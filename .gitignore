@@ -1,0 +1,7 @@
+*.aux
+*.ibc
+*.log
+*.pdf
+.ipynb_checkpoints
+budge.html
+build

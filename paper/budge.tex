@@ -1,0 +1,326 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage{amsmath}
+\DeclareMathOperator{\sign}{sign}
+
+% mathbb{N}
+\usepackage{amsfonts}
+
+% Code blocks
+\usepackage{listings}
+
+% Phonetic chars
+\usepackage{tipa}
+
+% Code annotation
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Haskell,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  frame=none,
+  tabsize=3
+}
+
+\title{The Budge programming language}
+
+\author{
+  Boro Sitnikovski \\
+  Skopje, North Macedonia \\
+  \texttt{buritomath@gmail.com} \\
+}
+
+\newcommand\doubleplus{\mathbin{{+}\mspace{-8mu}{+}}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a simple, esoteric programming language based on Gödel numbering and prime factorization, enhanced with explicit, scoped loops, allowing for easy program composition. We will show the syntax and semantics and then provide a few example programs and their evaluation. We will also provide a few interpreter implementations.
+\end{abstract}
+
+\keywords{Programming language, computational model, Gödel numbering, Python, Haskell, Idris}
+
+\section{Introduction}
+
+Budge (b\textturnv\textdyoghlig, b'dzh) is an esoteric programming language. It uses Gödel numbering\cite{b1} to represent registers and their values by relying on the Fundamental Theorem of Arithmetic\cite{b2}. For example, to represent the values $1$, $2$, and $3$ in memory, we would calculate $2^1 \cdot 3^2 \cdot 5^3$ (the first three primes 2, 3, 5 to the power of the number of the value at the corresponding register), arriving at the state $i = 2250$. We can extract $1$, $2$, and $3$ from $2250$ using prime factorization.
+
+Budge uses similar constructs as FRACTRAN\cite{b3}. However, Budge provides a more convenient way to construct loops and uses integers rather than fractions to denote instructions. A negative integer will decrease a register's value, while a positive integer will increase a register's value. In addition, it provides an easy way to code loops by using nested parenthesis\footnote{One disadvantage of the syntax for loops is that programs can't be as easily represented in memory.}. Finally, it abstracts prime numbers in the code from the programmer.
+
+\section{Syntax and semantics}
+
+Where data is represented as $i \in \mathbb{N^+}$ (product of primes), the syntax of the code in Backus-Naur form\cite{b4} is:
+
+\begin{verbatim}
+<posn>  ::= "1" | "2" | ...               <negn> ::= "-1" | "-2" | ...
+<stmt>  ::= <posn> | <negn> | "("<posn>","<stmts>")"
+<stmts> ::= <stmt>","<stmts> | <stmt>     <code> ::= "("<stmts>")"
+\end{verbatim}
+
+Let $p(n)$ be the $n$-th prime number. Let $\sign(n) = 1$ if $n>0$ and $-1$ otherwise; this will determine whether we need to multiply or divide. Let $E(i, x)$ represent the evaluation of a program $x$ (\texttt{<code>}) for input $i$ be defined by:
+
+$$ E(i, x) = {
+\begin{cases}
+E(i \cdot p(|n_0|)^{\sign(n_0)}, (n_1, \ldots, n_k)) & x = (n_0, n_1, \ldots, n_k) \land i \cdot p(|n_0|)^{\sign(n_0)} \in \mathbb{N}, \\
+E(i, (n_1, \ldots, n_k)) & x = (n_0, n_1, \ldots, n_k) \land i \cdot p(|n_0|)^{\sign(n_0)} \notin \mathbb{N}, \\
+E(E(i, (n'_0, \ldots, n'_k)), x) & x = ((P, n'_0, \ldots, n'_k), n_0, \ldots, n_j) \land i \cdot p(|P|)^{-1} \in \mathbb{N}, \\
+E(i, (n_0, \ldots, n_j)) & x = ((P, n'_0, \ldots, n'_k), n_0, \ldots, n_j) \land i \cdot p(|P|)^{-1} \notin \mathbb{N}, \\
+i & {\text{otherwise, that is, } x = ()}\end{cases}} $$
+
+Semantically, the first case handles increasing/decreasing a value in a register $n_0$. The second case is for skipping an instruction. The third and fourth cases represent the start and end of a loop (nested parenthesis).
+
+\section{Example programs in Budge}
+
+\subsection{Addition of numbers (manual evaluation)}
+
+To compute $E(2^3 \cdot 3^3, ((2, -2, 1)))$ we iterate the sequence $(-2, 1)$ until $\frac{i}{p(2)}$ is no longer an integer, that is, $\frac{i}{3}$:
+
+\begin{enumerate}
+\item Initially, $i = 2^3 \cdot 3^3 = 216$, and since $\frac{216}{3} = 72 \in \mathbb{N}$, proceed with evaluation.
+\item Calculate $p(|n|)^{\sign(n)}$ for $n = -2$: $i' = p(2)^{-1} = 3^{-1}$. Since $i \cdot i' \in \mathbb{N}$, set $i$ to $i \cdot i' = 216 \cdot i' = 72$.
+\item Calculate $p(|n|)^{\sign(n)}$ for $n = 1$: $i' = p(1)^{1} = 2$. Since $i \cdot i' \in \mathbb{N}$, set $i$ to $i \cdot i' = 72 \cdot i' = 144$.
+\item At this point, we go back and check the condition if $\frac{144}{3} \in \mathbb{N}$ - proceed with the evaluation.
+\item Calculate $p(|n|)^{\sign(n)}$ for $n = -2$: $i' = p(2)^{-1} = 3^{-1}$. Since $i \cdot i' \in \mathbb{N}$, set $i$ to $i \cdot i' = 144 \cdot i' = 48$.
+\item Calculate $p(|n|)^{\sign(n)}$ for $n = 1$: $i' = p(1)^{1} = 2$. Since $i \cdot i' \in \mathbb{N}$, set $i$ to $i \cdot i' = 48 \cdot i' = 96$.
+\item At this point, we go back and check the condition if $\frac{96}{3} \in \mathbb{N}$ - proceed with the evaluation.
+\item Calculate $p(|n|)^{\sign(n)}$ for $n = -2$: $i' = p(2)^{-1} = 3^{-1}$. Since $i \cdot i' \in \mathbb{N}$, set $i$ to $i \cdot i' = 96 \cdot i' = 32$.
+\item Calculate $p(|n|)^{\sign(n)}$ for $n = 1$: $i' = p(1)^{1} = 2$. Since $i \cdot i' \in \mathbb{N}$, set $i$ to $i \cdot i' = 32 \cdot i' = 64$.
+\item Now we have that $\frac{64}{3} \notin \mathbb{N}$, so the evaluation halts.
+\end{enumerate}
+
+Thus, $i$ is now equal to $64 = 2^6$. That is, the value from the first register $p(1)$ and the value from the second register $p(2)$ were added, and then stored in the first register, $p(1)$. In general, $E(2^a \cdot 3^b, ((2, -2, 1))) = 2^n$, with $n = a + b$.
+
+\subsection{Other arithmetic operations}
+
+\textit{Subtraction}: $E(2^x \cdot 3^y, s) = 2^n \cdot 3^k$ where $n = x - y$ and $k=1$ if $y \leq x$, and $k=0$ otherwise.
+
+$$s = ((1, -1, 3, 5), (2, -2, 4, 6), (3, -3, -4), (6, -5, -6), (4, -4, 1, 3), (3, (3, -3), 2), (5, -5, 1))$$
+
+\textit{Multiplication}: $E(2^x \cdot 3^y, m) = 2^n$ where $n = x \cdot y$.
+
+$$m = ((1, -1, (2, -2, 3, 4), (4, -4, 2)), (2, -2), (3, -3, 1))$$
+
+\textit{Division}: $E(2^a \cdot 3^d, d) = 2^q \cdot 3^r$ where $a = qd + r$ and $0 \leq r < d$.
+
+\begin{equation*}
+\begin{split}
+d = (9, (9, (2, -2, 7, 8), (8, -8, 2)) \doubleplus s \doubleplus (3, (2, -2, -3), (3, -3, 2), \\
+(9, -9), (2, -2, 9), (7, -7, 2), 10), (1, -1, -2), (10, -10, 1), -1)
+\end{split}
+\end{equation*}
+
+\textit{Logarithm}: $E(2^x \cdot 3^y, log) = 2^n$ where $n = \log_y(x)$.
+
+\begin{equation*}
+\begin{split}
+log = ((2, -2, 12), (1, (2, -2), (14, -14), (12, -12, 2, 14), (14, -14, 12)) \doubleplus \\
+d \doubleplus ((3, -3), 3, (2, -2, -3), (3, -3, 2), 11), -11, (11, -11, 1), (12, -12))
+\end{split}
+\end{equation*}
+
+\subsection{Logical operators}
+
+\textit{Logical "not"}: $E(2^x, not) = 2^n$ where $n = \neg x$.
+
+$$not = (2,(1,-1,-2),(2,-2,1))$$
+
+\textit{Logical "and"}: $E(2^x \cdot 3^y, and) = 2^n$ where $n = x \land y$.
+
+$$and = ((1,-1,3),(2,-2,3),-3,(3,-3,1))$$
+
+\textit{Logical "or"}: $E(2^x \cdot 3^y, or) = 2^n$ where $n = x \lor y$.
+
+$$or = ((1,-1,-2,3),(2,-2,3),(3,-3,1))$$
+
+\subsection{Representing sequences}
+
+As an example, the sequence $(1, 2, 3)$ can be represented with the number $2^1 \cdot 3^2 \cdot 5^3 = 2250$, using Gödel numbering. We can store this number in the first register, thus $i = 2^{2250}$. To retrieve $2250$ from $2^{2250}$, we use the logarithm program. Further, to retrieve the $n$-th element of the sequence, we keep dividing by $p(n)$ until there's no remainder, and count the divisions. For example, to get the second element, $p(2) = 3$ thus $\frac{2250}{3} = 750$ is one division, and $\frac{750}{3}$ is another division (note that $\frac{250}{3}$ is not divisible) - so two divisions in total which represent the value of the index.
+
+\subsection{Composing and interpreting programs}
+
+As we saw with $d$ and $log$, programs can be composed by concatenating sequences: $\forall s_1, \forall s_2, E(E(i, s_1), s_2) = E(i, s_1 \doubleplus s_2)$. For example, the program $(1, 2, 2, (2, -2, 1))$ is consisted of concatenating $(1, 2, 2)$ and $((2, -2, 1))$; initialize registers with values 1 and 2 respectively, and then add 1 and 2 together, storing the result in the first register.
+
+We show the pseudocode representation of this program by following its semantical interpretation:
+
+\begin{verbatim}
+// program 1
+r1 = 1; r2 = 2;
+// program 2
+while (r2 > 0) { r2 -= 1; r1 += 1; } // optimized: r1 += r2; r2 = 0;
+\end{verbatim}
+
+Another way to interpret programs, to explain computation to the general audience easily, is to imagine several jars with marbles. The command $-n$ removes a marble (if any) from the jar number $n$, and $n$ adds a marble to the jar number $n$. Loops can be interpreted as a way to repeat some commands while a jar $n$ is not empty.
+
+\section{Example interpreter implementations}
+
+\subsection{Python}
+
+Python\cite{b5} is a dynamically typed general-purpose programming language. For the implementation, we use lists to represent Budge programs and use recursion on them to perform the evaluation.
+
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[language=Python]
+def evaluate(i, code):
+  for el in code:
+    if isinstance(el, list) and len(el) > 1:
+      while i % p(abs(el[0])) == 0:
+        i = evaluate(i, el[1:])
+    elif sign(el) == 1:
+      i *= p(el)
+    else:
+      new_i = p(abs(el))
+      if i % new_i == 0:
+        i = int(i // new_i)
+  return i
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[language=Python]
+def fast_evaluate(i, code):
+  for el in code:
+    if isinstance(el, list) and len(el) > 1:
+      while abs(el[0]) in i and i[abs(el[0])]:
+        i = fast_evaluate(i, el[1:])
+    else:
+      (s, el) = (sign(el), abs(el))
+      if el not in i: i[el] = 0
+      i[el] = max(0, i[el] + s)
+  # remove zero registers
+  return {x:y for x,y in i.items() if y != 0}
+\end{lstlisting}
+\end{minipage}
+
+Given a function \texttt{p(n)} that returns the \texttt{n}-th prime number, the function \texttt{evaluate} closely resembles $E$. A more efficient interpreter (\texttt{fast\_evaluate}) uses a \texttt{dict} for registers and directly adjusts the values, rather than relying on number division.
+
+An example evaluation to perform addition of two numbers:
+
+\begin{verbatim}
+>>> fast_evaluate({1:2,2:2},[[2,-2,1]])
+{1: 4}
+\end{verbatim}
+
+\subsection{Haskell and Idris}
+
+Haskell\cite{b6} is a functional and statically typed, general-purpose programming language. Idris\cite{b7} is a dependently typed programming language and allows expressing mathematical proofs. As both languages are typed, we need to provide a data type for Budge programs per the syntax.
+
+\pagebreak
+
+Sequences can either contain a number or a sequence, and we encode that as follows:
+
+\begin{lstlisting}
+> data Budge = BNum Int | BSeq Int [Budge]
+\end{lstlisting}
+
+Similarly to the Python implementation, given a mapping (dictionary) \texttt{Map} from numbers to numbers, we can represent \texttt{fast\_evaluate} at the value level in Haskell and at the type level in Idris:
+
+\begin{minipage}[t]{0.49\textwidth}
+\begin{lstlisting}
+-- Haskell
+fastEvaluate :: M.Map Int Int -> [Budge] -> M.Map Int Int
+fastEvaluate i ((BNum x):xs) =
+  let key   = abs x
+      value = M.findWithDefault 0 (abs x) i in
+      fastEvaluate (M.insert key (max 0 (value + signum x)) i) xs
+fastEvaluate i l@((BSeq x' x):xs) =
+  if M.findWithDefault 0 (abs x') i /= 0
+  then fastEvaluate (fastEvaluate i x) l
+  else fastEvaluate i xs
+fastEvaluate i [] = i
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}[t]{0.49\textwidth}
+\begin{lstlisting}
+-- Idris
+data Budge : Map -> List BudgeData -> Map -> Type where
+  BId : Budge i [] i
+  BPos : Budge (UpdateMap i' x (i' x + 1)) xs i''
+    -> Budge i (BNum (PosNat x)::xs) (UpdateMap i' x (i' x + 1))
+  BNeg : Budge (UpdateMap i' x (i' x `minus` 1)) xs i''
+    -> Budge i (BNum (NegNat x)::xs) (UpdateMap i' x (i' x `minus` 1))
+  BWhileT : (i x' = 0 -> Void)
+    -> Budge i x i'
+    -> Budge i' ((BSeq x' x)::xs) i''
+    -> Budge i ((BSeq x' x)::xs) i''
+  BWhileF : i x' = 0
+    -> Budge i xs i'
+    -> Budge i ((BSeq x' x)::xs) i'
+\end{lstlisting}
+\end{minipage}
+
+The Haskell implementation uses recursion on the datatype. With it, we can run an example program:
+
+\begin{verbatim}
+> fastEvaluate (M.fromList [(1,2),(2,2)]) [BSeq 2 [BNum (-2),BNum 1]]
+fromList [(1,4),(2,0)]
+\end{verbatim}
+
+Essentially, the formalization \texttt{Budge x y z} in Idris corresponds to $z = E(x, y)$. We can prove a simple fact:
+
+\begin{lstlisting}
+Addition : List BudgeData
+Addition = [BSeq 2 [BNum (NegNat 2), BNum (PosNat 1)]]
+
+-- Given state [1 -> 2, 2 -> 2], the program Addition will update the state to [1 -> 4]
+EgAdd : Budge AddMap' Addition AddMap'''''
+EgAdd = BWhileT
+  (\case Refl impossible)
+  (BNeg {i' = AddMap'} (BPos {i' = AddMap''} BId))
+  (BWhileT (\case Refl impossible) (BNeg (BPos {i' = AddMap'''''} BId)) (BWhileF Refl BId))
+\end{lstlisting}
+
+\begin{thebibliography}{1}
+
+\bibitem{b1}
+Douglas Hofstadter
+\newblock {\em Godel, Escher, Bach: an Eternal Golden Braid}
+\newblock Basic Books, Inc., 1979.
+
+\bibitem{b2}
+Artur Korniłowicz, Piotr Rudnicki
+\newblock {\em Fundamental Theorem of Arithmetic}
+\newblock Formalized Mathematics 12.2, 2004.
+
+\bibitem{b3}
+John H. Conway
+\newblock {\em Fractran: A simple universal programming language for arithmetic}
+\newblock Open problems in Communication and Computation, 1986.
+
+\bibitem{b4}
+Daniel D. McCracken, Edwin D. Reilly
+\newblock {\em{Backus-Naur Form (BNF)}}
+\newblock Encyclopedia of Computer Science, 2003.
+
+\bibitem{b5}
+Guido van Rossum
+\newblock Python tutorial.
+\newblock {\em Technical Report CS-R9526, Centrum voor Wiskunde en Informatica (CWI), Amsterdam}, 1995.
+
+\bibitem{b6}
+Miran Lipovaca
+\newblock {\em Learn You a Haskell For Great Good}
+\newblock No Starch Press, 2011.
+
+\bibitem{b7}
+Boro Sitnikovski
+\newblock {\em Gentle Introduction to Dependent Types with Idris}
+\newblock Leanpub/Amazon KDP, 2018.
+
+\end{thebibliography}
+\end{document}
