@@ -225,7 +225,7 @@ Haskell\cite{b6} is a functional and statically typed, general-purpose programmi
 Sequences can either contain a number or a sequence, and we encode that as follows:
 
 \begin{lstlisting}
-> data Budge = BNum Int | BSeq Int [Budge]
+> data BudgeCmd = BNum Int | BSeq Int [BudgeCmd]
 \end{lstlisting}
 
 Similarly to the Python implementation, given a mapping (dictionary) \texttt{Map} from numbers to numbers, we can represent \texttt{fast\_evaluate} at the value level in Haskell and at the type level in Idris:
@@ -233,7 +233,7 @@ Similarly to the Python implementation, given a mapping (dictionary) \texttt{Map
 \begin{minipage}[t]{0.49\textwidth}
 \begin{lstlisting}
 -- Haskell
-fastEvaluate :: M.Map Int Int -> [Budge] -> M.Map Int Int
+fastEvaluate :: M.Map Int Int -> [BudgeCmd] -> M.Map Int Int
 fastEvaluate i ((BNum x):xs) =
   let key   = abs x
       value = M.findWithDefault 0 (abs x) i in
@@ -248,19 +248,19 @@ fastEvaluate i [] = i
 \begin{minipage}[t]{0.49\textwidth}
 \begin{lstlisting}
 -- Idris
-data Budge : Map -> List BudgeData -> Map -> Type where
-  BId : Budge i [] i
-  BPos : Budge i xs i'
-    -> Budge i (xs ++ [BNum (PosNat x)]) (UpdateMap i' x (i' x + 1))
-  BNeg : Budge i xs i'
-    -> Budge i (xs ++ [BNum (NegNat x)]) (UpdateMap i' x (i' x `minus` 1))
+data BudgeEval : Map -> List BudgeCmd -> Map -> Type where
+  BId : BudgeEval i [] i
+  BPos : BudgeEval i xs i'
+    -> BudgeEval i (xs ++ [BNum (PosNat x)]) (UpdateMap i' x (i' x + 1))
+  BNeg : BudgeEval i xs i'
+    -> BudgeEval i (xs ++ [BNum (NegNat x)]) (UpdateMap i' x (i' x `minus` 1))
   BWhileT : (i x' = 0 -> Void)
-    -> Budge i x i'
-    -> Budge i' ((BSeq x' x)::xs) i''
-    -> Budge i ((BSeq x' x)::xs) i''
+    -> BudgeEval i x i'
+    -> BudgeEval i' ((BSeq x' x)::xs) i''
+    -> BudgeEval i ((BSeq x' x)::xs) i''
   BWhileF : i x' = 0
-    -> Budge i xs i'
-    -> Budge i ((BSeq x' x)::xs) i'
+    -> BudgeEval i xs i'
+    -> BudgeEval i ((BSeq x' x)::xs) i'
 \end{lstlisting}
 \end{minipage}
 
@@ -271,14 +271,14 @@ The Haskell implementation uses recursion on the datatype. With it, we can run a
 fromList [(1,4),(2,0)]
 \end{verbatim}
 
-Essentially, the formalization \texttt{Budge x y z} in Idris corresponds to $z = E(x, y)$. We can prove a simple fact:
+Essentially, the formalization \texttt{BudgeEval x y z} in Idris corresponds to $z = E(x, y)$. We can prove a simple fact:
 
 \begin{lstlisting}
-Addition : List BudgeData
+Addition : List BudgeCmd
 Addition = [BSeq 2 [BNum (NegNat 2), BNum (PosNat 1)]]
 
 -- Given state [1 -> 2, 2 -> 2], the program Addition will update the state to [1 -> 4]
-EgAdd : Budge AddMap' Addition AddMap'''''
+EgAdd : BudgeEval AddMap' Addition AddMap'''''
 EgAdd = BWhileT
   (\case Refl impossible)
   (BPos (BNeg BId))

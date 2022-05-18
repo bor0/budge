@@ -13,9 +13,9 @@ Budge interpreter in Haskell
 Since sequences can either contain a number or a sequence, we encode that in our data type:
 
 > import qualified Data.Map as M
-> data Budge = BNum Int | BSeq Int [Budge]
+> data BudgeCmd = BNum Int | BSeq Int [BudgeCmd]
 >
-> instance Show Budge where
+> instance Show BudgeCmd where
 >   show (BNum x) = show x
 >   show (BSeq x xs) = "[" ++ show x ++ "," ++ tail (show xs)
 
@@ -29,7 +29,7 @@ With the following helper functions for getting prime numbers:
 
 Now we can implement the interpreter as follows:
 
-> evaluate :: Integer -> [Budge] -> Integer
+> evaluate :: Integer -> [BudgeCmd] -> Integer
 > evaluate i ((BNum x):xs) | signum x == 1  =
 >   evaluate (i * p x) xs
 > evaluate i ((BNum x):xs) | signum x == -1 =
@@ -80,7 +80,7 @@ Efficiency
 
 A more efficient interpreter would be to use a `Map` for registers and directly adjust the values there, rather than relying on number division:
 
-> fastEvaluate' :: M.Map Int Int -> [Budge] -> M.Map Int Int
+> fastEvaluate' :: M.Map Int Int -> [BudgeCmd] -> M.Map Int Int
 > fastEvaluate' i ((BNum x):xs) =
 >   let key   = abs x
 >       value = M.findWithDefault 0 (abs x) i in
