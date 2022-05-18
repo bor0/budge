@@ -197,12 +197,12 @@ Logic gates
 -----------
 
 > logicNot = [BNum 2, BSeq 1 [BNum (-1), BNum (-2)], BSeq 2 [BNum (-2), BNum 1]]
-> logicAnd = [BSeq 1 [BNum (-1), BNum 3], BSeq 2 [BNum (-2), BNum 3], BNum (-3), BSeq 3 [BNum (-3), BNum 1]]
-> logicOr  = [BSeq 1 [BNum (-1), BNum (-2), BNum 3], BSeq 2 [BNum (-2), BNum 3], BSeq 3 [BNum (-3), BNum 1]]
+> logicAnd = [BSeq 1 [BSeq 1 [BNum (-1)], BNum 3], BSeq 2 [BSeq 2 [BNum (-2)], BNum 3], BNum (-3), BSeq 3 [BNum (-3), BNum 1]]
+> logicOr  = [BSeq 1 [BSeq 1 [BNum (-1)], BNum 3], BSeq 2 [BSeq 2 [BNum (-2)], BNum 3], BSeq 3 [BSeq 3 [BNum (-3)], BNum 1]]
 
 > egNot  = [ (i, fastEvaluate [(1, i)] logicNot) | i <- [0..2]]
-> egAnd  = [ (i, j, fastEvaluate [(1, i), (2, j)] logicAnd) | i <- [0..1], j <- [0..1]]
-> egOr   = [ (i, j, fastEvaluate [(1, i), (2, j)] logicOr) | i <- [0..1], j <- [0..1]]
+> egAnd  = [ (i, j, fastEvaluate [(1, i), (2, j)] logicAnd) | i <- [0..2], j <- [0..2]]
+> egOr   = [ (i, j, fastEvaluate [(1, i), (2, j)] logicOr) | i <- [0..2], j <- [0..2]]
 
 Misc. algorithms
 ----------------
@@ -293,7 +293,7 @@ Sets $n$ to 1 if $x$ is prime, and 0 otherwise. Requires $x>1$.
 >   -- negate r1 for final result
 >   BSeq 2 [BNum (-2)], BNum 2, BSeq 1 [BNum (-1), BNum (-2)], BSeq 2 [BNum (-2), BNum 1]]
 
-The idea is to store in $r_{12}$ the result of `!(n%i)` for `i=n;i>=0`. We say that a number is prime if $r_{12}=2$`, i.e. only two numbers divide the number (1 and itself).
+The idea is to store in $r_{12}$ the result of `!(n%i)` for `i=n;i>=0`. We say that a number is prime if $r_{12}=2$, i.e. only two numbers divide the number (1 and itself).
 
 > egPrime = [ (i, fastEvaluate [(1, i)] isPrime) | i <- [2..9] ]
 
@@ -321,8 +321,3 @@ Sets $n$ to $log_y(x)$.
 
 > egLog2 = [ (i, fastEvaluate [(1, i), (2, 2)] logn) | i <- [2..8] ]
 > egLog3 = [ (i, fastEvaluate [(1, i), (2, 3)] logn) | i <- [3..9] ]
-
-Representing sequences
-----------------------
-
-As an example, the sequence $(1, 2, 3)$ can be represented with the number $2^1 \cdot 3^2 \cdot 5^3 = 2250$, using Gödel numbering. We can store this number in the first register, thus $i = 2^{2250}$. To retrieve $2250$ from $2^{2250}$, we use the logarithm code. Further, to retrieve the $n$-th element of the sequence, we keep dividing $2250$ by $p(n)$ until there's no remainder, and count the divisions. For example, to get the second element, $p(2) = 3$ thus $2250/3 = 750$ is one division, and $750/3$ is another division (note that $250/3$ is not divisible) - so two divisions in total which represent the value of the index.
