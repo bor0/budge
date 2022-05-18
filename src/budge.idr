@@ -13,10 +13,10 @@ UpdateMap m x v x' = if x == x' then v else m x'
 
 data Budge : Map -> List BudgeData -> Map -> Type where
   BId : Budge i [] i
-  BPos : Budge (UpdateMap i' x (i' x + 1)) xs i''
-    -> Budge i (BNum (PosNat x)::xs) (UpdateMap i' x (i' x + 1))
-  BNeg : Budge (UpdateMap i' x (i' x `minus` 1)) xs i''
-    -> Budge i (BNum (NegNat x)::xs) (UpdateMap i' x (i' x `minus` 1))
+  BPos : Budge i xs i'
+    -> Budge i (xs ++ [BNum (PosNat x)]) (UpdateMap i' x (i' x + 1))
+  BNeg : Budge i xs i'
+    -> Budge i (xs ++ [BNum (NegNat x)]) (UpdateMap i' x (i' x `minus` 1))
   BWhileT : (i x' = 0 -> Void)
     -> Budge i x i'
     -> Budge i' ((BSeq x' x)::xs) i''
@@ -33,16 +33,16 @@ AddMap = UpdateMap EmptyMap 1 2
 AddMap' : Map
 AddMap' = UpdateMap AddMap 2 2
 AddMap'' : Map
-AddMap'' = UpdateMap AddMap' 1 (AddMap' 1 + 1)
+AddMap'' = UpdateMap AddMap' 2 (AddMap' 2 `minus` 1)
 AddMap''' : Map
-AddMap''' = UpdateMap AddMap'' 2 (AddMap'' 2 `minus` 1)
+AddMap''' = UpdateMap AddMap'' 1 (AddMap'' 1 + 1)
 AddMap'''' : Map
-AddMap'''' = UpdateMap AddMap''' 1 (AddMap''' 1 + 1)
+AddMap'''' = UpdateMap AddMap''' 2 (AddMap''' 2 `minus` 1)
 AddMap''''' : Map
-AddMap''''' = UpdateMap AddMap'''' 2 (AddMap'''' 2 `minus` 1)
+AddMap''''' = UpdateMap AddMap'''' 1 (AddMap'''' 1 + 1)
 
 EgAdd : Budge AddMap' Addition AddMap'''''
 EgAdd = BWhileT
   (\case Refl impossible)
-  (BNeg {i' = AddMap'} (BPos {i' = AddMap''} BId))
-  (BWhileT (\case Refl impossible) (BNeg (BPos {i' = AddMap'''''} BId)) (BWhileF Refl BId))
+  (BPos (BNeg BId))
+  (BWhileT (\case Refl impossible) (BPos (BNeg BId)) (BWhileF Refl BId))
