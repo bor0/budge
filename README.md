@@ -4,7 +4,7 @@ Interpreter implementation **with example programs** in [Python](./src/budge.ipy
 
 Esolang entry: [Budge](https://esolangs.org/wiki/Budge).
 
-Paper on arXiv (coming soon), and the source code for the paper [here](./paper).
+Paper on [arXiv](https://arxiv.org/abs/2205.07979), and the source code for the paper [here](./paper).
 
 ## Introduction
 
