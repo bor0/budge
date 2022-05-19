@@ -46,15 +46,15 @@ Where data is represented as $i \in \mathbb{N^+}$ (product of primes), the synta
 <stmts> ::= <stmt>","<stmts> | <stmt>     <code> ::= "("<stmts>")"
 \end{verbatim}
 
-Let $p(n)$ be the $n$-th prime number. Let $\sign(n) = 1$ if $n>0$ and $-1$ otherwise; this will determine whether we need to multiply or divide. Let $E(i, x)$ represent the evaluation of a program $x$ (\texttt{<code>}) for input $i$ be defined by:
+Let $p(n)$ be the $n$-th prime number. Let $\sign(n) = 1$ if $n>0$ and $-1$ otherwise; this will determine whether we need to multiply or divide. With $\forall x, n_x \in \mathbb{Z} \land n'_x \in \mathbb{Z}$, let $E(i, s)$ represent the evaluation of a sequence $s$ (\texttt{<code>}) for input $i$ be defined by:
 
-$$ E(i, x) = {
+$$ E(i, s) = {
 \begin{cases}
-E(i \cdot p(|n_0|)^{\sign(n_0)}, (n_1, \ldots, n_k)) & x = (n_0, n_1, \ldots, n_k) \land i \cdot p(|n_0|)^{\sign(n_0)} \in \mathbb{N}, \\
-E(i, (n_1, \ldots, n_k)) & x = (n_0, n_1, \ldots, n_k) \land i \cdot p(|n_0|)^{\sign(n_0)} \notin \mathbb{N}, \\
-E(E(i, (n'_0, \ldots, n'_k)), x) & x = ((P, n'_0, \ldots, n'_k), n_0, \ldots, n_j) \land i \cdot p(|P|)^{-1} \in \mathbb{N}, \\
-E(i, (n_0, \ldots, n_j)) & x = ((P, n'_0, \ldots, n'_k), n_0, \ldots, n_j) \land i \cdot p(|P|)^{-1} \notin \mathbb{N}, \\
-i & {\text{otherwise, that is, } x = ()}\end{cases}} $$
+E(i \cdot p(|n_0|)^{\sign(n_0)}, (n_1, \ldots, n_k)) & s = (n_0, n_1, \ldots, n_k) \land i \cdot p(|n_0|)^{\sign(n_0)} \in \mathbb{N}, \\
+E(i, (n_1, \ldots, n_k)) & s = (n_0, n_1, \ldots, n_k) \land i \cdot p(|n_0|)^{\sign(n_0)} \notin \mathbb{N}, \\
+E(E(i, (n'_0, \ldots, n'_k)), s) & s = ((P, n'_0, \ldots, n'_k), n_0, \ldots, n_j) \land i \cdot p(|P|)^{-1} \in \mathbb{N}, \\
+E(i, (n_0, \ldots, n_j)) & s = ((P, n'_0, \ldots, n'_k), n_0, \ldots, n_j) \land i \cdot p(|P|)^{-1} \notin \mathbb{N}, \\
+i & {\text{otherwise, that is, } s = ()}\end{cases}} $$
 
 Semantically, the first case handles increasing/decreasing a value in a register $n_0$. The second case is for skipping an instruction. The third and fourth cases represent the start and end of a loop (nested parenthesis).
 
@@ -100,13 +100,13 @@ d = (9, (9, (2, -2, 7, 8), (8, -8, 2)) \doubleplus s \doubleplus (3, (2, -2, -3)
 
 \section{Composing and interpreting programs}
 
-As we saw with $d$, programs can be composed by concatenating sequences: $\forall s_1, \forall s_2, E(E(i, s_1), s_2) = E(i, s_1 \doubleplus s_2)$. For example, the program $(1, 2, 2, (2, -2, 1))$ is consisted of concatenating $(1, 2, 2)$ and $((2, -2, 1))$; initialize registers with values 1 and 2 respectively, and then add 1 and 2 together, storing the result in the first register.
+As we saw with $d$, sequences can be composed by concatenating them: $\forall s_1, \forall s_2, E(E(i, s_1), s_2) = E(i, s_1 \doubleplus s_2)$. For example, the sequence $(1, 2, 2, (2, -2, 1))$ is consisted of concatenating $(1, 2, 2)$ and $((2, -2, 1))$; initialize registers with values 1 and 2 respectively, and then add 1 and 2 together, storing the result in the first register.
 
-We show the pseudo-code representation of this program by following its semantical interpretation:
+We show the pseudo-code representation of this sequence by following its semantical interpretation:
 
 \begin{verbatim}
-r1 = 1; r2 = 2; // program 1
-while (r2 > 0) { r2 -= 1; r1 += 1; } // program 2. optimized: r1 += r2; r2 = 0;
+r1 = 1; r2 = 2; // sequence 1
+while (r2 > 0) { r2 -= 1; r1 += 1; } // sequence 2. optimized: r1 += r2; r2 = 0;
 \end{verbatim}
 
 \begin{thebibliography}{1}
