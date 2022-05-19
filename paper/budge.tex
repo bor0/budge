@@ -250,7 +250,7 @@ data BudgeCmd = CNum SignedNat | CCons BudgeCmd BudgeCmd | CWhile Nat BudgeCmd
 data BudgeEval : Map -> BudgeCmd -> Map -> Type where
   BPos : BudgeEval i (CNum (PosNat x)) (UpdateMap i x (i x + 1))
   BNeg : BudgeEval i (CNum (NegNat x)) (UpdateMap i x (i x `minus` 1))
-  BSeq : BudgeEval i c1 i'
+  BCons : BudgeEval i c1 i'
     -> BudgeEval i' c2 i''
     -> BudgeEval i (CCons c1 c2) i''
   BWhileT : (i cond = 0 -> Void)
@@ -271,12 +271,22 @@ The Haskell implementation uses recursion on the datatype. Running an example pr
 fromList [(1,4),(2,0)]
 \end{verbatim}
 
-Essentially, the formalization \texttt{BudgeEval x y z} in Idris corresponds to $z = E(x, y)$. We can prove a simple fact:
+Essentially, the formalization \texttt{BudgeEval x y z} in Idris corresponds to $z = E(x, y)$. We can prove simple facts:
 
 \begin{lstlisting}
+Addition : BudgeCmd
+Addition = CWhile 2 (CCons (CNum (NegNat 2)) (CNum (PosNat 1)))
+
+-- Given state [1 -> 2, 2 -> 2], the program Addition will update the state to [1 -> 4]
+EgAdd : BudgeEval AddMap' Addition AddMap'''''
+EgAdd = BWhileT
+  (\case Refl impossible)
+  (BCons BNeg BPos)
+  (BWhileT (\case Refl impossible) (BCons BNeg BPos) (BWhileF Refl))
+
 -- Programs in Budge can be composed
 Composition : BudgeEval i c1 i' -> BudgeEval i' c2 i'' -> BudgeEval i (CCons c1 c2) i''
-Composition hyp1 hyp2 = BSeq hyp1 hyp2
+Composition hyp1 hyp2 = BCons hyp1 hyp2
 \end{lstlisting}
 
 \begin{thebibliography}{1}
