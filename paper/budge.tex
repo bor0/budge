@@ -158,7 +158,7 @@ As an example, the sequence $(1, 2, 3)$ can be represented with the number $2^1 
 
 As we saw with $d$ and $log$, programs can be composed by concatenating sequences: $\forall s_1, \forall s_2, E(E(i, s_1), s_2) = E(i, s_1 \doubleplus s_2)$. For example, the program $(1, 2, 2, (2, -2, 1))$ is consisted of concatenating $(1, 2, 2)$ and $((2, -2, 1))$; initialize registers with values 1 and 2 respectively, and then add 1 and 2 together, storing the result in the first register.
 
-We show the pseudocode representation of this program by following its semantical interpretation:
+We show the pseudo-code representation of this program by following its semantical interpretation:
 
 \begin{verbatim}
 // program 1
@@ -227,25 +227,25 @@ Similarly to the Python implementation, given a mapping (dictionary) \texttt{Map
 \begin{minipage}[t]{0.49\textwidth}
 \begin{lstlisting}
 -- Haskell
-data BudgeCmd = CNum Int | CCons BudgeCmd BudgeCmd | CSeq Int BudgeCmd
+data BudgeCmd = CNum Int | CCons BudgeCmd BudgeCmd | CWhile Int BudgeCmd
 
-fastEvaluate :: M.Map Int Int -> [BudgeCmd] -> M.Map Int Int
-fastEvaluate i ((CNum x):xs) =
+fastEvaluate :: M.Map Int Int -> BudgeCmd -> M.Map Int Int
+fastEvaluate i (CNum x) =
   let key   = abs x
       value = M.findWithDefault 0 (abs x) i in
-      fastEvaluate (M.insert key (max 0 (value + signum x)) i) xs
-fastEvaluate i l@(CSeq x' x) =
+      M.insert key (max 0 (value + signum x)) i
+fastEvaluate i l@(CWhile x' x) =
   if M.findWithDefault 0 (abs x') i /= 0
   then fastEvaluate (fastEvaluate i x) l
   else i
-fastEvaluate i (CSeq c1 c2) = fastEvaluate (fastEvaluate i c1) c2
+fastEvaluate i (CCons c1 c2) = fastEvaluate (fastEvaluate i c1) c2
 \end{lstlisting}
 \end{minipage}
 \begin{minipage}[t]{0.49\textwidth}
 \begin{lstlisting}
 -- Idris
 data SignedNat = PosNat Nat | NegNat Nat
-data BudgeCmd = CNum SignedNat | CCons BudgeCmd BudgeCmd | CSeq Nat BudgeCmd
+data BudgeCmd = CNum SignedNat | CCons BudgeCmd BudgeCmd | CWhile Nat BudgeCmd
 
 data BudgeEval : Map -> BudgeCmd -> Map -> Type where
   BPos : BudgeEval i (CNum (PosNat x)) (UpdateMap i x (i x + 1))
@@ -255,19 +255,19 @@ data BudgeEval : Map -> BudgeCmd -> Map -> Type where
     -> BudgeEval i (CCons c1 c2) i''
   BWhileT : (i cond = 0 -> Void)
     -> BudgeEval i c i'
-    -> BudgeEval i' (CSeq cond c) i''
-    -> BudgeEval i (CSeq cond c) i''
+    -> BudgeEval i' (CWhile cond c) i''
+    -> BudgeEval i (CWhile cond c) i''
   BWhileF : i cond = 0
-    -> BudgeEval i (CSeq cond c) i
+    -> BudgeEval i (CWhile cond c) i
 \end{lstlisting}
 \end{minipage}
 
-Sequences can either contain a number or a sequence, and we encode in the \texttt{BudgeCmd} datatype.
+Sequences can either contain a number or a sequence, and we encode that in the \texttt{BudgeCmd} datatype.
 
-The Haskell implementation uses recursion on the datatype. With it, we can run an example program:
+The Haskell implementation uses recursion on the datatype. Running an example program:
 
 \begin{verbatim}
-> fastEvaluate (M.fromList [(1,2),(2,2)]) (CSeq 2 (CCons (CNum (-2)) (CNum 1)))
+> fastEvaluate (M.fromList [(1,2),(2,2)]) (CWhile 2 (CCons (CNum (-2)) (CNum 1)))
 fromList [(1,4),(2,0)]
 \end{verbatim}
 
