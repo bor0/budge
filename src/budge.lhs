@@ -119,7 +119,7 @@ Subtraction
 
 *Input*: $2^x \cdot 3^y$. *Output*: $2^n \cdot 3^k$.
 
-The following code will set $k$ to 1 if $y \leq x$, and 0 otherwise. The final result is stored in $n$.
+The following code will set $k$ to 1 if $y > x$, and 0 otherwise. The final result is stored in $n$.
 
 > arithSub = [
 >   CWhile 1 [CNum (-1), CNum 3, CNum 5], -- move r1 to r3 r4
