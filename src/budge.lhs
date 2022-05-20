@@ -119,7 +119,7 @@ Subtraction
 
 *Input*: $2^x \cdot 3^y$. *Output*: $2^n \cdot 3^k$.
 
-The following code will set $k$ to 1 if $y > x$, and 0 otherwise. The final result is stored in $n$.
+The following code will set $k$ to 1 if $y > x$, and 0 otherwise. The final result is $n = |x - y|$.
 
 > arithSub = [
 >   CWhile 1 [CNum (-1), CNum 3, CNum 5], -- move r1 to r3 r4
@@ -152,27 +152,22 @@ Division
 
 *Input*: $2^x \cdot 3^y$. *Output*: $2^n \cdot 3^k$.
 
-The following code only works when $x \geq y$. Given $a = qb + r$ where $a$ is input through $x$ and $b$ is input through $y$, it will calculate $q$ into $n$ and $r$ into $k$.
+If $x \geq y$, given $a = qb + r$ where $a$ is input through $x$ and $b$ is input through $y$, it will calculate $q$ into $n$ and $r$ into $k$. Otherwise, it calculates $y - x$.
 
 > arithDiv = [
->   CNum 9,
->   CWhile 9 -- while x>y
->     -- save r2
->     ([CWhile 2 [CNum (-2), CNum 7, CNum 8],
->     CWhile 8 [CNum (-8), CNum 2]]
->     ++ arithSub ++ -- see "Composing code"
->     -- negate r2 (see logical gate "Not")
->     [CNum 3, CWhile 2 [CNum (-2), CNum (-3)], CWhile 3 [CNum (-3), CNum 2],
->     -- store r2 to r9
->     CWhile 9 [CNum (-9)], CWhile 2 [CNum (-2), CNum 9],
->     -- bring back r2
->     CWhile 7 [CNum (-7), CNum 2],
->     CNum 10 -- increase quotient
->   ]),
->   CWhile 1 [CNum (-1), CNum (-2)], -- calc remainder (r2>r1 from last sub)
->   CWhile 10 [CNum (-10), CNum 1], CNum (-1)] -- set r1=r10 (quotient)
+>   CWhile 2 [CNum (-2), CNum 7], -- store r2 in r7
+>   CWhile 1 -- while r1>0
+>     ([CWhile 7 [CNum (-7), CNum 2, CNum 8], -- bring back r2
+>     CWhile 8 [CNum (-8), CNum 7]]           -- save r2 to r7
+>     ++ arithSub ++                          -- see "Composing code"
+>     [CNum 9, -- increase quotient
+>     -- if sub. underflow store rem in r8
+>     CWhile 2 [CWhile 2 [CNum (-2)], CWhile 1 [CNum (-1), CNum 8], CNum (-9)]]),
+>     CWhile 7 [CNum (-7)],         -- flush tmp
+>     CWhile 9 [CNum (-9), CNum 1], -- set quotient
+>     CWhile 8 [CNum (-8), CNum 2]] -- set remainder
 
-The idea is to keep subtracting until subtraction returns 1 in $r_2$ (second register), which means underflow. We negate $r_2$ because Budge loops only work with >1 checks. We keep track of the number of subtractions and then set $r_2 = r_2 - r_1$ for the remainder.
+The idea is to keep subtracting until subtraction returns 1 in $r_2$ (second register), which means underflow. We keep track of the number of subtractions and then set $r_2 = r_2 - r_1$ for the remainder.
 
 > egDiv1 = fastEvaluate [(1, 4), (2, 2)] arithDiv
 > egDiv2 = fastEvaluate [(1, 4), (2, 3)] arithDiv
