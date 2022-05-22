@@ -152,7 +152,7 @@ Division
 
 *Input*: $2^x \cdot 3^y$. *Output*: $2^n \cdot 3^k$.
 
-If $x \geq y$, given $a = qb + r$ where $a$ is input through $x$ and $b$ is input through $y$, it will calculate $q$ into $n$ and $r$ into $k$. Otherwise, it calculates $y - x$.
+Given $a = qb + r$ where $a$ is input through $x$ and $b$ is input through $y$, it will calculate $q$ into $n$ and $r$ into $k$.
 
 > arithDiv = [
 >   CWhile 2 [CNum (-2), CNum 7], -- store r2 in r7
@@ -162,10 +162,16 @@ If $x \geq y$, given $a = qb + r$ where $a$ is input through $x$ and $b$ is inpu
 >     ++ arithSub ++                          -- see "Composing code"
 >     [CNum 9, -- increase quotient
 >     -- if sub. underflow store rem in r8
->     CWhile 2 [CWhile 2 [CNum (-2)], CWhile 1 [CNum (-1), CNum 8], CNum (-9)]]),
->     CWhile 7 [CNum (-7)],         -- flush tmp
->     CWhile 9 [CNum (-9), CNum 1], -- set quotient
->     CWhile 8 [CNum (-8), CNum 2]] -- set remainder
+>     CWhile 2 [
+>       CNum (-2),
+>       CWhile 1 [CNum (-1), CNum (-7)],
+>       CWhile 7 [CNum (-7), CNum 8],
+>       CNum (-9)
+>     ]
+>   ]),
+>   CWhile 7 [CNum (-7)],         -- flush r7
+>   CWhile 9 [CNum (-9), CNum 1], -- set quotient
+>   CWhile 8 [CNum (-8), CNum 2]] -- set remainder
 
 The idea is to keep subtracting until subtraction returns 1 in $r_2$ (second register), which means underflow. We keep track of the number of subtractions and then set $r_2 = r_2 - r_1$ for the remainder.
 
