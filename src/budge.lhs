@@ -124,11 +124,11 @@ The following code will set $k$ to 1 if $y > x$, and 0 otherwise. The final resu
 > arithSub = [
 >   CWhile 1 [CNum (-1), CNum 3, CNum 5], -- move r1 to r3 r4
 >   CWhile 2 [CNum (-2), CNum 4, CNum 6], -- move r2 to r5 r6
->   CWhile 3 [CNum (-3), CNum (-4)],   -- calculate r3 - r4
->   CWhile 6 [CNum (-5), CNum (-6)],   -- calculate r6 - r5
->   CWhile 4 [CNum (-4), CNum 1, CNum 3], -- move r4 to r1 and r3 (if it was set)
+>   CWhile 3 [CNum (-3), CNum (-4)],      -- calculate r3 - r4
+>   CWhile 6 [CNum (-5), CNum (-6)],      -- calculate r6 - r5
+>   CWhile 4 [CNum (-4), CNum 1, CNum 3],      -- case x > y: move r4 to r1 and r3 (if it was set)
 >   CWhile 3 [CWhile 3 [CNum (-3)], CNum 2],   -- if r3 was set, then set r2 to 1 to indicate flag
->   CWhile 5 [CNum (-5), CNum 1]]      -- move r5 to r1 (if it was set)
+>   CWhile 5 [CNum (-5), CNum 1]]         -- otherwise case y >= x: move r5 to r1 (if it was set)
 
 > egSub1 = fastEvaluate [(1, 5), (2, 3)] arithSub
 > egSub2 = fastEvaluate [(1, 3), (2, 5)] arithSub
@@ -268,29 +268,27 @@ Primality test
 Sets $n$ to 1 if $x$ is prime, and 0 otherwise. Requires $x>1$.
 
 > isPrime = [
->   CWhile 1 [CNum (-1), CNum 11, CNum 12],    -- copy r1 to r11/r12
+>   CWhile 1 [CNum (-1), CNum 11, CNum 12],      -- copy r1 to r11/r12
 >   CWhile 11
->     ([CWhile 1 [CNum (-1)],
->     CWhile 12 [CNum (-12), CNum 1, CNum 15], -- first argument is original input
->     CWhile 15 [CNum (-15), CNum 12],      -- save original value from r15 (tmp) to r12
+>     ([CWhile 12 [CNum (-12), CNum 1, CNum 15], -- first argument is original input
+>     CWhile 15 [CNum (-15), CNum 12],           -- save original value from r15 (tmp) to r12
 >     CWhile 2 [CNum (-2)],
->     CWhile 11 [CNum (-11), CNum 15],      -- copy r11 to r15
->     CWhile 15 [CNum (-15), CNum 2, CNum 11]] -- second argument is current iterator
->     ++ arithDiv ++                -- do the division
+>     CWhile 11 [CNum (-11), CNum 15],           -- copy r11 to r15
+>     CWhile 15 [CNum (-15), CNum 2, CNum 11]]   -- second argument is current iterator
+>     ++ arithDiv ++                             -- do the division
 >     [
->     -- negate r2 (see logical gate "Not")
->     CWhile 3 [CNum (-3)], CNum 3, CWhile 2 [CNum (-2), CNum (-3)], CWhile 3 [CNum (-3), CNum 2],
->     -- if there was a non-zero remainder, it is now zero
->     CWhile 2 [CNum (-2), CNum 14],      -- if the remainder was zero, then it will be one and added to 14
->     CNum (-11)
+>     -- if there was a non-zero remainder, increase r14 (no factors)
+>     CWhile 2 [CWhile 2 [CNum (-2)], CNum 14],
+>     CNum (-11),
+>     CWhile 1 [CNum (-1)]                       -- flush r1 (from division)
 >   ]),
->   CWhile 12 [CNum (-12)],                       -- flush r12 (original input)
->   CWhile 1 [CNum (-1)], CWhile 14 [CNum (-14), CNum 1], -- move result to r1
+>   CWhile 12 [CNum (-12), CNum 1],     -- move r12 to r1 (total factors)
+>   CWhile 14 [CNum (-14), CNum (-1)],  -- subtract r14 from r1 (total factors - no factors)
 >   -- at this point, r1 contains the number of factors
 >   -- if it's a prime, the number of factors will be two.
->   CNum (-1), CNum (-1)                  ,        -- if prime, r1 = 0, else r1 > 1
+>   CNum (-1), CNum (-1),               -- if prime, r1 = 0, else r1 > 1
 >   -- negate r1 for final result
->   CWhile 2 [CNum (-2)], CNum 2, CWhile 1 [CNum (-1), CNum (-2)], CWhile 2 [CNum (-2), CNum 1]]
+>   CNum 2, CWhile 1 [CNum (-1), CNum (-2)], CWhile 2 [CNum (-2), CNum 1]]
 
 The idea is to store in $r_{12}$ the result of `!(n%i)` for `i=n;i>=0`. We say that a number is prime if $r_{12}=2$, i.e. only two numbers divide the number (1 and itself).
 
