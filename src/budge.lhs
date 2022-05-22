@@ -183,18 +183,17 @@ Exponents
 
 *Input*: $2^x \cdot 3^y$. *Output*: $2^n$.
 
-This code sets $n$ to $x^y$. Requires $y>0$.
+This code sets $n$ to $x^y$.
 
 > arithExp = [
->   CNum (-2),
->   CWhile 2 [CNum (-2), CNum 5],         -- move r2 to r5
->   CWhile 1 [CNum (-1), CNum 6, CNum 7], -- set r6, r7 to r1
->   CWhile 7 [CNum (-7), CNum 1],         -- move r7 to r1
->   CWhile 5 ([CNum (-5),                 -- while y>0
+>   CWhile 2 [CNum (-2), CNum 5], -- move r2 to r5
+>   CWhile 1 [CNum (-1), CNum 6], -- set r6 to r1
+>   CNum 1,                       -- start with 1
+>   CWhile 5 ([CNum (-5),         -- while y>0
 >     CWhile 6 [CNum (-6), CNum 7, CNum 2], -- set r7, r2 to r6
 >     CWhile 7 [CNum (-7), CNum 6]]         -- bring r6 back
->     ++ arithMul),              -- multiply
->   CWhile 6 [CNum (-6)]]          -- flush r6
+>     ++ arithMul),                         -- multiply
+>   CWhile 6 [CNum (-6)]]         -- flush r6
 
 > egExp = fastEvaluate [(1, 2), (2, 3)] arithExp
 
