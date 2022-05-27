@@ -236,11 +236,11 @@ The following program sets $n$ to $Fib(x)$.
 > fib = [
 >   CNum 3,    -- r1 = input/output, r2 = 0, r3 = 1, r4 = 0, r5 = 0
 >   CWhile 1     -- while n > 1
->     ([CNum (-1),                     -- decrease n
+>     [CNum (-1),                     -- decrease n
 >       CWhile 3 [CNum (-3), CNum 2, CNum 4], -- move r3 to r4, and add it to r2
 >       CWhile 2 [CNum (-2), CNum 5],      -- move r2 to r5
 >       CWhile 4 [CNum (-4), CNum 2],      -- move r4 to r2, and add it to r2
->       CWhile 5 [CNum (-5), CNum 3]]),    -- move r5 to r3
+>       CWhile 5 [CNum (-5), CNum 3]],    -- move r5 to r3
 >   CWhile 3 [CNum (-3)],      -- flush r3
 >   CWhile 2 [CNum (-2), CNum 1]] -- move r2 to r1
 
@@ -298,6 +298,97 @@ Sets $n$ to 1 if $x$ is prime, and 0 otherwise. Requires $x>1$.
 The idea is to store in $r_{12}$ the result of `!(n%i)` for `i=n;i>=0`. We say that a number is prime if $r_{12}=2$, i.e. only two numbers divide the number (1 and itself).
 
 > egPrime = [ (i, fastEvaluate [(1, i)] isPrime) | i <- [2..9] ]
+
+Finding prime numbers
+---------------------
+
+*Input*: $2^x$. *Output*: $2^n$.
+
+Sets $n$ to the first prime number greater/lower than $x$.
+
+> findNextPrime = [
+>   CWhile 1 [CNum (-1), CNum 17], -- store r1 to r17
+>   CNum 1,                        -- set prime flag
+>   CWhile 1 ([CNum (-1),          -- unset prime flag
+>     CNum 17,                                 -- increase current number
+>     CWhile 17 [CNum (-17), CNum 1, CNum 18], -- store r17 into r1 and r18
+>     CWhile 18 [CNum (-18), CNum 17]]         -- bring back r17
+>     ++ isPrime ++                            -- prime check
+>     -- negate r1
+>     [CNum 2, CWhile 1 [CNum (-1), CNum (-2)], CWhile 2 [CNum (-2), CNum 1]]),
+>     CWhile 17 [CNum (-17), CNum 1]]          -- store result in r17
+
+> egNextPrime = [ (i, fastEvaluate [(1, i)] findNextPrime) | i <- [2..9] ]
+
+> findPrevPrime = [
+>   CWhile 1 [CNum (-1), CNum 17], -- store r1 to r17
+>   CNum 1,                        -- set prime flag
+>   CWhile 1 ([CNum (-1),          -- unset prime flag
+>     CNum (-17),                              -- increase current number
+>     CWhile 17 [CNum (-17), CNum 1, CNum 18], -- store r17 into r1 and r18
+>     CWhile 18 [CNum (-18), CNum 17]]         -- bring back r17
+>     ++ isPrime ++                            -- prime check
+>     -- negate r1
+>     [CNum 2, CWhile 1 [CNum (-1), CNum (-2)], CWhile 2 [CNum (-2), CNum 1]]),
+>     CWhile 17 [CNum (-17), CNum 1]]          -- store result in r17
+
+> egPrevPrime = [ (i, fastEvaluate [(1, i)] findPrevPrime) | i <- [3..9] ]
+
+Stack implementation (push)
+---------------------------
+
+*Input*: $2^x \cdot 67^y \cdot 71^z$. *Output*: $2^x \cdot 67^{y \cdot w^x} \cdot 71^w$, where $w$ is the first prime after $z$.
+
+> stackPush = [
+>   CWhile 1 [CNum (-1), CNum 21, CNum 22],
+>   CWhile 20 [CNum (-20), CNum 1]]
+>   ++ findNextPrime ++
+>   [CWhile 1 [CNum (-1), CNum 20],
+>   CWhile 21 [CNum (-21), CNum 2],
+>   CWhile 20 [CNum (-20), CNum 1, CNum 21],
+>   CWhile 21 [CNum (-21), CNum 20]]
+>   ++ arithExp ++
+>   [CWhile 19 [CNum (-19), CNum 2]]
+>   ++ arithMul ++
+>   [CWhile 1 [CNum (-1), CNum 19],
+>   CWhile 22 [CNum (-22), CNum 1]]
+
+> egStackEmpty = [(19, 1), (20, 1)]
+> egStack1 = fastEvaluate (egStackEmpty ++ [(1, 3)]) stackPush
+> egStack2 = fastEvaluate (egStack1 ++ [(1, 2)]) stackPush
+> egStack3 = fastEvaluate (egStack2 ++ [(1, 1)]) stackPush
+
+Stack implementation (pop)
+--------------------------
+
+*Input*: $67^{{p_1}^{k_1} \cdot {p_2}^{k_2} \cdot \ldots \cdot {p_n}^{k_n}} \cdot 71^{p_n}$. *Output*: $2^{k_n} \cdot 67^{{p_1}^{k_1} \cdot {p_2}^{k_2} \cdot \ldots \cdot {p_{n-1}}^{k_{n-1}}} \cdot 71^{p_{n-1}}$, where $p_n$ denotes the $n$-th prime number ($n$-th position), and $k_n$ denotes the value of the $n$-th position.
+
+> stackPop = [
+>   CNum 2, -- set remainder flag
+>   CWhile 1 [CNum (-1)], CWhile 19 [CNum (-19), CNum 1],
+>   CWhile 2 ([
+>     CWhile 19 [CNum (-19)],
+>     CWhile 1 [CNum (-1), CNum 19], -- flush number
+>     CNum (-2), -- flush remainder
+>     CWhile 19 [CNum (-19), CNum 1, CNum 21],
+>     CWhile 21 [CNum (-21), CNum 19],
+>     CWhile 20 [CNum (-20), CNum 2, CNum 21],
+>     CWhile 21 [CNum (-21), CNum 20]]
+>     ++ arithDiv ++
+>     -- negate r2
+>     [CNum 3, CWhile 2 [CNum (-2), CNum (-3)], CWhile 3 [CNum (-3), CNum 2],
+>     CNum 22 -- increase count
+>   ]),
+>   CWhile 1 [CNum (-1)],
+>   CWhile 20 [CNum (-20), CNum 1]]
+>   ++ findPrevPrime ++
+>   [CWhile 1 [CNum (-1), CNum 20],
+>   CNum (-22), -- adjust value
+>   CWhile 22 [CNum (-22), CNum 1]]
+
+> egStack4 = fastEvaluate egStack3 stackPop
+> egStack5 = fastEvaluate egStack4 stackPop
+> egStack6 = fastEvaluate egStack5 stackPop
 
 Logarithm
 ---------
