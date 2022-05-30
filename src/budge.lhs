@@ -353,6 +353,8 @@ Stack implementation (push)
 >   [CWhile 1 [CNum (-1), CNum 19],
 >   CWhile 22 [CNum (-22), CNum 1]]
 
+The idea is to store the current prime number in $r_{20}$, and whenever an element is pushed, we find the next prime number and store it in $r_{20}$ and multiply $r_{19}$ by this prime times the value of the element being pushed. That is, the value of $r_{19}$ represents Gödel numbering, similar to how Budge is implemented. If we push 3, 2, and 1 to the stack, note that the value of $r_{19}$ would be $2^3 \cdot 3^2 \cdot 5^1 = 360$.
+
 > egStackEmpty = [(19, 1), (20, 1)]
 > egStack1 = fastEvaluate (egStackEmpty ++ [(1, 3)]) stackPush
 > egStack2 = fastEvaluate (egStack1 ++ [(1, 2)]) stackPush
@@ -385,6 +387,8 @@ Stack implementation (pop)
 >   [CWhile 1 [CNum (-1), CNum 20],
 >   CNum (-22), -- adjust value
 >   CWhile 22 [CNum (-22), CNum 1]]
+
+Similarly to the push implementation, the idea is to store the current prime number in $r_{20}$, and whenever an element is popped, we find the previous prime number and store it in $r_{20}$ and divide $r_{19}$ by the previous prime as long as division doesn't return a remainder.
 
 > egStack4 = fastEvaluate egStack3 stackPop
 > egStack5 = fastEvaluate egStack4 stackPop
