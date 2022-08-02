@@ -1,0 +1,19 @@
+rZ : 0
+thZ! : rZ
+
+rS : S(x)
+
+rCoordOrigin : (0,0)
+rCoordA : (S(x),y) -> (x,y)
+rCoordD : (x,y) -> (S(x),y)
+rCoordW : (x,S(y)) -> (x,y)
+rCoordS : (x,y) -> (x,S(y))
+
+thOne! : rS x=thZ!
+thTwo! : rS x=thOne!
+
+thCoord00 : rCoordOrigin
+thCoord10 : rCoordD x=thZ!;y=thZ! thCoord00
+thCoord11 : rCoordS x=thOne!;y=thZ! thCoord10
+thCoord10' : rCoordW x=thOne!;y=thZ! thCoord11
+thCoord00' : rCoordA x=thZ!;y=thZ! thCoord10'

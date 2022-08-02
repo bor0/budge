@@ -1,0 +1,36 @@
+# SKI formal system, as per https://en.wikipedia.org/wiki/SKI_combinator_calculus
+
+## SKI base terms
+rTmS : S
+rTmK : K
+rTmI : I
+rTmE : EPS
+tmS! : rTmS
+tmK! : rTmK
+tmI! : rTmI
+tmE! : rTmE
+
+## SKI term construction rules
+rTm : (x y)
+
+## SKI derivation rules
+rId : ⊢(d (I x)) -> ⊢(d x)
+rConst : ⊢(d ((K x) y)) -> ⊢(d x)
+rSubst : ⊢(d (((S x) y) z)) -> ⊢(d ((x z) (y z)))
+
+#################################
+# Initial theorem for the example
+rEgTerm : ⊢(EPS (I (((S K) S) K)))
+thEgTerm : rEgTerm
+
+# Terms needed for the proofs
+tm(SK)! : rTm x=tmS!;y=tmK!
+tm((SK)S)! : rTm x=tm(SK)!;y=tmS!
+tm(((SK)S)K)! : rTm x=tm((SK)S)!;y=tmK!
+
+# Theorems
+th(((SK)S)K) : rId d=tmE!;x=tm(((SK)S)K)! thEgTerm
+thKK(SK) : rSubst d=tmE!;x=tmK!;y=tmS!;z=tmK! th(((SK)S)K)
+
+# Finally, we prove that, by the assumption of ⊢ISKSK we can deduce ⊢K (note this is different from K (tmK!))
+thK : rConst d=tmE!;x=tmK!;y=tm(SK)! thKK(SK)

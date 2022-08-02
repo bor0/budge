@@ -1,0 +1,30 @@
+rTmX : X
+tmX : rTmX
+
+rTmY : Y
+tmY : rTmY
+
+rTmImp : x→y
+rTmAnd : x∧y
+
+ruleMP : ⊢x -> ⊢x→y -> ⊢y
+ruleJoin : ⊢x→y→x∧y # object level
+ruleJoin' : ⊢x -> ⊢y -> ⊢(x)∧(y)  # meta level
+
+# Terms and theorem needed for th1
+th1step1! : ruleJoin x=tmX;y=tmY
+
+rPrfX : ⊢X
+thPrfX : rPrfX
+# Given the proof of ⊢X (thPrfX), we can now conclude Y→X∧Y
+tmXandY! : rTmAnd x=tmX;y=tmY
+tmYtoXandY! : rTmImp x=tmY;y=tmXandY!
+th1 : ruleMP x=tmX;y=tmYtoXandY! thPrfX th1step1!
+
+rPrfY : ⊢Y
+thPrfY : rPrfY
+# Given the proof of ⊢Y (thPrfY), we can now conclude X∧Y
+th2 : ruleMP x=tmY;y=tmXandY! thPrfY th1
+
+# Combine both th1 and th2 at the meta level
+th3 : ruleJoin' x=tmYtoXandY!;y=tmXandY! th1 th2

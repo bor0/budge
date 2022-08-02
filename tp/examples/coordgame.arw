@@ -1,0 +1,29 @@
+# Numbers
+rZ : 0
+rS : S(x)
+
+# Initial game state
+rCoordOrigin : P(0,0) E(S(S(0)),S(0)) HP=S(S(0))
+
+# Game commands (attack)
+rGameAttack : P(x,y) E(x,y) HP=S(h) -> P(x,y) E(x,y) HP=h
+rGameFinalAttack : P(x,y) E(x,y) HP=0 -> WIN
+
+# Game commands (movement)
+rCoordA : P(S(x),y) E(a,b) HP=h -> P(x,y) E(a,b) HP=h
+rCoordD : P(x,y) E(a,b) HP=h -> P(S(x),y) E(a,b) HP=h
+rCoordW : P(x,S(y)) E(a,b) -> P(x,y) E(a,b) HP=h
+rCoordS : P(x,y) E(a,b) HP=h -> P(x,S(y)) E(a,b) HP=h
+
+thZ! : rZ
+thOne! : rS x=thZ!
+thTwo! : rS x=thOne!
+
+# Gameplay
+thGameStart : rCoordOrigin
+thGameMoveRight1 : rCoordD x=thZ!;y=thZ!;a=thTwo!;b=thOne!;h=thTwo! thGameStart
+thGameMoveRight2 : rCoordD x=thOne!;y=thZ!;a=thTwo!;b=thOne!;h=thTwo! thGameMoveRight1
+thGameMoveUp : rCoordS x=thTwo!;y=thZ!;a=thTwo!;b=thOne!;h=thTwo! thGameMoveRight2
+thGameAttack1 : rGameAttack x=thTwo!;y=thOne!;h=thOne! thGameMoveUp
+thGameAttack2 : rGameAttack x=thTwo!;y=thOne!;h=thZ! thGameAttack1
+thGameWin : rGameFinalAttack x=thTwo!;y=thOne! thGameAttack2

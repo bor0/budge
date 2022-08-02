@@ -1,0 +1,66 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{arxiv}
+\usepackage{hyperref}
+
+\title{The Arrew theorem prover}
+
+\author{
+  Boro Sitnikovski \\
+  Skopje, North Macedonia \\
+  \texttt{buritomath@gmail.com} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Arrew (Arrow Rewriter) is a mathematical system (theorem prover) that allows expressing and working with formal systems. It relies on a simple substitution rule and set equality to derive theorems.
+\end{abstract}
+
+\keywords{Theorem prover, mathematical system}
+
+\section{Mathematical system}
+
+A formal system is defined by the tuple $F = (R, V, T)$ together with the functions $subst_{rule}^n$ and $subst_{thm}^n$ where $R_n \in R$ is a set of rules of $n$-ary arguments, $V$ is a set of variables, and $T$ is a set of theorems. A rule $r = (r_1, \ldots, r_n) \in R_n$ is a sequence of string of symbols; it can be roughly interpreted as a function $r_1 \to \ldots \to r_n$, where the $n$-th argument represents a conclusion, and the others represent hypotheses.
+
+Let $S \subseteq V \times T$ denote a set of substitutions, and $X[t/v]$ denote the expression $X$ in which each occurrence of $v$ is replaced with $t$. We define the following function which performs substitution on a rule's hypotheses and conclusion:
+$$ subst_{rule}^n(r, S) = {
+\begin{cases}
+subst_{rule}^n(r_1[t/v], \ldots, r_n[t/v], S \setminus \{(v, t) \}), & r = (r_1, \ldots, r_n) \land (v, t) \in S \\
+r & S = \emptyset
+\end{cases}}
+$$
+
+Let $h = (h_1, \ldots, h_{n-1})$ where $\forall i, h_i \in T$. The function $subst_{thm}^{n-1}(h, S)$ is defined similarly.
+
+For deriving new theorems, we say that $t = subst_{rule}^1((r_n), S) \in T$ (i.e., $t$ is a theorem) if and only if:
+$$subst_{rule}^{n-1}((r_1, \ldots, r_{n-1}), S) = subst_{thm}^{n-1}(h, S)$$
+
+Terms and axioms are represented as 1-ary rules; note that for $n = 1$ we have $subst_{rule}^0((), S) = () = subst_{thm}^0((), S)$ i.e. all 1-ary rules are theorems: $\forall r, r \in R_1 \to r \in T$.
+
+\section{Example}
+
+Let $R = \{ \{ \vdash\texttt{MI}, \texttt{I} \}, \{ (\vdash\texttt{Mx}, \vdash\texttt{Mxx}) \} \}$, $V = \{ \texttt{x} \}$. The particular choice of $R_1$ allows us to pick $S = \{ (\texttt{x}, \texttt{I}) \}$; since \texttt{I} is a 1-ary rule, $\texttt{I} \in T$. Similarly, $\vdash \texttt{MI} \in T$. To prove $\vdash\texttt{MII} \in T$, we use the rule within $R_2$ and since $(\texttt{x}, \texttt{I}) \in S$, we get that $subst_{rule}^1((\vdash\texttt{Mx}), S) = \vdash\texttt{MI} = subst_{thm}^1((\vdash\texttt{MI}), S)$. Since the rule's arguments match the theorem's hypotheses, $subst_{rule}^1((\vdash\texttt{Mxx}), S) = \vdash\texttt{MII} \in T$.
+
+\begin{thebibliography}{1}
+
+\bibitem{b1}
+Boro Sitnikovski,
+\newblock Arrew theorem prover (Python implementation).
+\newblock [Online]. Available: \url{https://github.com/bor0/arrew/} (Accessed Jun. 2022)
+
+\bibitem{b2}
+Daniel J. Velleman,
+\newblock How to Prove It: A Structured Approach.
+\newblock Cambridge University Press, 2006.
+
+\bibitem{b3}
+Douglas Hofstadter,
+\newblock Godel, Escher, Bach: an Eternal Golden Braid.
+\newblock Basic Books, Inc., 1979.
+
+\end{thebibliography}
+\end{document}

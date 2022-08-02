@@ -1,0 +1,20 @@
+# The TQ system, as per GEB.
+
+# Term construction
+rTm- : -
+tm-! : rTm-
+rTmMk : xy
+
+# Rules
+rBase : xT-Qx # x*1 = x
+rSucc : xTyQz -> xTy-Qzx # x*y = z -> x*(y+1) = zx
+rComp : x-Ty-Qz -> Cz # (x+1)*(y+1) = z -> Cz
+
+# Terms needed for the proofs
+tm--! : rTmMk x=tm-!;y=tm-!
+tm----! : rTmMk x=tm--!;y=tm--!
+
+thmTwoMultOne : rBase x=tm--!
+thmTwoMultTwo : rSucc x=tm--!;y=tm-!;z=tm--! thmTwoMultOne
+
+thmTwoComposite : rComp x=tm-!;y=tm-!;z=tm----! thmTwoMultTwo

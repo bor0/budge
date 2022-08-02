@@ -1,0 +1,27 @@
+# Zero is a natural number (term)
+rTmZ : 0
+tmZ! : rTmZ
+
+# Successor
+rTmS : S(x) # term
+
+# Lists
+# NIL (proof)
+rMkList : (x y)
+rCar : (x y) -> x
+rCdr : (x y) -> y
+
+# NIL (term)
+rTmNil : NIL
+tmNil! : rTmNil
+
+tmOne! : rTmS x=tmZ!
+tmTwo! : rTmS x=tmOne!
+tmThree! : rTmS x=tmTwo!
+
+thLstep1! : rMkList x=tmThree!;y=tmNil!
+thLstep2! : rMkList x=tmTwo!;y=thLstep1!
+thL : rMkList x=tmOne!;y=thLstep2!
+
+thCarEg : rCar x=tmOne!;y=thLstep2! thL
+thCdrEg : rCdr x=tmOne!;y=thLstep2! thL

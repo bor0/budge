@@ -1,0 +1,26 @@
+# The PQ system, as per GEB.
+
+# Term construction
+rTm- : -
+tm-! : rTm-
+rTmMk : xy
+
+# Rules
+rDNDBase : xyDNDx # not (x+y)|x
+rDNDSucc : xDNDy -> xDNDxy # not x|y -> not x|(x+y)
+rDFBase : --DNDx -> xDF-- # x divisor free 2
+rDFSucc : xDFy -> y-DNDx -> xDFy- # if x div. free y and not (y+1)|x then x divisor free y+1
+rPBase : P--
+rPSucc : x-DFx -> Px- # if (x+1) divisor free up to x then x+1 prime
+
+# Terms needed for the proofs
+tm--! : rTmMk x=tm-!;y=tm-!
+tm---! : rTmMk x=tm--!;y=tm-!
+tm----! : rTmMk x=tm--!;y=tm--!
+
+thmPrimeTwo : rPBase
+
+th2step1! : rDNDBase x=tm-!;y=tm-!
+th2step2! : rDNDSucc x=tm--!;y=tm-! th2step1!
+th2step3! : rDFBase x=tm---! th2step2!
+thmPrimeThree : rPSucc x=tm--! th2step3!
