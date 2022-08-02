@@ -1,10 +1,10 @@
-# The Arrew theorem prover
+# The Budge theorem prover
 
-Arrew (ARrow REWriter) is a computer program that allows expressing formal systems and deriving theorems.
+Budge-tp is a computer program that allows expressing formal systems and deriving theorems.
 
 ## Syntax
 
-Every statement in an Arrew code is of the form:
+Every statement in an Budge code is of the form:
 
 ```
 r<name> : <expr> [-> <expr> -> ... -> <expr>]
@@ -23,7 +23,7 @@ In a rule, all expressions but the last are considered the hypothesis (arguments
 
 For theorems, the rule `<ruleN>` will be applied to the corresponding arguments. Substitution with theorems (`x` with theorem `X`; `y` with theorem `Y`...) will be performed in both the rule's hypotheses and the theorem's provided argument, and they will be matched/unified. If unification is successful, the final argument in the rule `argn` will be the result.
 
-Arrew will print all derived theorems except those whose name ends in a `!`.
+Budge will print all derived theorems except those whose name ends in a `!`.
 
 ## Example
 
