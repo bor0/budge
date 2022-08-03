@@ -194,14 +194,6 @@ rMergeSucc : MERGE ((p q) (x y)) (a b) -> MERGE (q (p (x y))) (a b)
 
 To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState, rLoop2Succ, rMergeRevSucc, rMergeRevSucc, rMergeRevBase, rMergeSucc, rMergeSucc, rMergeBase, rNextState-2, rNextState+1, rLoop2Succ, rMergeRevSucc, rMergeRevSucc, rMergeRevBase, rMergeSucc, rMergeSucc, rMergeBase, rNextState-2, rNextState+1}.
 
-\section{Conclusion}
-
-We presented a simple programming language and a simple theorem prover, and we expressed the programming language in the theorem prover. While the programming language performs a multi-step evaluation of statements, the theorem prover performs only a single-step evaluation - either substituting a variable or deriving a new theorem by doing an equality check.
-
-In theory, it is possible to represent Budge-TP within Budge-PL, since Budge-PL is powerful enough to construct a list of elements (hypotheses) and perform substitution and equality checks.
-
-Having simple evaluation rules reduces complexity and provides for a simple programming language, or a simple TCB in the case of theorem provers, making it easier for the programmer to predict a program's behavior.
-
 \begin{thebibliography}{1}
 
 \bibitem{b1}
