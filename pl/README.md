@@ -2,13 +2,13 @@
 
 Interpreter implementation **with example programs** in [Python](./src/budge.ipynb) and in [Haskell](./src/budge.lhs). Formalization in [Idris](./src/budge.idr).
 
-Esolang entry: [Budge](https://esolangs.org/wiki/Budge).
+Esolang entry: [Budge-PL](https://esolangs.org/wiki/Budge-PL).
 
 Paper on [arXiv](https://arxiv.org/abs/2205.07979), and the source code for the paper [here](./paper).
 
 ## Introduction
 
-Budge (bʌdʒ, b'dzh) is an esoteric programming language. It uses Gödel numbering to represent registers and their values by relying on the Fundamental Theorem of Arithmetic (prime factorization). The language uses similar constructs as [FRACTRAN](https://en.wikipedia.org/wiki/FRACTRAN), however, it provides a more convenient way to construct loops and uses integers rather than fractions to denote instructions. It also abstracts prime numbers in the code, allowing for direct register access. A negative integer will decrease a register's value, while a positive integer will increase a register's value.
+Budge-PL (bʌdʒ, b'dzh) is an esoteric programming language. It uses Gödel numbering to represent registers and their values by relying on the Fundamental Theorem of Arithmetic (prime factorization). The language uses similar constructs as [FRACTRAN](https://en.wikipedia.org/wiki/FRACTRAN), however, it provides a more convenient way to construct loops and uses integers rather than fractions to denote instructions. It also abstracts prime numbers in the code, allowing for direct register access. A negative integer will decrease a register's value, while a positive integer will increase a register's value.
 
 ## Syntax and semantics
 
@@ -29,7 +29,7 @@ That is, the outermost sequence (main program) will not loop, and any sequence c
 
 **For the general audience**: Imagine several jars with marbles. The command `-n` removes a marble (if any) from the jar number `n`, and `n` adds a marble to the jar number `n`. Loops can be interpreted as a way to repeat some commands while a jar `n` is not empty.
 
-![Budge addition visualization](./budge.gif)
+![Budge-PL addition visualization](./budge.gif)
 
 ## Example program: Addition
 
@@ -54,6 +54,6 @@ The value of `i` is now equal to 64, which is `2^6`, i.e. the sum of `3` and `3`
 
 ## Turing completeness
 
-We claim Budge is [Turing-complete](https://en.wikipedia.org/wiki/Turing_completeness). Since Budge can multiply, divide, run a primality test for numbers, and perform code repeatedly, it can simulate FRACTRAN. Since FRACTRAN is proven to be Turing complete, so is Budge.
+We claim Budge-PL is [Turing-complete](https://en.wikipedia.org/wiki/Turing_completeness). Since Budge-PL can multiply, divide, run a primality test for numbers, and perform code repeatedly, it can simulate FRACTRAN. Since FRACTRAN is proven to be Turing complete, so is Budge-PL.
 
 Boro Sitnikovski, 2022
