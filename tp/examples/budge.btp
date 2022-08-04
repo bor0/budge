@@ -20,7 +20,7 @@ rNextState-2 : (PP0 x) (a Sb) -> x (a b)
 rLoop2Base : ((SS0 x) y) (a 0) -> y (a 0)
 rLoop2Succ : ((SS0 x) y) (a Sb) -> MERGEREV (x ((SS0 x) y)) NIL (a Sb)
 
-# Reversing a list prior to merging in a loop
+# Reversing a list before merging in a loop
 rMergeRevBase : MERGEREV (NIL x) z (a b) -> MERGE (z x) (a b)
 rMergeRevSucc : MERGEREV ((p q) (x y)) z (a b) -> MERGEREV (q (x y)) (p z) (a b)
 
