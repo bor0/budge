@@ -4,8 +4,6 @@ Interpreter implementation **with example programs** in [Python](./src/budge.ipy
 
 Esolang entry: [Budge-PL](https://esolangs.org/wiki/Budge-PL).
 
-Paper on [arXiv](https://arxiv.org/abs/2205.07979), and the source code for the paper [here](./paper).
-
 ## Introduction
 
 Budge-PL (bʌdʒ, b'dzh) is an esoteric programming language. It uses Gödel numbering to represent registers and their values by relying on the Fundamental Theorem of Arithmetic (prime factorization). The language uses similar constructs as [FRACTRAN](https://en.wikipedia.org/wiki/FRACTRAN), however, it provides a more convenient way to construct loops and uses integers rather than fractions to denote instructions. It also abstracts prime numbers in the code, allowing for direct register access. A negative integer will decrease a register's value, while a positive integer will increase a register's value.
