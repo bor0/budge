@@ -1,0 +1,53 @@
+# Equality refl, symm, tr
+rEqR : ⊢EQ(x,x)
+rEqS : ⊢EQ(x,y) -> ⊢EQ(y,x)
+rEqT : ⊢EQ(x,y) -> ⊢EQ(y,z) -> ⊢EQ(x,z)
+
+rCongOr : ⊢EQ(x,y) -> ⊢EQ((x∨z),(y∨z))
+rCongAnd : ⊢EQ(x,y) -> ⊢EQ((x∧z),(y∧z))
+
+# Per https://en.wikipedia.org/wiki/Boolean_algebra_(structure)#Definition
+
+# Vars (object-level)
+rTmX : X
+rTmY : Y
+tmX! : rTmX
+tmY! : rTmY
+
+# 1 and 0 are terms
+rTm1 : 1
+rTm0 : 0
+tm1! : rTm1
+tm0! : rTm0
+
+# Terms for 'and', 'or', 'not'
+rTmAnd : (x∧y)
+rTmOr : (x∨y)
+
+# Rules
+# Commutativity
+rCommOr : ⊢EQ((x∨y),(y∨x))
+rCommAnd : ⊢EQ((x∧y),(y∧x))
+
+# Identity
+rIdentOr : ⊢EQ((x∨0),x)
+rIdentAnd : ⊢EQ((x∧1),x)
+
+# Distributivity
+rDistrOr : ⊢EQ((x∨(y∧z)),((x∨y)∧(x∨z)))
+rDistrAnd : ⊢EQ((x∧(y∨z)),((x∧y)∨(x∧z)))
+
+# Example theorem derivation
+tm1andX! : rTmAnd x=tm1!;y=tmX!
+tmXand1! : rTmAnd x=tmX!;y=tm1!
+tmXor1andX! : rTmOr x=tmX!;y=tm1andX!
+tm1andXor1andX! : rTmOr x=tm1andX!;y=tm1andX!
+tmXorX! : rTmOr x=tmX!;y=tmX!
+tm1andXorX! : rTmAnd x=tm1!;y=tmXorX!
+
+thmstep1! : rCommAnd x=tm1!;y=tmX!
+thmstep2! : rIdentAnd x=tmX!
+thmstep3! : rEqT x=tm1andX!;y=tmXand1!;z=tmX! thmstep1! thmstep2!
+thmstep4! : rCongOr x=tm1andX!;y=tmX!;z=tm1andX! thmstep3!
+thmstep5! : rDistrAnd x=tm1!;y=tmX!;z=tmX!
+thm : rEqT x=tm1andXorX!;y=tm1andXor1andX!;z=tmXor1andX! thmstep5! thmstep4!
