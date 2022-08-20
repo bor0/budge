@@ -1,0 +1,45 @@
+# Inspired by https://twitter.com/SandMouth/status/1558473206239006720/
+
+# Rules
+rId : ⊢a→a
+rFst : ⊢a∧b→a
+rSnd : ⊢a∧b→b
+rInj1 : ⊢a→a∨b
+rInj2 : ⊢b→a∨b
+rInit : ⊢⊥→a
+rTerm : ⊢a→⊤
+rPair : ⊢a→b -> ⊢a→c -> ⊢a→b∧c
+rCase : ⊢a→b -> ⊢a→c -> ⊢a∨b→c
+rComp : ⊢a→b -> ⊢b→c -> ⊢a→c
+
+# Terms construction
+rTOr : a∨b
+rTAnd : a∧b
+rTImp : a→b
+
+# Terms (vars)
+rTW : W
+tW! : rTW
+rTX : X
+tX! : rTX
+rTY : Y
+tY! : rTY
+rTZ : Z
+tZ! : rTZ
+rTTop : ⊤
+tTop! : rTTop
+rTBot : ⊥
+tBot! : rTBot
+
+# Terms needed for the proof
+tW|Y! : rTOr a=tW!;b=tY!
+tW&X! : rTAnd a=tW!;b=tX!
+tW&X&Y! : rTAnd a=tW&X!;b=tY!
+tW&X&Y&Z! : rTAnd a=tW&X&Y!;b=tZ!
+
+# Proof
+tStep1 : rInj2 a=tW!;b=tY!
+tStep2 : rSnd a=tW&X!;b=tY!
+tStep3 : rComp a=tW&X&Y!;b=tY!;c=tW|Y! tStep2 tStep1
+tStep4 : rFst a=tW&X&Y!;b=tZ!
+tStep5 : rComp a=tW&X&Y&Z!;b=tW&X&Y!;c=tW|Y! tStep4 tStep3
