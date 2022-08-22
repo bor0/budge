@@ -180,7 +180,7 @@ rLoop2Succ : ((SS0 x) y) (a Sb)
 \end{verbatim}
 \end{minipage}
 
-Together with the following helper rules for merging lists:
+Together with the following helper rules for appending lists:
 
 \begin{verbatim}
 # Appending lists
@@ -188,7 +188,7 @@ rAppendNil : APPEND NIL y y
 rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 \end{verbatim}
 
-To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState, rLoop2Succ, rNextState-2, rNextState+1, rLoop2Succ, rNextState-2, rNextState+1, rLoop2Base}.
+To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Base}.
 
 \begin{thebibliography}{1}
 

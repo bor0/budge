@@ -44,11 +44,11 @@ tEgList4! : rMkList x=t-2!;y=tNil!
 tEgList5! : rMkList x=t1!;y=tEgList
 tEgList6! : rMkList x=t-2!;y=tEgList5!
 
-t1Init : rInitState p=tEgList;a=t1!;b=t2!
-
 tAp1! : rAppendNil y=tEgList
 tAp2! : rAppendRec x=tNil!;y=tEgList;z=tEgList;a=t1! tAp1!
 tAp : rAppendRec x=tEgList1!;y=tEgList;z=tEgList5!;a=t-2! tAp2!
+
+t1Init : rInitState p=tEgList;a=t1!;b=t2!
 
 t1Loop1 : rLoop2Succ x=tEgList2!;y=tNil!;a=t1!;b=t1!;z=tEgList6! t1Init tAp
 t1DecR2 : rNextState-2 x=tEgList5!;a=t1!;b=t1! t1Loop1
