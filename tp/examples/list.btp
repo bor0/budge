@@ -25,3 +25,14 @@ thL : rMkList x=tmOne!;y=thLstep2!
 
 thCarEg : rCar x=tmOne!;y=thLstep2! thL
 thCdrEg : rCdr x=tmOne!;y=thLstep2! thL
+
+# Appending lists
+rAppendNil : APPEND NIL y y
+rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
+
+thL1 : rMkList x=tmOne!;y=tmNil!
+thL2 : rMkList x=tmOne!;y=thL1
+
+tappS1 : rAppendNil y=thL1
+tappS2 : rAppendRec x=tmNil!;y=thL1;z=thL1;a=tmOne! tappS1
+tappS3 : rAppendRec x=thL1;y=thL1;z=thL2;a=tmOne! tappS2

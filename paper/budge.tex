@@ -176,23 +176,19 @@ rNextState-2 : (PP0 x) (a Sb) -> x (a b)
 # Commands for looping on the second register
 rLoop2Base : ((SS0 x) y) (a 0) -> y (a 0)
 rLoop2Succ : ((SS0 x) y) (a Sb)
-             -> MERGEREV (x ((SS0 x) y)) NIL (a Sb)
+             -> APPEND x ((SS0 x) y) z -> z (a Sb)
 \end{verbatim}
 \end{minipage}
 
 Together with the following helper rules for merging lists:
 
 \begin{verbatim}
-# Reversing a list before merging in a loop
-rMergeRevBase : MERGEREV (NIL x) z (a b) -> MERGE (z x) (a b)
-rMergeRevSucc : MERGEREV ((p q) (x y)) z (a b) -> MERGEREV (q (x y)) (p z) (a b)
-
-# Merge a list when looping
-rMergeBase : MERGE (NIL x) (a b) -> x (a b)
-rMergeSucc : MERGE ((p q) (x y)) (a b) -> MERGE (q (p (x y))) (a b)
+# Appending lists
+rAppendNil : APPEND NIL y y
+rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 \end{verbatim}
 
-To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState, rLoop2Succ, rMergeRevSucc, rMergeRevSucc, rMergeRevBase, rMergeSucc, rMergeSucc, rMergeBase, rNextState-2, rNextState+1, rLoop2Succ, rMergeRevSucc, rMergeRevSucc, rMergeRevBase, rMergeSucc, rMergeSucc, rMergeBase, rNextState-2, rNextState+1}.
+To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState, rLoop2Succ, rNextState-2, rNextState+1, rLoop2Succ, rNextState-2, rNextState+1, rLoop2Base}.
 
 \begin{thebibliography}{1}
 

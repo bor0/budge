@@ -5,6 +5,10 @@ rTm0 : 0
 rTmS : Sx
 rTmP : Px
 
+# Appending lists
+rAppendNil : APPEND NIL y y
+rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
+
 ## Two-register Budge rules ##
 
 # Initial program
@@ -18,15 +22,7 @@ rNextState-2 : (PP0 x) (a Sb) -> x (a b)
 
 # Commands for looping on the second register
 rLoop2Base : ((SS0 x) y) (a 0) -> y (a 0)
-rLoop2Succ : ((SS0 x) y) (a Sb) -> MERGEREV (x ((SS0 x) y)) NIL (a Sb)
-
-# Reversing a list before merging in a loop
-rMergeRevBase : MERGEREV (NIL x) z (a b) -> MERGE (z x) (a b)
-rMergeRevSucc : MERGEREV ((p q) (x y)) z (a b) -> MERGEREV (q (x y)) (p z) (a b)
-
-# Merge a list when looping
-rMergeBase : MERGE (NIL x) (a b) -> x (a b)
-rMergeSucc : MERGE ((p q) (x y)) (a b) -> MERGE (q (p (x y))) (a b)
+rLoop2Succ : ((SS0 x) y) (a Sb) -> APPEND x ((SS0 x) y) z -> z (a Sb)
 
 # Proofs begin here
 
@@ -45,29 +41,21 @@ tEgList2! : rMkList x=t-2!;y=tEgList1!
 tEgList3! : rMkList x=t2!;y=tEgList2!
 tEgList : rMkList x=tEgList3!;y=tNil!
 tEgList4! : rMkList x=t-2!;y=tNil!
-tEgList5! : rMkList x=t1!;y=tEgList4!
-tEgList6! : rMkList x=t1!;y=tEgList
-tEgList7! : rMkList x=t-2!;y=tEgList6!
+tEgList5! : rMkList x=t1!;y=tEgList
+tEgList6! : rMkList x=t-2!;y=tEgList5!
 
 t1Init : rInitState p=tEgList;a=t1!;b=t2!
-t1Loop1 : rLoop2Succ x=tEgList2!;y=tNil!;a=t1!;b=t1! t1Init
-t1LMR1 : rMergeRevSucc p=t-2!;q=tEgList1!;x=tEgList3!;y=tNil!;z=tNil!;a=t1!;b=t2! t1Loop1
-t1LMR2 : rMergeRevSucc p=t1!;q=tNil!;x=tEgList3!;y=tNil!;z=tEgList4!;a=t1!;b=t2! t1LMR1
-t1LMR3 : rMergeRevBase x=tEgList;z=tEgList5!;a=t1!;b=t2! t1LMR2
-t1LM1 : rMergeSucc p=t1!;q=tEgList4!;x=tEgList3!;y=tNil!;z=tNil!;a=t1!;b=t2! t1LMR3
-t1LM2 : rMergeSucc p=t-2!;q=tNil!;x=t1!;y=tEgList;a=t1!;b=t2! t1LM1
-t1LM3 : rMergeBase p=t-2!;q=tNil!;x=tEgList7!;a=t1!;b=t2! t1LM2
-t1DecR2 : rNextState-2 x=tEgList6!;a=t1!;b=t1! t1LM3
+
+tAp1! : rAppendNil y=tEgList
+tAp2! : rAppendRec x=tNil!;y=tEgList;z=tEgList;a=t1! tAp1!
+tAp : rAppendRec x=tEgList1!;y=tEgList;z=tEgList5!;a=t-2! tAp2!
+
+t1Loop1 : rLoop2Succ x=tEgList2!;y=tNil!;a=t1!;b=t1!;z=tEgList6! t1Init tAp
+t1DecR2 : rNextState-2 x=tEgList5!;a=t1!;b=t1! t1Loop1
 t1IncR1 : rNextState+1 x=tEgList;a=t1!;b=t1! t1DecR2
 
-t1Loop2 : rLoop2Succ x=tEgList2!;y=tNil!;a=t2!;b=t0! t1IncR1
-t1LMR1' : rMergeRevSucc p=t-2!;q=tEgList1!;x=tEgList3!;y=tNil!;z=tNil!;a=t2!;b=t1! t1Loop2
-t1LMR2' : rMergeRevSucc p=t1!;q=tNil!;x=tEgList3!;y=tNil!;z=tEgList4!;a=t2!;b=t1! t1LMR1'
-t1LMR3' : rMergeRevBase x=tEgList;z=tEgList5!;a=t2!;b=t1! t1LMR2'
-t1LM1' : rMergeSucc p=t1!;q=tEgList4!;x=tEgList3!;y=tNil!;z=tNil!;a=t2!;b=t1! t1LMR3'
-t1LM2' : rMergeSucc p=t-2!;q=tNil!;x=t1!;y=tEgList;a=t2!;b=t1! t1LM1'
-t1LM3' : rMergeBase p=t-2!;q=tNil!;x=tEgList7!;a=t2!;b=t1! t1LM2'
-t1DecR2' : rNextState-2 x=tEgList6!;a=t2!;b=t0! t1LM3'
+t1Loop2 : rLoop2Succ x=tEgList2!;y=tNil!;a=t2!;b=t0!;z=tEgList6! t1IncR1 tAp
+t1DecR2' : rNextState-2 x=tEgList5!;a=t2!;b=t0! t1Loop2
 t1IncR1' : rNextState+1 x=tEgList;a=t2!;b=t0! t1DecR2'
 
 t1 : rLoop2Base x=tEgList2!;y=tNil!;a=t3!;b=t0! t1IncR1'
