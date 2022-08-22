@@ -12,10 +12,16 @@ rPair : ⊢a→b -> ⊢a→c -> ⊢a→b∧c
 rCase : ⊢a→b -> ⊢a→c -> ⊢a∨b→c
 rComp : ⊢a→b -> ⊢b→c -> ⊢a→c
 
-# Terms construction
+# Terms (logical operators)
 rTOr : a∨b
 rTAnd : a∧b
 rTImp : a→b
+
+# Terms
+rTTop : ⊤
+tTop! : rTTop
+rTBot : ⊥
+tBot! : rTBot
 
 # Terms (vars)
 rTW : W
@@ -26,20 +32,32 @@ rTY : Y
 tY! : rTY
 rTZ : Z
 tZ! : rTZ
-rTTop : ⊤
-tTop! : rTTop
-rTBot : ⊥
-tBot! : rTBot
 
+# Example proof 1: ⊢W∧X∧Y∧Z→W∨Y
 # Terms needed for the proof
 tW|Y! : rTOr a=tW!;b=tY!
 tW&X! : rTAnd a=tW!;b=tX!
 tW&X&Y! : rTAnd a=tW&X!;b=tY!
 tW&X&Y&Z! : rTAnd a=tW&X&Y!;b=tZ!
-
 # Proof
-tStep1 : rInj2 a=tW!;b=tY!
-tStep2 : rSnd a=tW&X!;b=tY!
-tStep3 : rComp a=tW&X&Y!;b=tY!;c=tW|Y! tStep2 tStep1
-tStep4 : rFst a=tW&X&Y!;b=tZ!
-tStep5 : rComp a=tW&X&Y&Z!;b=tW&X&Y!;c=tW|Y! tStep4 tStep3
+t1Step1! : rInj2 a=tW!;b=tY!
+t1Step2! : rSnd a=tW&X!;b=tY!
+t1Step3! : rComp a=tW&X&Y!;b=tY!;c=tW|Y! t1Step2! t1Step1!
+t1Step4! : rFst a=tW&X&Y!;b=tZ!
+t1 : rComp a=tW&X&Y&Z!;b=tW&X&Y!;c=tW|Y! t1Step4! t1Step3!
+
+# Example proof 2: ⊢W∧X→X∧W
+t2Step1! : rSnd a=tW!;b=tX!
+t2Step2! : rFst a=tW!;b=tX!
+t2 : rPair a=tW&X!;b=tX!;c=tW! t2Step1! t2Step2!
+
+# Example proof 3: ⊢Y∨W→W∨Y
+# Terms needed for the proof
+tY|W! : rTOr a=tY!;b=tW!
+tY|Y|W! : rTOr a=tY!;b=tY|W!
+# Proof
+t3Step1! : rInj1 a=tY!;b=tW!
+t3Step2! : rInj2 a=tW!;b=tY!
+t3Step3! : rCase a=tY!;b=tY|W!;c=tW|Y! t3Step1! t3Step2!
+t3Step4! : rInj2 b=tY|W!;a=tY!
+t3 : rComp a=tY|W!;b=tY|Y|W!;c=tW|Y! t3Step4! t3Step3!
