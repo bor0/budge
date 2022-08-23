@@ -106,7 +106,9 @@ while (r2 > 0) { r2 -= 1; r1 += 1; } // sequence 2
 
 \section{Budge theorem prover}
 
-Budge-TP (b\textturnv\textdyoghlig, b'dzh) is a theorem prover that allows expressing formal systems. Formal systems are important because they lie at the core of mathematics. Budge-TP has a small Trusted-Computing Base (TCB). Its semantics rely only on substitution and equality check (symbol comparison), though they are still powerful enough to represent any formal system, including computation, as we will see next.
+Budge-TP (b\textturnv\textdyoghlig, b'dzh) is a theorem prover that allows expressing formal systems. Formal systems are important because they lie at the core of mathematics. It is directly inspired by Prolog\cite{b5}, where the main difference is that there is no automated deduction and every step has to be manually specified. This allows for a more explicit understanding of formal systems.
+
+Budge-TP has a small Trusted-Computing Base (TCB). Its semantics rely only on substitution and equality check (symbol comparison), though they are still powerful enough to represent any formal system, including computation, as we will see next.
 
 \subsection{Semantics}
 
@@ -129,7 +131,7 @@ Terms and axioms are represented as 1-ary rules; note that for $n = 1$ we have $
 
 \subsection{Syntax}
 
-Even though we used set theory to represent the semantics, we can liberate from set theory and use a more convenient syntax. Every statement is of the form:
+Even though we used set theory\cite{b6} to represent the semantics, we can liberate from set theory and use a more convenient syntax. Every statement is of the form:
 
 \begin{verbatim}
 r<name> : <expr> [-> <expr> [-> ... -> <expr>]]
@@ -140,13 +142,59 @@ The syntax \texttt{r<name>} specifies a rule, and \texttt{t<name>} specifies a t
 
 In a rule, all expressions but the last are considered the hypothesis (arguments to be passed when used in a theorem), and the last is the conclusion. For theorems, the rule \texttt{<ruleN>} will be applied to the corresponding arguments. Substitution with theorems (\texttt{x} with theorem \texttt{X}; \texttt{y} with theorem \texttt{Y}...) will be performed in both the rule's hypotheses and the theorem's provided argument, and they will be matched/unified. If unification is successful, the final argument in the rule \texttt{argn} will be the result.
 
-All derived theorems will be printed, except those whose name ends in a \texttt{!}.
-
 \subsection{Example theorems}
 
 \subsubsection{MIU system\cite{b1} (set theoretical syntax)}
 
 Let $R = \{ \{ \vdash\texttt{MI}, \texttt{I} \}, \{ (\vdash\texttt{Mx}, \vdash\texttt{Mxx}) \} \}$, $V = \{ \texttt{x} \}$. The particular choice of $R_1$ allows us to pick $S = \{ (\texttt{x}, \texttt{I}) \}$; since \texttt{I} is a 1-ary rule, $\texttt{I} \in T$. Similarly, $\vdash \texttt{MI} \in T$. To prove $\vdash\texttt{MII} \in T$, we use the rule within $R_2$ and since $(\texttt{x}, \texttt{I}) \in S$, we get that $subst_{rule}^1((\vdash\texttt{Mx}), S) = \vdash\texttt{MI} = subst_{thm}^1((\vdash\texttt{MI}), S)$. Since the rule's arguments match the theorem's hypotheses, $subst_{rule}^1((\vdash\texttt{Mxx}), S) = \vdash\texttt{MII} \in T$.
+
+\subsubsection{MIU system (Budge-TP syntax)}
+
+With the following code, we define the terms, the initial axiom and the rules of inference, and a few example theorems:
+
+\begin{minipage}{0.30\textwidth}
+\begin{verbatim}
+# Terms
+rTmM : M
+rTmI : I
+rTmU : U
+tmM! : rTmM
+tmI! : rTmI
+tmU! : rTmU
+rTmxy : xy
+\end{verbatim}
+\end{minipage}
+\begin{minipage}{0.33\textwidth}
+\begin{verbatim}
+# Axiom and rules
+rMI : |- MI
+thMI : rMI
+
+r1 : |- xI -> |- xIU
+r2 : |- Mx -> |- Mxx
+r3 : |- xIIIy -> |- xUy
+\end{verbatim}
+\end{minipage}
+\begin{minipage}{0.33\textwidth}
+\begin{verbatim}
+# Example theorems
+thMII : r2 x=tmI! thMI
+
+tmII! : rTmxy x=tmI!;y=tmI!
+thMIIII : r2 x=tmII! thMII
+
+thMUI : r3 x=tmM!;y=tmI! thMIIII
+\end{verbatim}
+\end{minipage}
+
+The theorems, once deduced, produce the following results:
+
+\begin{verbatim}
+thMI : |- MI
+thMII : |- MII
+thMIIII : |- MIIII
+thMUI : |- MUI
+\end{verbatim}
 
 \subsubsection{Budge-PL language (Budge-TP syntax)}
 
@@ -188,32 +236,42 @@ rAppendNil : APPEND NIL y y
 rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 \end{verbatim}
 
-To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Base}.
+To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Base}. These rules take the initial register state \texttt{(1 2)} and evaluate it to \texttt{(3 0)} which represents the sum.
 
 \begin{thebibliography}{1}
 
 \bibitem{b1}
-Douglas Hofstadter
-\newblock {\em Godel, Escher, Bach: an Eternal Golden Braid}
-\newblock Basic Books, Inc., 1979.
+Hofstadter, Douglas R.
+\newblock {\em Gödel, Escher, Bach: An Eternal Golden Braid}.
+\newblock New York: Basic books, 1979.
 
 \bibitem{b2}
-Artur Korniłowicz, Piotr Rudnicki
-\newblock {\em Fundamental Theorem of Arithmetic}
-\newblock Formalized Mathematics 12.2, 2004.
+Korniłowicz, Artur, and Piotr Rudnicki.
+\newblock "Fundamental Theorem of Arithmetic."
+\newblock {\em Formalized Mathematics} 12, no. 2 (2004): 179-186.
 
 \bibitem{b3}
-John H. Conway
-\newblock {\em Fractran: A simple universal programming language for arithmetic}
-\newblock Open problems in Communication and Computation, 1986.
+Conway, John H.
+\newblock "Fractran: A simple universal programming language for arithmetic."
+\newblock In {\em Open problems in Communication and Computation}, pp. 4-26. Springer, New York, NY, 1987.
 
 \bibitem{b4}
-Daniel D. McCracken, Edwin D. Reilly
-\newblock {\em{Backus-Naur Form (BNF)}}
-\newblock Encyclopedia of Computer Science, 2003.
+McCracken, Daniel D., and Edwin D. Reilly.
+\newblock "Backus-Naur Form (BNF)."
+\newblock In {\em Encyclopedia of Computer Science}, pp. 129-131. 2003.
 
 \bibitem{b5}
-Boro Sitnikovski,
+Clocksin, William F., and Christopher S. Mellish.
+\newblock {\em Programming in Prolog}.
+\newblock Springer Science \& Business Media, 2003.
+
+\bibitem{b6}
+Velleman, Daniel J.
+\newblock {\em How to Prove It: A Structured Approach}.
+\newblock Cambridge University Press, 2019.
+
+\bibitem{b7}
+Sitnikovski, B.
 \newblock Budge programming language and theorem prover (Python implementation).
 \newblock [Online]. Available: \url{https://github.com/bor0/budge/} (Accessed Aug. 2022)
 
