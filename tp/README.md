@@ -27,15 +27,15 @@ Budge will print all derived theorems except those whose name ends in a `!`.
 
 ## Example
 
-In the [MU puzzle](./examples/miu.arw) example we provide a simple usage of a small formal system.
+In the [MU puzzle](./examples/miu.btq) example we provide a simple usage of a small formal system.
 
-We implement number addition and multiplication with the [PQ](./examples/pq.arw) and [TQ](examples/tq.arw) system respectively. Prime numbers with the [DND](examples/dnd.arw) system. See [Peano's axioms](./examples/peano.arw) for a more detailed example on numbers.
+We implement number addition and multiplication with the [PQ](./examples/pq.btq) and [TQ](examples/tq.btq) system respectively. Prime numbers with the [DND](examples/dnd.btq) system. See [Peano's axioms](./examples/peano.btq) for a more detailed example on numbers.
 
-See [Gentzen](./examples/gentzen.arw) and [SKI calculus](./examples/ski.arw) for logical systems.
+See [Boolean](./examples/boolean.btp), [CL](./examples/cl.btp), [Gentzen](./examples/gentzen.btq) and [SKI calculus](./examples/ski.btq) for logical systems.
 
-There is an implementation of [lists](examples/list.arw), as well as a system for [coordinates](./examples/coord.arw) and a small [game](./examples/coordgame.arw).
+There is an implementation of [lists](examples/list.btq), as well as a system for [coordinates](./examples/coord.btq) and a small [game](./examples/coordgame.btq).
 
-There's also an implementation of a [two-register Budge system](./examples/budge.arw), based on my [Budge programming language](https://github.com/bor0/budge).
+There's also an implementation of a [two-register Budge system](./examples/budge.btq), based on my [Budge programming language](https://github.com/bor0/budge).
 
 ## Development
 
