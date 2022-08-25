@@ -35,7 +35,7 @@ See [Boolean](./examples/boolean.btp), [CL](./examples/cl.btp), [Gentzen](./exam
 
 There is an implementation of [lists](examples/list.btq), as well as a system for [coordinates](./examples/coord.btq) and a small [game](./examples/coordgame.btq).
 
-There's also an implementation of a [two-register Budge system](./examples/budge.btq), based on my [Budge programming language](https://github.com/bor0/budge).
+There's also an implementation of a [two-register Budge system](./examples/budge-pl.btq), based on my [Budge programming language](https://github.com/bor0/budge).
 
 ## Development
 

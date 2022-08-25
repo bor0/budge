@@ -1,6 +1,6 @@
 # The Budge programming language
 
-Interpreter implementation **with example programs** in [Python](./src/budge.ipynb) and in [Haskell](./src/budge.lhs). Formalization in [Idris](./src/budge.idr).
+Interpreter implementation **with example programs** in [Python](./src/budge-pl.ipynb) and in [Haskell](./src/budge-pl.lhs). Formalization in [Idris](./src/budge-pl.idr).
 
 Esolang entry: [Budge-PL](https://esolangs.org/wiki/Budge-PL).
 
@@ -27,7 +27,7 @@ That is, the outermost sequence (main program) will not loop, and any sequence c
 
 **For the general audience**: Imagine several jars with marbles. The command `-n` removes a marble (if any) from the jar number `n`, and `n` adds a marble to the jar number `n`. Loops can be interpreted as a way to repeat some commands while a jar `n` is not empty.
 
-![Budge-PL addition visualization](./budge.gif)
+![Budge-PL addition visualization](./budge-pl.gif)
 
 ## Example program: Addition
 

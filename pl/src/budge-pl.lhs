@@ -4,7 +4,7 @@ author: "Boro Sitnikovski"
 ---
 
 ```
-This is a literate Haskell file. You can build an HTML with pandoc by running `pandoc -s budge.lhs -o budge.html` or run it with stack with `stack repl budge.lhs`.
+This is a literate Haskell file. You can build an HTML with pandoc by running `pandoc -s budge-pl.lhs -o budge-pl.html` or run it with stack with `stack repl budge-pl.lhs`.
 ```
 
 Budge-PL interpreter in Haskell
