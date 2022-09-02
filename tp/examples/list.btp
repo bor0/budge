@@ -1,3 +1,4 @@
+## Numbers
 # Zero is a natural number (term)
 rTmZ : 0
 tmZ! : rTmZ
@@ -5,34 +6,68 @@ tmZ! : rTmZ
 # Successor
 rTmS : S(x) # term
 
-# Lists
-# NIL (proof)
+# Inequality
+rLtZ : LT(0, S(x))
+rLtS : LT(x, y) -> LT(S(x), S(y))
+
+## Bools
+rTmT : TRUE
+tmT! : rTmT
+
+rTmF : FALSE
+tmF! : rTmF
+
+## Lists
+# Constructing lists
 rMkList : (x y)
-rCar : (x y) -> x
-rCdr : (x y) -> y
 
 # NIL (term)
 rTmNil : NIL
 tmNil! : rTmNil
 
+# First and second element (list or nil) of a list
+rCar : (x y) -> x
+rCdr : (x y) -> y
+
+# Appending lists
+rAppendNil : APPEND(NIL, y, y)
+rAppendRec : APPEND(x, y, z) -> APPEND((a x), y, (a z))
+
+# Checking membership
+rMemberNil : MEMBER(a, NIL, FALSE) # a not member of []
+rMemberEq : MEMBER(a, b, c) -> MEMBER(a, (a b), TRUE) # a member of (a b)
+rMemberNeqL : LT(a, x) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
+rMemberNeqR : LT(x, a) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
+
+## Examples
+
+# Some terms needed for the examples
 tmOne! : rTmS x=tmZ!
 tmTwo! : rTmS x=tmOne!
 tmThree! : rTmS x=tmTwo!
 
+# Example 1: Car and cdr
 thLstep1! : rMkList x=tmThree!;y=tmNil!
 thLstep2! : rMkList x=tmTwo!;y=thLstep1!
 thL : rMkList x=tmOne!;y=thLstep2!
 
-thCarEg : rCar x=tmOne!;y=thLstep2! thL
-thCdrEg : rCdr x=tmOne!;y=thLstep2! thL
+thCarEg : rCar x=tmOne!;y=thLstep2! thL # head [1, 2, 3] = 1
+thCdrEg : rCdr x=tmOne!;y=thLstep2! thL # tail [1, 2, 3] = [2, 3]
 
-# Appending lists
-rAppendNil : APPEND NIL y y
-rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
+# Example 2: Appending lists
+thL1! : rMkList x=tmOne!;y=tmNil!
+thL2! : rMkList x=tmOne!;y=thL1!
+thL3! : rMkList x=tmTwo!;y=tmNil!
 
-thL1 : rMkList x=tmOne!;y=tmNil!
-thL2 : rMkList x=tmOne!;y=thL1
+tappS1 : rAppendNil y=thL1! # [] ++ [1] = [1]
+tappS2 : rAppendRec x=tmNil!;y=thL1!;z=thL1!;a=tmOne! tappS1 # [1] ++ [1] = [1, 1]
+tappS3 : rAppendRec x=thL1!;y=thL1!;z=thL2!;a=tmOne! tappS2 # [1, 1] ++ [1] = [1, 1, 1]
 
-tappS1 : rAppendNil y=thL1
-tappS2 : rAppendRec x=tmNil!;y=thL1;z=thL1;a=tmOne! tappS1
-tappS3 : rAppendRec x=thL1;y=thL1;z=thL2;a=tmOne! tappS2
+# Example 3: Inequality
+tLTEg1 : rLtZ x=tmZ! # 0 < 1
+tLTEg2 : rLtS x=tmZ!;y=tmOne! tLTEg1 # 1 < 2
+
+# Example 4: List membership
+tmemberEg1 : rMemberNil a=tmOne! # 1 `elem` [] => False
+tmemberEg2 : rMemberNeqL a=tmOne!;b=tmNil!;c=tmF!;x=tmTwo! tLTEg2 tmemberEg1 # 1 `elem` [2] => False
+tmemberEg3 : rMemberEq a=tmOne!;b=thL3!;c=tmF!;x=tmTwo! tmemberEg2 # 1 `elem` [1, 2] => True
