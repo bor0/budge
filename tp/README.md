@@ -1,6 +1,6 @@
 # The Budge theorem prover
 
-Budge-tp is a computer program that allows expressing formal systems and deriving theorems.
+Budge-TP is a computer program that allows expressing formal systems and deriving theorems.
 
 ## Syntax
 
