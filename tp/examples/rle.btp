@@ -1,0 +1,61 @@
+# Rules for creating a list and numbers (succ, pred)
+rMkList : (x y)
+rTmNil : NIL
+rTm0 : 0
+rTmS : Sx
+
+# Appending lists
+rAppendNil : APPEND NIL y y
+rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
+
+# Some letters
+rX : X
+rY : Y
+tX! : rX
+tY! : rY
+
+# Initial program
+rInitState : CODED=l DECODED=s
+
+# Commands for looping on the second register
+rLoopRLE : CODED=((Sx y) z) DECODED=s -> APPEND s (y NIL) q -> CODED=((x y) z) DECODED=q
+rBaseRLE : CODED=((0 y) z) DECODED=s -> CODED=z DECODED=s
+
+# Proofs begin here
+
+# Terms (numbers) we need for the proofs
+t0! : rTm0
+t1! : rTmS x=t0!
+t2! : rTmS x=t1!
+t3! : rTmS x=t2!
+tNil! : rTmNil
+
+# Represent the pairs 1X and 2Y in a list
+tPair1! : rMkList x=t2!;y=tY!
+tPair2! : rMkList x=t1!;y=tX!
+
+tList1! : rMkList x=tPair1!;y=tNil!
+tList2! : rMkList x=tPair2!;y=tList1!
+
+# Some lists needed for the proof with the append lemmas
+tListX! : rMkList x=tX!;y=tNil!
+tListY! : rMkList x=tY!;y=tNil!
+tListXY! : rMkList x=tX!;y=tListY!
+
+tListYY! : rMkList x=tY!;y=tListY!
+tListXYY! : rMkList x=tX!;y=tListYY!
+
+tLemma1! : rAppendNil y=tListX!
+tLemma2! : rAppendNil y=tListY!
+tLemma3! : rAppendRec a=tX!;x=tNil!;y=tListY!;z=tListY! tLemma2!
+tLemma4! : rAppendNil y=tListY!
+tLemma5! : rAppendRec a=tY!;x=tNil!;y=tListY!;z=tListY! tLemma4!
+tLemma6! : rAppendRec a=tX!;x=tListY!;y=tListY!;z=tListYY! tLemma5!
+
+# Example
+tStep1 : rInitState l=tList2!;s=tNil!
+tStep2 : rLoopRLE x=t0!;y=tX!;z=tList1!;s=tNil!;q=tListX! tStep1 tLemma1!
+tStep3 : rBaseRLE y=tX!;z=tList1!;s=tListX! tStep2
+tStep4 : rLoopRLE x=t1!;y=tY!;z=tNil!;s=tListX!;q=tListXY! tStep3 tLemma3!
+tStep5 : rLoopRLE x=t0!;y=tY!;z=tNil!;s=tListXY!;q=tListXYY! tStep4 tLemma6!
+tStep6 : rBaseRLE x=t0!;y=tY!;z=tNil!;s=tListXYY! tStep5
