@@ -1,4 +1,4 @@
-# Rules for creating a list and numbers (succ, pred)
+# Rules for creating a list and numbers
 rMkList : (x y)
 rTmNil : NIL
 rTm0 : 0
@@ -14,10 +14,10 @@ rY : Y
 tX! : rX
 tY! : rY
 
-# Initial program
-rInitState : CODED=l DECODED=s
+# Initial state
+rInitState : CODED=l DECODED=NIL
 
-# Commands for looping on the second register
+# Rules for decompressing
 rLoopRLE : CODED=((Sx y) z) DECODED=s -> APPEND s (y NIL) q -> CODED=((x y) z) DECODED=q
 rBaseRLE : CODED=((0 y) z) DECODED=s -> CODED=z DECODED=s
 
@@ -53,7 +53,7 @@ tLemma5! : rAppendRec a=tY!;x=tNil!;y=tListY!;z=tListY! tLemma4!
 tLemma6! : rAppendRec a=tX!;x=tListY!;y=tListY!;z=tListYY! tLemma5!
 
 # Example
-tStep1 : rInitState l=tList2!;s=tNil!
+tStep1 : rInitState l=tList2!
 tStep2 : rLoopRLE x=t0!;y=tX!;z=tList1!;s=tNil!;q=tListX! tStep1 tLemma1!
 tStep3 : rBaseRLE y=tX!;z=tList1!;s=tListX! tStep2
 tStep4 : rLoopRLE x=t1!;y=tY!;z=tNil!;s=tListX!;q=tListXY! tStep3 tLemma3!
