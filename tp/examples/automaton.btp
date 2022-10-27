@@ -1,0 +1,16 @@
+# Simple FSM
+rBase : ⊢01
+rSucc : ⊢ab -> ⊢a01b
+
+rTm0 : 0
+rTm1 : 1
+tm0! : rTm0
+tm1! : rTm1
+rMkTm : ab
+
+tm00! : rMkTm a=tm0!;b=tm0!
+tm11! : rMkTm a=tm1!;b=tm1!
+
+thm1 : rBase
+thm2 : rSucc a=tm0!;b=tm1! thm1
+thm3 : rSucc a=tm00!;b=tm11! thm2
