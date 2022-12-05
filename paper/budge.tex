@@ -127,7 +127,7 @@ Let $h = (h_1, \ldots, h_{n-1})$ where $\forall i, h_i \in T$. The function $sub
 For deriving new theorems, we say that $t = subst_{rule}^1((r_n), S) \in T$ (i.e., $t$ is a theorem) if and only if:
 $$subst_{rule}^{n-1}((r_1, \ldots, r_{n-1}), S) = subst_{thm}^{n-1}(h, S)$$
 
-Terms and axioms are represented as 1-ary rules; note that for $n = 1$ we have $subst_{rule}^0((), S) = () = subst_{thm}^0((), S)$ i.e. all 1-ary rules are theorems: $\forall r, r \in R_1 \to r \in T$.
+Terms and axioms are represented as 1-ary rules; note that for $n = 1$ we have $subst_{rule}^0((), S) = () = subst_{thm}^0((), S)$ i.e. all 1-ary rules are theorems: $\forall r, r \in R_1 \to r \in T$. Since derived theorems can be used like a rule we have $\forall t, t \in T \to t \in R_1$, thus $T = R_1$.
 
 \subsection{Syntax}
 

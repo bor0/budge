@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from os.path import exists
+from os.path import exists, isfile
 
 
 def parse_rules(rules):
+    """Given a list of rules, parse their hypotheses and conclusion"""
     parsed_rules = {}
 
     # Split rules into hypotheses and conclusion
@@ -18,20 +19,23 @@ def parse_rules(rules):
 
 
 def parse_replacements(theorem_name, replacements):
+    """Parse all replacements for a theorem"""
     parsed_replacements = {}
 
-    if replacements == None:
+    if replacements is None:
         return parsed_replacements
 
-    replacements = replacements.split(';')
+    replacements = list(filter(lambda x: x, replacements.split(';')))
 
-    # Parses "x=X,y=Y,..." into a dictionary for easier substitution, checking syntax on the way
+    # Parses "x=X,y=Y,..." into a dictionary for easier substitution, checking
+    # syntax on the way
     for expr in replacements:
         replacement = expr.split('=', 1)
 
-        if len(replacement) < 2 or len(replacement[0]) != 1 or not replacement[0].islower():
+        if len(replacement) < 2 or len(
+                replacement[0]) != 1 or not replacement[0].islower():
             raise Exception(
-                "Invalid syntax for replacement '%s' in '%s'" % (expr, theorem_name))
+                f"Invalid syntax for replacement '{expr}' in '{theorem_name}'")
 
         parsed_replacements[replacement[0]] = replacement[1]
 
@@ -39,14 +43,16 @@ def parse_replacements(theorem_name, replacements):
 
 
 def parse_theorems(theorems):
+    """Parse all theorems"""
     parsed_theorems = {}
 
-    # Process theorems, checking for valid syntax and process replacements on the way
+    # Process theorems, checking for valid syntax and process replacements on
+    # the way
     for name in theorems:
         arguments = list(filter(lambda x: x, theorems[name].split(' ')))
 
         if len(arguments) < 1:
-            raise Exception("Invalid syntax for theorem '%s'" % name)
+            raise Exception(f"Invalid syntax for theorem '{name}")
 
         rule = arguments[0]
         replacements = arguments[1] if len(arguments) > 1 else None
@@ -59,6 +65,7 @@ def parse_theorems(theorems):
 
 
 def calculate_environment(code):
+    """Calculate rules, theorems"""
     env = {'rules': {}, 'theorems': {}}
     types = {'r': 'rules', 't': 'theorems'}
 
@@ -66,25 +73,26 @@ def calculate_environment(code):
     code = filter(lambda x: x, map(
         lambda line: line.split('#')[0], code))  # strip comments
 
-    # Process every line in the code, checking for valid syntax and storing the data for further parsing
+    # Process every line in the code, checking for valid syntax and storing
+    # the data for further parsing
     for line in code:
         parsed_line = list(
             filter(lambda x: x, map(str.strip, line.split(':', 1))))
 
         if len(parsed_line) != 2:
-            raise Exception("Invalid syntax: '%s'" % line)
+            raise Exception(f"Invalid syntax: '{line}'")
 
         [name, expr] = parsed_line
 
         if name[0] not in types:
-            raise Exception("Invalid variable name: '%s'" % name)
+            raise Exception(f"Invalid variable name: '{name}'")
 
-        ty = types[name[0]]
+        tip = types[name[0]]
 
-        if name in env[ty]:
-            raise Exception("Name redeclaration: '%s'" % name)
+        if name in env[tip]:
+            raise Exception(f"Name redeclaration: '{name}'")
 
-        env[ty][name] = expr
+        env[tip][name] = expr
 
     env['rules'] = parse_rules(env['rules'])
     env['theorems'] = parse_theorems(env['theorems'])
@@ -92,71 +100,82 @@ def calculate_environment(code):
     return env
 
 
-def apply_rule(env, theorem, theorem_name):
+def apply_rule_or_theorem(env, theorem, theorem_name):
+    """Main method used to apply a rule or a theorem"""
     replacements = theorem['replacements']
     th_hypotheses = theorem['hypotheses']
     rule = theorem['rule']
 
-    if rule not in env['rules']:
-        raise Exception("Invalid rule: '%s'" % rule)
+    if rule in env['rules']:
+        ru_hypotheses = env['rules'][rule]['hypotheses'].copy()
+        ru_conclusion = env['rules'][rule]['conclusion']
+    elif rule in env['theorems']:
+        ru_hypotheses = []
+        ru_conclusion = env['theorems'][rule]
+    else:
+        raise Exception(f"Invalid rule/theorem: '{rule}'")
 
-    ru_hypotheses = env['rules'][rule]['hypotheses'].copy()
-    ru_conclusion = env['rules'][rule]['conclusion']
+    for key, value in replacements.items():
+        if not value or value not in env['theorems']:
+            raise Exception(f"Invalid theorem: '{value}' in '{theorem_name}'")
 
-    for k, v in replacements.items():
-        if not v or v not in env['theorems']:
-            raise Exception("Invalid theorem: '%s' in '%s'" %
-                            (v, theorem_name))
+        replacements[key] = env['theorems'][value]
 
-        replacements[k] = env['theorems'][v]
-
-        if not isinstance(replacements[k], str):
-            raise Exception("Invalid theorem: '%s' in '%s'" %
-                            (v, theorem_name))
+        if not isinstance(replacements[key], str):
+            raise Exception(f"Invalid theorem: '{value}' in '{theorem_name}'")
 
     # Process theorem's hypotheses by substituting for other theorems
-    for i, h in enumerate(th_hypotheses):
-        if h not in env['theorems']:
-            raise Exception("Invalid theorem: '%s' in '%s'" %
-                            (h, theorem_name))
-        hypothesis = env['theorems'][h]
+    for i, hypo in enumerate(th_hypotheses):
+        if hypo not in env['theorems']:
+            raise Exception(f"Invalid theorem: '{hypo}' in '{theorem_name}'")
+        hypothesis = env['theorems'][hypo]
 
-        for k, v in replacements.items():
-            hypothesis = hypothesis.replace(k, v)
+        for key, value in replacements.items():
+            hypothesis = hypothesis.replace(key, value)
 
         th_hypotheses[i] = hypothesis
 
-    for k, v in replacements.items():
+    for key, value in replacements.items():
         # Process rule's hypotheses by substituting the replacements
-        for i in range(0, len(ru_hypotheses)):
-            ru_hypotheses[i] = ru_hypotheses[i].replace(k, v)
+        for i, _ in enumerate(ru_hypotheses):
+            ru_hypotheses[i] = ru_hypotheses[i].replace(key, value)
 
         # Process conclusion by substituting the replacements
-        ru_conclusion = ru_conclusion.replace(k, v)
+        ru_conclusion = ru_conclusion.replace(key, value)
 
     if ru_hypotheses != th_hypotheses:
-        raise Exception("Hypotheses mismatch for '%s': cannot unify\n\t%s\nand\n\t%s" % (
-            theorem_name, str(ru_hypotheses), str(th_hypotheses)))
+        raise Exception(
+            f"Hypotheses mismatch for '{theorem_name}': cannot unify\n\t{str(ru_hypotheses)}\nand\n\t{str(th_hypotheses)}")
 
     return ru_conclusion
 
 
-if len(sys.argv) != 2:
-    exit('Usage: python %s <filename.btp>' % sys.argv[0])
+def main():
+    """Entrypoint"""
+    if len(sys.argv) != 2:
+        sys.exit(f"Usage: python {sys.argv[0]} <filename.btp>")
 
-if not exists(sys.argv[1]):
-    exit("Filename '%s' not found." % sys.argv[1])
+    if not exists(sys.argv[1]):
+        sys.exit(f"Filename '{sys.argv[1]}' not found.")
 
-with open(sys.argv[1]) as f:
-    code = f.read()
+    if not isfile(sys.argv[1]):
+        sys.exit(f"Not a filename: '{sys.argv[1]}'.")
 
-env = calculate_environment(code)
+    with open(sys.argv[1], encoding='utf-8') as file:
+        code = file.read()
 
-for theorem_name in env['theorems']:
-    theorem = env['theorems'][theorem_name]
-    env['theorems'][theorem_name] = apply_rule(env, theorem, theorem_name)
+    env = calculate_environment(code)
 
-for name in env['theorems']:
-    if name[-1] == '!':
-        continue
-    print('%s : %s' % (name, env['theorems'][name]))
+    for theorem_name in env['theorems']:
+        theorem = env['theorems'][theorem_name]
+        env['theorems'][theorem_name] = apply_rule_or_theorem(
+            env, theorem, theorem_name)
+
+    for theorem_name in env['theorems']:
+        if theorem_name[-1] == '!':
+            continue
+        print(f"{theorem_name} : {env['theorems'][theorem_name]}")
+
+
+if __name__ == '__main__':
+    sys.exit(main())

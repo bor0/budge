@@ -1,16 +1,18 @@
 # Definitions
 
 ## Axioms of Hilbert's system
-r1 : ⊢(a=>(b=>a))
-r2 : ⊢((a=>(b=>c))=>((a=>b)=>(a=>c)))
-r3 : ⊢((¬a=>¬b)=>(b=>a))
+r1 : ⊢(p=>(q=>p))
+r2 : ⊢((p=>(q=>r))=>((p=>q)=>(p=>r)))
+r3 : ⊢((¬p=>¬q)=>(q=>p))
 
 ## Modus ponens
-rMp : ⊢a -> ⊢(a=>b) -> ⊢b
+rMp : ⊢p -> ⊢(p=>q) -> ⊢q
 
 ## Terms and vars
-rTmImp : (a=>b)
-rTmNeg : ¬a
+rTmImp : (p=>q)
+rTmNeg : ¬p
+
+# Object vars
 rA : A
 rB : B
 rC : C
@@ -18,66 +20,79 @@ tmA! : rA
 tmB! : rB
 tmC! : rC
 
+# Meta vars
+ra : a
+rb : b
+rc : c
+tma! : ra
+tmb! : rb
+tmc! : rc
+rp : p
+rq : q
+rr : r
+tmp! : rp
+tmq! : rq
+tmr! : rr
+
 # 1. Proof that A -> A
 ## Terms needed for the proof
-tm(B=>A)! : rTmImp a=tmB!;b=tmA!
-tm((B=>A)=>A)! : rTmImp a=tm(B=>A)!;b=tmA!
-tm(A=>((B=>A)=>A))! : rTmImp a=tmA!;b=tm((B=>A)=>A)!
-tm(A=>A)! : rTmImp a=tmA!;b=tmA!
-tm(A=>(B=>A))! : rTmImp a=tmA!;b=tm(B=>A)!
-tm((A=>(B=>A))=>(A=>A))! : rTmImp a=tm(A=>(B=>A))!;b=tm(A=>A)!
+tm(b=>a)! : rTmImp p=tmb!;q=tma!
+tm((b=>a)=>a)! : rTmImp p=tm(b=>a)!;q=tma!
+tm(a=>((b=>a)=>a))! : rTmImp p=tma!;q=tm((b=>a)=>a)!
+tm(a=>a)! : rTmImp p=tma!;q=tma!
+tm(a=>(b=>a))! : rTmImp p=tma!;q=tm(b=>a)!
+tm((a=>(b=>a))=>(a=>a))! : rTmImp p=tm(a=>(b=>a))!;q=tm(a=>a)!
 
 ## Proof
-thm1step1! : r1 a=tmA!;b=tm(B=>A)!
-thm1step2! : r2 a=tmA!;b=tm(B=>A)!;c=tmA!
-thm1step3! : rMp a=tm(A=>((B=>A)=>A))!;b=tm((A=>(B=>A))=>(A=>A))! thm1step1! thm1step2!
-thm1step4! : r1 a=tmA!;b=tmB!
-thm1 : rMp a=tm(A=>(B=>A))!;b=tm(A=>A)! thm1step4! thm1step3!
+thm1step1! : r1 p=tma!;q=tm(b=>a)!
+thm1step2! : r2 p=tma!;q=tm(b=>a)!;r=tma!
+thm1step3! : rMp p=tm(a=>((b=>a)=>a))!;q=tm((a=>(b=>a))=>(a=>a))! thm1step1! thm1step2!
+thm1step4! : r1 p=tma!;q=tmb!
+thm1 : rMp p=tm(a=>(b=>a))!;q=tm(a=>a)! thm1step4! thm1step3!
 
 # 2. Proof of the hypothetical syllogism (B -> C) -> ((A -> B) -> (A -> C))
 ## Terms needed for the proof
-tm(B=>C)! : rTmImp a=tmB!;b=tmC!
-tm(A=>(B=>C))! : rTmImp a=tmA!;b=tm(B=>C)!
-tm(A=>B)! : rTmImp a=tmA!;b=tmB!
-tm(A=>C)! : rTmImp a=tmA!;b=tmC!
-tm((A=>B)=>(A=>C))! : rTmImp a=tm(A=>B)!;b=tm(A=>C)!
-tm((A=>(B=>C))=>((A=>B)=>(A=>C)))! : rTmImp a=tm(A=>(B=>C))!;b=tm((A=>B)=>(A=>C))!
-tm((B=>C)=>((A=>(B=>C))=>((A=>B)=>(A=>C))))! : rTmImp a=tm(B=>C)!;b=tm((A=>(B=>C))=>((A=>B)=>(A=>C)))!
-tm((B=>C)=>(A=>(B=>C)))! : rTmImp a=tm(B=>C)!;b=tm(A=>(B=>C))!
-tm((B=>C)=>((A=>B)=>(A=>C)))! : rTmImp a=tm(B=>C)!;b=tm((A=>B)=>(A=>C))!
-tm(((B=>C)=>(A=>(B=>C)))=>((B=>C)=>((A=>B)=>(A=>C))))! : rTmImp a=tm((B=>C)=>(A=>(B=>C)))!;b=tm((B=>C)=>((A=>B)=>(A=>C)))!
+tm(b=>c)! : rTmImp p=tmb!;q=tmc!
+tm(a=>(b=>c))! : rTmImp p=tma!;q=tm(b=>c)!
+tm(a=>b)! : rTmImp p=tma!;q=tmb!
+tm(a=>c)! : rTmImp p=tma!;q=tmc!
+tm((a=>b)=>(a=>c))! : rTmImp p=tm(a=>b)!;q=tm(a=>c)!
+tm((a=>(b=>c))=>((a=>b)=>(a=>c)))! : rTmImp p=tm(a=>(b=>c))!;q=tm((a=>b)=>(a=>c))!
+tm((b=>c)=>((a=>(b=>c))=>((a=>b)=>(a=>c))))! : rTmImp p=tm(b=>c)!;q=tm((a=>(b=>c))=>((a=>b)=>(a=>c)))!
+tm((b=>c)=>(a=>(b=>c)))! : rTmImp p=tm(b=>c)!;q=tm(a=>(b=>c))!
+tm((b=>c)=>((a=>b)=>(a=>c)))! : rTmImp p=tm(b=>c)!;q=tm((a=>b)=>(a=>c))!
+tm(((b=>c)=>(a=>(b=>c)))=>((b=>c)=>((a=>b)=>(a=>c))))! : rTmImp p=tm((b=>c)=>(a=>(b=>c)))!;q=tm((b=>c)=>((a=>b)=>(a=>c)))!
 
 ## Proof
-thm2step1! : r2 a=tmA!;b=tmB!;c=tmC!
-thm2step2! : r1 a=tm((A=>(B=>C))=>((A=>B)=>(A=>C)))!;b=tm(B=>C)!
-thm2step3! : rMp a=tm((A=>(B=>C))=>((A=>B)=>(A=>C)))!;b=tm((B=>C)=>((A=>(B=>C))=>((A=>B)=>(A=>C))))! thm2step1! thm2step2!
-thm2step4! : r2 a=tm(B=>C)!;b=tm(A=>(B=>C))!;c=tm((A=>B)=>(A=>C))!
-thm2step5! : r1 a=tm(B=>C)!;b=tmA!
-thm2step6! : rMp a=tm((B=>C)=>((A=>(B=>C))=>((A=>B)=>(A=>C))))!;b=tm(((B=>C)=>(A=>(B=>C)))=>((B=>C)=>((A=>B)=>(A=>C))))! thm2step3! thm2step4!
-thm2 : rMp a=tm((B=>C)=>(A=>(B=>C)))!;b=tm((B=>C)=>((A=>B)=>(A=>C)))! thm2step5! thm2step6!
-
-# TODO: Budge has no concept of meta vars, so we lift last proof to a rule
-rthm2 : ⊢((b=>c)=>((a=>b)=>(a=>c)))
+thm2step1! : r2 p=tma!;q=tmb!;r=tmc!
+thm2step2! : r1 p=tm((a=>(b=>c))=>((a=>b)=>(a=>c)))!;q=tm(b=>c)!
+thm2step3! : rMp p=tm((a=>(b=>c))=>((a=>b)=>(a=>c)))!;q=tm((b=>c)=>((a=>(b=>c))=>((a=>b)=>(a=>c))))! thm2step1! thm2step2!
+thm2step4! : r2 p=tm(b=>c)!;q=tm(a=>(b=>c))!;r=tm((a=>b)=>(a=>c))!
+thm2step5! : r1 p=tm(b=>c)!;q=tma!
+thm2step6! : rMp p=tm((b=>c)=>((a=>(b=>c))=>((a=>b)=>(a=>c))))!;q=tm(((b=>c)=>(a=>(b=>c)))=>((b=>c)=>((a=>b)=>(a=>c))))! thm2step3! thm2step4!
+# Replace vars to be able to use lifted theorem
+thm2step7! : rMp p=tm((b=>c)=>(a=>(b=>c)))!;q=tm((b=>c)=>((a=>b)=>(a=>c)))! thm2step5! thm2step6!
+thm2 : thm2step7! a=tmp!;b=tmq!;c=tmr!
 
 # 3. Proof of ⊢((¬¬(F)=>¬¬A)=>((F)=>A))
 ## Terms needed for the proof
-tm¬A! : rTmNeg a=tmA!
-tm(C=>B)! : rTmImp a=tmC!;b=tmB!
-tm(B=>(C=>B))! : rTmImp a=tmB!;b=tm(C=>B)!
-tm¬(B=>(C=>B))! : rTmNeg a=tm(B=>(C=>B))!
-tm¬¬A! : rTmNeg a=tm¬A!
-tm(¬A=>¬(B=>(C=>B)))! : rTmImp a=tm¬A!;b=tm¬(B=>(C=>B))!
-tm((B=>(C=>B))=>A)! : rTmImp a=tm(B=>(C=>B))!;b=tmA!
-tm((¬A=>¬(B=>(C=>B)))=>((B=>(C=>B))=>A))! : rTmImp a=tm(¬A=>¬(B=>(C=>B)))!;b=tm((B=>(C=>B))=>A)!
-tm¬¬(B=>(C=>B))! : rTmNeg a=tm¬(B=>(C=>B))!
-tm(¬¬(B=>(C=>B))=>¬¬A)! : rTmImp a=tm¬¬(B=>(C=>B))!;b=tm¬¬A!
-tm((¬¬(B=>(C=>B))=>¬¬A)=>(¬A=>¬(B=>(C=>B))))! : rTmImp a=tm(¬¬(B=>(C=>B))=>¬¬A)!;b=tm(¬A=>¬(B=>(C=>B)))!
-tm((¬¬(B=>(C=>B))=>¬¬A)=>((B=>(C=>B))=>A))! : rTmImp a=tm(¬¬(B=>(C=>B))=>¬¬A)!;b=tm((B=>(C=>B))=>A)!
-tm(((¬¬(B=>(C=>B))=>¬¬A)=>(¬A=>¬(B=>(C=>B))))=>((¬¬(B=>(C=>B))=>¬¬A)=>((B=>(C=>B))=>A)))! : rTmImp a=tm((¬¬(B=>(C=>B))=>¬¬A)=>(¬A=>¬(B=>(C=>B))))!;b=tm((¬¬(B=>(C=>B))=>¬¬A)=>((B=>(C=>B))=>A))!
+tm¬a! : rTmNeg p=tma!
+tm(c=>b)! : rTmImp p=tmc!;q=tmb!
+tm(b=>(c=>b))! : rTmImp p=tmb!;q=tm(c=>b)!
+tm¬(b=>(c=>b))! : rTmNeg p=tm(b=>(c=>b))!
+tm¬¬a! : rTmNeg p=tm¬a!
+tm(¬a=>¬(b=>(c=>b)))! : rTmImp p=tm¬a!;q=tm¬(b=>(c=>b))!
+tm((b=>(c=>b))=>a)! : rTmImp p=tm(b=>(c=>b))!;q=tma!
+tm((¬a=>¬(b=>(c=>b)))=>((b=>(c=>b))=>a))! : rTmImp p=tm(¬a=>¬(b=>(c=>b)))!;q=tm((b=>(c=>b))=>a)!
+tm¬¬(b=>(c=>b))! : rTmNeg p=tm¬(b=>(c=>b))!
+tm(¬¬(b=>(c=>b))=>¬¬a)! : rTmImp p=tm¬¬(b=>(c=>b))!;q=tm¬¬a!
+tm((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))! : rTmImp p=tm(¬¬(b=>(c=>b))=>¬¬a)!;q=tm(¬a=>¬(b=>(c=>b)))!
+tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))! : rTmImp p=tm(¬¬(b=>(c=>b))=>¬¬a)!;q=tm((b=>(c=>b))=>a)!
+tm(((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))=>((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a)))! : rTmImp p=tm((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))!;q=tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))!
 
 ## Proof
-thm3step1! : r3 a=tm¬(B=>(C=>B))!;b=tm¬A!
-thm3step2! : r3 a=tmA!;b=tm(B=>(C=>B))!
-thm3step3! : rthm2 a=tm(¬¬(B=>(C=>B))=>¬¬A)!;b=tm(¬A=>¬(B=>(C=>B)))!;c=tm((B=>(C=>B))=>A)!
-thm3step4! : rMp a=tm((¬A=>¬(B=>(C=>B)))=>((B=>(C=>B))=>A))!;b=tm(((¬¬(B=>(C=>B))=>¬¬A)=>(¬A=>¬(B=>(C=>B))))=>((¬¬(B=>(C=>B))=>¬¬A)=>((B=>(C=>B))=>A)))! thm3step2! thm3step3!
-thm3 : rMp a=tm((¬¬(B=>(C=>B))=>¬¬A)=>(¬A=>¬(B=>(C=>B))))!;b=tm((¬¬(B=>(C=>B))=>¬¬A)=>((B=>(C=>B))=>A))! thm3step1! thm3step4!
+thm3step1! : r3 p=tm¬(b=>(c=>b))!;q=tm¬a!
+thm3step2! : r3 p=tma!;q=tm(b=>(c=>b))!
+thm3step3! : thm2 p=tm(¬¬(b=>(c=>b))=>¬¬a)!;q=tm(¬a=>¬(b=>(c=>b)))!;r=tm((b=>(c=>b))=>a)!
+thm3step4! : rMp p=tm((¬a=>¬(b=>(c=>b)))=>((b=>(c=>b))=>a))!;q=tm(((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))=>((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a)))! thm3step2! thm3step3!
+thm3 : rMp p=tm((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))!;q=tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))! thm3step1! thm3step4!

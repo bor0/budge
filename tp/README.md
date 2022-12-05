@@ -36,12 +36,3 @@ See [Boolean](./examples/boolean.btp), [CL](./examples/cl.btp), [Gentzen](./exam
 There is an implementation of [lists](examples/list.btp), as well as a system for [coordinates](./examples/coord.btp) and a small [game](./examples/coordgame.btp). Based on lists, there's a simple [Run-Length Encoder decompressor](./examples/rle.btp).
 
 There's also an implementation of a [two-register Budge system](./examples/budge-pl.btp), based on my [Budge programming language](https://github.com/bor0/budge).
-
-## Development
-
-Install `pre-commit` and configure it once you clone this repo:
-
-```
-$ pip3 install pre-commit
-$ pre-commit install
-```
