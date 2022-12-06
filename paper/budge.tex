@@ -106,13 +106,13 @@ while (r2 > 0) { r2 -= 1; r1 += 1; } // sequence 2
 
 \section{Budge theorem prover}
 
-Budge-TP (b\textturnv\textdyoghlig, b'dzh) is a theorem prover that allows expressing formal systems. Formal systems are important because they lie at the core of mathematics. It is directly inspired by Prolog\cite{b5}, where the main difference is that there is no automated deduction and every step has to be manually specified. This allows for a more explicit understanding of formal systems.
+Budge-TP (b\textturnv\textdyoghlig, b'dzh) is a theorem prover that allows the expressing of formal systems. Formal systems are important because they lie at the core of mathematics. It is directly inspired by Prolog\cite{b5}, where the main difference is that there is no automated deduction and every step has to be manually specified. This allows for a more explicit understanding of formal systems.
 
 Budge-TP has a small Trusted-Computing Base (TCB). Its semantics rely only on substitution and equality check (symbol comparison), though they are still powerful enough to represent any formal system, including computation, as we will see next.
 
 \subsection{Semantics}
 
-Within Budge-TP, a formal system is defined by the tuple $F = (R, V, T)$ together with the functions $subst_{rule}^n$ and $subst_{thm}^n$ where $R_n \in R$ is a set of rules of $n$-ary arguments, $V$ is a set of variables, and $T$ is a set of theorems. A rule $r = (r_1, \ldots, r_n) \in R_n$ is a sequence of string of symbols; it can be roughly interpreted as a function $r_1 \to \ldots \to r_n$, where the $n$-th argument represents a conclusion, and the others represent hypotheses.
+Within Budge-TP, a formal system is defined by the tuple $F = (R, V, T)$ together with the functions $subst_{rule}^n$ and $subst_{thm}^n$ where $R_n \in R$ is a set of rules of $n$-ary arguments, $V$ is a set of variables, and $T$ is a set of theorems. A rule $r = (r_1, \ldots, r_n) \in R_n$ is a sequence of a string of symbols; it can be roughly interpreted as a function $r_1 \to \ldots \to r_n$, where the $n$-th argument represents a conclusion, and the others represent hypotheses.
 
 Let $S \subseteq V \times T$ denote a set of substitutions, and $X[t/v]$ denote the expression $X$ in which each occurrence of $v$ is replaced with $t$. We define the following function which performs substitution on a rule's hypotheses and conclusion:
 $$ subst_{rule}^n(r, S) = {
@@ -140,7 +140,7 @@ t<name> : <ruleN> [x=X;y=Y;...] [arg1] [arg2] [...] [argn]
 
 The syntax \texttt{r<name>} specifies a rule, and \texttt{t<name>} specifies a theorem. For \texttt{<name>} and \texttt{<expr>}, any string of characters is accepted except \texttt{':'} and \texttt{' '} (whitespace) for \texttt{<name>} and \texttt{'->'} for \texttt{<expr>}. Square brackets represent optional values. Lowercase characters in a rule expression are considered a variable and will be used for substitution within the expressions.
 
-In a rule, all expressions but the last are considered the hypothesis (arguments to be passed when used in a theorem), and the last is the conclusion. For theorems, the rule \texttt{<ruleN>} will be applied to the corresponding arguments. Substitution with theorems (\texttt{x} with theorem \texttt{X}; \texttt{y} with theorem \texttt{Y}...) will be performed in both the rule's hypotheses and the theorem's provided argument, and they will be matched/unified. If unification is successful, the final argument in the rule \texttt{argn} will be the result.
+Within a rule, all expressions but the last are considered the hypothesis (arguments to be passed when used in a theorem), and the last is the conclusion. For theorems, the rule \texttt{<ruleN>} will be applied to the corresponding arguments. Substitution with theorems (\texttt{x} with theorem \texttt{X}; \texttt{y} with theorem \texttt{Y}...) will be performed in both the rule's hypotheses and the theorem's provided argument, and they will be matched/unified. If unification is successful, the final argument in the rule \texttt{argn} will be the result.
 
 \subsection{Example theorems}
 
