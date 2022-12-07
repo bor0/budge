@@ -31,7 +31,9 @@ In the [MU puzzle](./examples/miu.btp) example we provide a simple usage of a sm
 
 We implement number addition and multiplication with the [PQ](./examples/pq.btp) and [TQ](examples/tq.btp) system respectively. Prime numbers with the [DND](examples/dnd.btp) system. See [Peano's axioms](./examples/peano.btp) for a more detailed example on numbers.
 
-See [Boolean](./examples/boolean.btp), [CL](./examples/cl.btp), [Gentzen](./examples/gentzen.btp) and [SKI calculus](./examples/ski.btp) for logical systems.
+See [Boolean](./examples/boolean.btp), [CL](./examples/cl.btp), [Gentzen](./examples/gentzen.btp), [SKI calculus](./examples/ski.btp) and [Hilbert's system](./examples/hilbert.btp) for logical systems.
+
+A simple finite-state machine is in the [Automaton](./examples/automaton.btp) example.
 
 There is an implementation of [lists](examples/list.btp), as well as a system for [coordinates](./examples/coord.btp) and a small [game](./examples/coordgame.btp). Based on lists, there's a simple [Run-Length Encoder decompressor](./examples/rle.btp).
 
