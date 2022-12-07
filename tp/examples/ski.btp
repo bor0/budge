@@ -19,14 +19,17 @@ rTm : (x y)
 ### I combinator
 rIdL : ⊢(d (I x)) => ⊢(d x)
 rIdR : ⊢((I x) d) => ⊢(x d)
+rIdLR : ⊢(d (I x) b) => ⊢(d x b)
 rId' : ⊢(I x) => ⊢x # Handling EPS (empty) case
 ### K combinator, corresponds to Hilbert's r1
 rConstL : ⊢(d ((K x) y)) => ⊢(d x)
 rConstR : ⊢(((K x) y) d) => ⊢(x d)
+rConstLR : ⊢(d ((K x) y) b) => ⊢(d x b)
 rConst' : ⊢((K x) y) => ⊢x # EPS
 ### S combinator, corresponds to Hilbert's r2
 rSubstL : ⊢(d (((S x) y) z)) => ⊢(d ((x z) (y z)))
 rSubstR : ⊢((((S x) y) z)) => ⊢(((x z) (y z)) d)
+rSubstLR : ⊢(d (((S x) y) z) b) => ⊢(d ((x z) (y z)) b)
 rSubst' : ⊢(((S x) y) z) => ⊢((x z) (y z)) # EPS
 
 ## Modus ponens
