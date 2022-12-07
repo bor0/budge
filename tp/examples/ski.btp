@@ -1,4 +1,6 @@
-# SKI formal system (meta-level), as per https://en.wikipedia.org/wiki/SKI_combinator_calculus
+# SKI formal system, as per https://en.wikipedia.org/wiki/SKI_combinator_calculus
+
+# Definitions
 
 ## SKI base terms
 rTmS : S
@@ -14,28 +16,74 @@ tmE! : rTmE
 rTm : (x y)
 
 ## SKI derivation rules
-# I combinator
-rId : ⊢(d (I x)) -> ⊢(d x)
-rId' : ⊢(I x) -> ⊢x # Handling EPS (empty) case
-# K combinator, corresponds to Hilbert's r1
-rConst : ⊢(d ((K x) y)) -> ⊢(d x)
-rConst' : ⊢((K x) y) -> ⊢x # EPS
-# S combinator, corresponds to Hilbert's r2
-rSubst : ⊢(d (((S x) y) z)) -> ⊢(d ((x z) (y z)))
+### I combinator
+rIdL : ⊢(d (I x)) => ⊢(d x)
+rIdR : ⊢((I x) d) => ⊢(x d)
+rId' : ⊢(I x) => ⊢x # Handling EPS (empty) case
+### K combinator, corresponds to Hilbert's r1
+rConstL : ⊢(d ((K x) y)) => ⊢(d x)
+rConstR : ⊢(((K x) y) d) => ⊢(x d)
+rConst' : ⊢((K x) y) => ⊢x # EPS
+### S combinator, corresponds to Hilbert's r2
+rSubstL : ⊢(d (((S x) y) z)) => ⊢(d ((x z) (y z)))
+rSubstR : ⊢((((S x) y) z)) => ⊢(((x z) (y z)) d)
 rSubst' : ⊢(((S x) y) z) => ⊢((x z) (y z)) # EPS
 
-# Initial theorem for the example
-rEgTerm : ⊢(EPS (I (((S K) S) K)))
-thEgTerm : rEgTerm
+## Modus ponens
+rMp : ⊢p -> ⊢(p => q) -> ⊢q
+## Hypothetical syllogism
+### TODO: This can probably be proved on its own using the previous rules.
+### See hilbert.btp `thm2` which uses r1 and r2 which correspond to K and S.
+rHs : ⊢a => ⊢b -> ⊢b => ⊢c -> ⊢a => ⊢c
 
-# Terms needed for the proofs
+## Meta vars
+ra : a
+rb : b
+rc : c
+tma! : ra
+tmb! : rb
+tmc! : rc
+rp : p
+rq : q
+rr : r
+tmp! : rp
+
+# 1. Proof that ⊢(I (I (((S K) S) K))) => ⊢K
+## Terms needed for the proof
 tm(SK)! : rTm x=tmS!;y=tmK!
 tm((SK)S)! : rTm x=tm(SK)!;y=tmS!
 tm(((SK)S)K)! : rTm x=tm((SK)S)!;y=tmK!
+tm(I(((SK)S)K))! : rTm x=tmI!;y=tm(((SK)S)K)!
+tm(I(I(((SK)S)K)))! : rTm x=tmI!;y=tm(I(((SK)S)K))!
+tm(KK)! : rTm x=tmK!;y=tmK!
+tm((KK)(SK))! : rTm x=tm(KK)!;y=tm(SK)!
 
-# Theorems
-th(((SK)S)K) : rId d=tmE!;x=tm(((SK)S)K)! thEgTerm
-thKK(SK) : rSubst d=tmE!;x=tmK!;y=tmS!;z=tmK! th(((SK)S)K)
+## Theorems (lemmas)
+th=>EgTerm! : rIdL d=tmI!;x=tm(((SK)S)K)!
+th=>(((SK)S)K)! : rId' x=tm(((SK)S)K)!
+th=>KK(SK)! : rSubst' x=tmK!;y=tmS!;z=tmK!
+th=>K! : rConst' x=tmK!;y=tm(SK)!
 
-# Finally, we prove that, by the assumption of ⊢ISKSK we can deduce ⊢K (note this is different from K (tmK!))
-thK : rConst d=tmE!;x=tmK!;y=tm(SK)! thKK(SK)
+## Proof
+thK'! : rHs a=tm(I(I(((SK)S)K)))!;b=tm(I(((SK)S)K))!;c=tm(((SK)S)K)! th=>EgTerm! th=>(((SK)S)K)!
+thK''! : rHs a=tm(I(I(((SK)S)K)))!;b=tm(((SK)S)K)!;c=tm((KK)(SK))! thK'! th=>KK(SK)!
+thK : rHs a=tm(I(I(((SK)S)K)))!;b=tm((KK)(SK))!;c=tmK! thK''! th=>K!
+
+# 2. Recursion: Proof that ⊢(((S I) I) a) => ⊢(a a)
+## Terms needed for the proof
+tm(Ip)! : rTm x=tmI!;y=tmp!
+tm(SI)! : rTm x=tmS!;y=tmI!
+tm((SI)I)! : rTm x=tm(SI)!;y=tmI!
+tm(((SI)I)p)! : rTm x=tm((SI)I)!;y=tmp!
+tm((Ip)(Ip))! : rTm x=tm(Ip)!;y=tm(Ip)!
+tm((Ip)p)! : rTm x=tm(Ip)!;y=tmp!
+tm(pp)! : rTm x=tmp!;y=tmp!
+
+## Proof
+thRecStep! : rSubst' x=tmI!;y=tmI!;z=tmp!
+thRecStep2! : rIdL d=tm(Ip)!;x=tmp!
+thRecStep3! : rIdR d=tmp!;x=tmp!
+thRecStep4! : rHs a=tm(((SI)I)p)!;b=tm((Ip)(Ip))!;c=tm((Ip)p)! thRecStep! thRecStep2!
+thRecStep5! : rHs a=tm(((SI)I)p)!;b=tm((Ip)p)!;c=tm(pp)! thRecStep4! thRecStep3!
+# Replace vars to be able to use lifted theorem
+thRec : thRecStep5! p=tma!
