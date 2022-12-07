@@ -1,4 +1,4 @@
-# SKI formal system, as per https://en.wikipedia.org/wiki/SKI_combinator_calculus
+# SKI formal system (meta-level), as per https://en.wikipedia.org/wiki/SKI_combinator_calculus
 
 ## SKI base terms
 rTmS : S
@@ -14,11 +14,16 @@ tmE! : rTmE
 rTm : (x y)
 
 ## SKI derivation rules
+# I combinator
 rId : ⊢(d (I x)) -> ⊢(d x)
+rId' : ⊢(I x) -> ⊢x # Handling EPS (empty) case
+# K combinator, corresponds to Hilbert's r1
 rConst : ⊢(d ((K x) y)) -> ⊢(d x)
+rConst' : ⊢((K x) y) -> ⊢x # EPS
+# S combinator, corresponds to Hilbert's r2
 rSubst : ⊢(d (((S x) y) z)) -> ⊢(d ((x z) (y z)))
+rSubst' : ⊢(((S x) y) z) => ⊢((x z) (y z)) # EPS
 
-#################################
 # Initial theorem for the example
 rEgTerm : ⊢(EPS (I (((S K) S) K)))
 thEgTerm : rEgTerm
