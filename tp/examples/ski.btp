@@ -6,29 +6,32 @@
 rTmS : S
 rTmK : K
 rTmI : I
+rTm( : (
+rTm) : )
+rTmE : E
 tmS! : rTmS
 tmK! : rTmK
 tmI! : rTmI
+tm(! : rTm(
+tm)! : rTm)
+tmE! : rTmE
 
 ## SKI term construction rules
-rTm : (x y)
+rWd : xy   # Words over S K I ( )
+rTm : (xy) # Terms
 
 ## SKI derivation rules
+### Epsilon (empty) value
+rEpsElimL : ⊢Ex => ⊢x
+rEpsElimR : ⊢xE => ⊢x
+rEpsIntroL : ⊢x => ⊢Ex
+rEpsIntroR : ⊢x => ⊢xE
 ### I combinator
-rIdL : ⊢(d (I x)) => ⊢(d x)
-rIdR : ⊢((I x) d) => ⊢(x d)
-rIdLR : ⊢(d (I x) b) => ⊢(d x b)
-rId' : ⊢(I x) => ⊢x
+rId : ⊢d(Ix)b => ⊢dxb # d, b words x term
 ### K combinator, corresponds to Hilbert's r1
-rConstL : ⊢(d ((K x) y)) => ⊢(d x)
-rConstR : ⊢(((K x) y) d) => ⊢(x d)
-rConstLR : ⊢(d ((K x) y) b) => ⊢(d x b)
-rConst' : ⊢((K x) y) => ⊢x
+rConst : ⊢d((Kx)y)b => ⊢dxb # d, b words x, y terms
 ### S combinator, corresponds to Hilbert's r2
-rSubstL : ⊢(d (((S x) y) z)) => ⊢(d ((x z) (y z)))
-rSubstR : ⊢((((S x) y) z)) => ⊢(((x z) (y z)) d)
-rSubstLR : ⊢(d (((S x) y) z) b) => ⊢(d ((x z) (y z)) b)
-rSubst' : ⊢(((S x) y) z) => ⊢((x z) (y z))
+rSubst : ⊢d(((Sx)y)z)b => ⊢d((xz)(yz))b # d, b words x, y, z terms
 
 ## Modus ponens
 rMp : ⊢p -> ⊢(p => q) -> ⊢q
@@ -60,17 +63,36 @@ tm(I(((SK)S)K))! : rTm x=tmI!;y=tm(((SK)S)K)!
 tm(I(I(((SK)S)K)))! : rTm x=tmI!;y=tm(I(((SK)S)K))!
 tm(KK)! : rTm x=tmK!;y=tmK!
 tm((KK)(SK))! : rTm x=tm(KK)!;y=tm(SK)!
+tmE(I(I(((SK)S)K)))! : rWd x=tmE!;y=tm(I(I(((SK)S)K)))!
+tmE(I(I(((SK)S)K)))E! : rWd x=tmE(I(I(((SK)S)K)))!;y=tmE!
+tmE(I(((SK)S)K))! : rWd x=tmE!;y=tm(I(((SK)S)K))!
+tmE(I(((SK)S)K))E! : rWd x=tmE(I(((SK)S)K))!;y=tmE!
+tmE(((SK)S)K)! : rWd x=tmE!;y=tm(((SK)S)K)!
+tmE(((SK)S)K)E! : rWd x=tmE(((SK)S)K)!;y=tmE!
+tmE((KK)(SK))! : rWd x=tmE!;y=tm((KK)(SK))!
+tmE((KK)(SK))E! : rWd x=tmE((KK)(SK))!;y=tmE!
+tmKE! : rWd x=tmK!;y=tmE!
+tmEK! : rWd x=tmE!;y=tmK!
+tmEKE! : rWd x=tmEK!;y=tmE!
 
 ## Lemmas
-th=>EgTerm! : rIdL d=tmI!;x=tm(((SK)S)K)!
-th=>(((SK)S)K)! : rId' x=tm(((SK)S)K)!
-th=>KK(SK)! : rSubst' x=tmK!;y=tmS!;z=tmK!
-th=>K! : rConst' x=tmK!;y=tm(SK)!
+th=>EgTerm! : rId d=tmE!;x=tm(I(((SK)S)K))!;b=tmE!
+th=>(((SK)S)K)! : rId d=tmE!;x=tm(((SK)S)K)!;b=tmE!
+th=>KK(SK)! : rSubst d=tmE!;x=tmK!;y=tmS!;z=tmK!;b=tmE!
+th=>K! : rConst d=tmE!;x=tmK!;y=tm(SK)!;b=tmE!
 
 ## Proof
-thK'! : rHs a=tm(I(I(((SK)S)K)))!;b=tm(I(((SK)S)K))!;c=tm(((SK)S)K)! th=>EgTerm! th=>(((SK)S)K)!
-thK''! : rHs a=tm(I(I(((SK)S)K)))!;b=tm(((SK)S)K)!;c=tm((KK)(SK))! thK'! th=>KK(SK)!
-thK : rHs a=tm(I(I(((SK)S)K)))!;b=tm((KK)(SK))!;c=tmK! thK''! th=>K!
+thKstep1! : rHs a=tmE(I(I(((SK)S)K)))E!;b=tmE(I(((SK)S)K))E!;c=tmE(((SK)S)K)E! th=>EgTerm! th=>(((SK)S)K)!
+thKstep2! : rHs a=tmE(I(I(((SK)S)K)))E!;b=tmE(((SK)S)K)E!;c=tmE((KK)(SK))E! thKstep1! th=>KK(SK)!
+thKstep3! : rHs a=tmE(I(I(((SK)S)K)))E!;b=tmE((KK)(SK))E!;c=tmEKE! thKstep2! th=>K!
+thKstep4! : rEpsElimL x=tmKE!
+thKstep5! : rHs a=tmE(I(I(((SK)S)K)))E!;b=tmEKE!;c=tmKE! thKstep3! thKstep4!
+thKstep6! : rEpsElimR x=tmK!
+thKstep7! : rHs a=tmE(I(I(((SK)S)K)))E!;b=tmKE!;c=tmK! thKstep5! thKstep6!
+thKstep8! : rEpsIntroL x=tm(I(I(((SK)S)K)))!
+thKstep9! : rEpsIntroR x=tmE(I(I(((SK)S)K)))!
+thKstep10! : rHs a=tmE(I(I(((SK)S)K)))!;b=tmE(I(I(((SK)S)K)))E!;c=tmK! thKstep9! thKstep7!
+thK : rHs a=tm(I(I(((SK)S)K)))!;b=tmE(I(I(((SK)S)K)))!;c=tmK! thKstep8! thKstep10!
 
 # 2. Recursion: Proof that ⊢(((S I) I) a) => ⊢(a a)
 ## Terms needed for the proof
@@ -81,12 +103,32 @@ tm(((SI)I)p)! : rTm x=tm((SI)I)!;y=tmp!
 tm((Ip)(Ip))! : rTm x=tm(Ip)!;y=tm(Ip)!
 tm((Ip)p)! : rTm x=tm(Ip)!;y=tmp!
 tm(pp)! : rTm x=tmp!;y=tmp!
+tm((Ip)! : rWd x=tm(!;y=tm(Ip)!
+tmE((Ip)! : rWd x=tmE!;y=tm((Ip)!
+tm)E! : rWd x=tm)!;y=tmE!
+tmE(! : rWd x=tmE!;y=tm(!
+tmp)E! : rWd x=tmp!;y=tm)E!
+tmE(((SI)I)p)! : rWd x=tmE!;y=tm(((SI)I)p)!
+tmE(((SI)I)p)E! : rWd x=tmE(((SI)I)p)!;y=tmE!
+tmE((Ip)(Ip))! : rWd x=tmE!;y=tm((Ip)(Ip))!
+tmE((Ip)(Ip))E! : rWd x=tmE((Ip)(Ip))!;y=tmE!
+tmE((Ip)p)! : rWd x=tmE!;y=tm((Ip)p)!
+tmE((Ip)p)E! : rWd x=tmE((Ip)p)!;y=tmE!
+tmE(pp)! : rWd x=tmE!;y=tm(pp)!
+tm(pp)E! : rWd x=tm(pp)!;y=tmE!
+tmE(pp)E! : rWd x=tmE(pp)!;y=tmE!
 
 ## Proof
-thRecStep! : rSubst' x=tmI!;y=tmI!;z=tmp!
-thRecStep2! : rIdL d=tm(Ip)!;x=tmp!
-thRecStep3! : rIdR d=tmp!;x=tmp!
-thRecStep4! : rHs a=tm(((SI)I)p)!;b=tm((Ip)(Ip))!;c=tm((Ip)p)! thRecStep! thRecStep2!
-thRecStep5! : rHs a=tm(((SI)I)p)!;b=tm((Ip)p)!;c=tm(pp)! thRecStep4! thRecStep3!
-# Replace vars to be able to use lifted theorem
-thRec : thRecStep5! p=tma!
+thRecstep1! : rSubst d=tmE!;x=tmI!;y=tmI!;z=tmp!;b=tmE!
+thRecstep2! : rId d=tmE((Ip)!;x=tmp!;b=tm)E!
+thRecstep3! : rId d=tmE(!;x=tmp!;b=tmp)E!
+thRecstep4! : rHs a=tmE(((SI)I)p)E!;b=tmE((Ip)(Ip))E!;c=tmE((Ip)p)E! thRecstep1! thRecstep2!
+thRecstep5! : rHs a=tmE(((SI)I)p)E!;b=tmE((Ip)p)E!;c=tmE(pp)E! thRecstep4! thRecstep3!
+thRecstep6! : rEpsElimL x=tm(pp)E!
+thRecstep7! : rEpsElimR x=tm(pp)!
+thRecstep8! : rHs a=tmE(((SI)I)p)E!;b=tmE(pp)E!;c=tm(pp)E! thRecstep5! thRecstep6!
+thRecstep9! : rHs a=tmE(((SI)I)p)E!;b=tm(pp)E!;c=tm(pp)! thRecstep8! thRecstep7!
+thRecstep10! : rEpsIntroL x=tm(((SI)I)p)!
+thRecstep11! : rEpsIntroR x=tmE(((SI)I)p)!
+thRecstep12! : rHs a=tmE(((SI)I)p)!;b=tmE(((SI)I)p)E!;c=tm(pp)! thRecstep11! thRecstep9!
+thRec : rHs a=tm(((SI)I)p)!;b=tmE(((SI)I)p)!;c=tm(pp)!;p=tma! thRecstep10! thRecstep12!
