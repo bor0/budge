@@ -6,11 +6,9 @@
 rTmS : S
 rTmK : K
 rTmI : I
-rTmE : EPS
 tmS! : rTmS
 tmK! : rTmK
 tmI! : rTmI
-tmE! : rTmE
 
 ## SKI term construction rules
 rTm : (x y)
@@ -20,17 +18,17 @@ rTm : (x y)
 rIdL : ⊢(d (I x)) => ⊢(d x)
 rIdR : ⊢((I x) d) => ⊢(x d)
 rIdLR : ⊢(d (I x) b) => ⊢(d x b)
-rId' : ⊢(I x) => ⊢x # Handling EPS (empty) case
+rId' : ⊢(I x) => ⊢x
 ### K combinator, corresponds to Hilbert's r1
 rConstL : ⊢(d ((K x) y)) => ⊢(d x)
 rConstR : ⊢(((K x) y) d) => ⊢(x d)
 rConstLR : ⊢(d ((K x) y) b) => ⊢(d x b)
-rConst' : ⊢((K x) y) => ⊢x # EPS
+rConst' : ⊢((K x) y) => ⊢x
 ### S combinator, corresponds to Hilbert's r2
 rSubstL : ⊢(d (((S x) y) z)) => ⊢(d ((x z) (y z)))
 rSubstR : ⊢((((S x) y) z)) => ⊢(((x z) (y z)) d)
 rSubstLR : ⊢(d (((S x) y) z) b) => ⊢(d ((x z) (y z)) b)
-rSubst' : ⊢(((S x) y) z) => ⊢((x z) (y z)) # EPS
+rSubst' : ⊢(((S x) y) z) => ⊢((x z) (y z))
 
 ## Modus ponens
 rMp : ⊢p -> ⊢(p => q) -> ⊢q
@@ -50,6 +48,8 @@ rp : p
 rq : q
 rr : r
 tmp! : rp
+tmq! : rq
+tmr! : rr
 
 # 1. Proof that ⊢(I (I (((S K) S) K))) => ⊢K
 ## Terms needed for the proof
@@ -61,7 +61,7 @@ tm(I(I(((SK)S)K)))! : rTm x=tmI!;y=tm(I(((SK)S)K))!
 tm(KK)! : rTm x=tmK!;y=tmK!
 tm((KK)(SK))! : rTm x=tm(KK)!;y=tm(SK)!
 
-## Theorems (lemmas)
+## Lemmas
 th=>EgTerm! : rIdL d=tmI!;x=tm(((SK)S)K)!
 th=>(((SK)S)K)! : rId' x=tm(((SK)S)K)!
 th=>KK(SK)! : rSubst' x=tmK!;y=tmS!;z=tmK!
