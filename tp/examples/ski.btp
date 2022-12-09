@@ -44,15 +44,21 @@ rHs : ⊢a => ⊢b -> ⊢b => ⊢c -> ⊢a => ⊢c
 ra : a
 rb : b
 rc : c
-tma! : ra
-tmb! : rb
-tmc! : rc
 rp : p
 rq : q
 rr : r
+rx : x
+ry : y
+rz : z
+tma! : ra
+tmb! : rb
+tmc! : rc
 tmp! : rp
 tmq! : rq
 tmr! : rr
+tmx! : rx
+tmy! : ry
+tmz! : rz
 
 # 1. Proof that ⊢(I (I (((S K) S) K))) => ⊢K
 ## Terms needed for the proof
@@ -132,3 +138,32 @@ thRecstep10! : rEpsIntroL x=tm(((SI)I)p)!
 thRecstep11! : rEpsIntroR x=tmE(((SI)I)p)!
 thRecstep12! : rHs a=tmE(((SI)I)p)!;b=tmE(((SI)I)p)E!;c=tm(pp)! thRecstep11! thRecstep9!
 thRec : rHs a=tm(((SI)I)p)!;b=tmE(((SI)I)p)!;c=tm(pp)!;p=tma! thRecstep10! thRecstep12!
+
+# 3. Proof that SK = I
+## Terms needed for the proof
+tm((SK)p)! : rTm x=tm(SK)!;y=tmp!
+tm(((SK)p)q)! : rTm x=tm((SK)p)!;y=tmq!
+tm(((SK)y)z)! : tm(((SK)p)q)! x=tm(((SK)p)q)!;p=tmy!;q=tmz!
+tm(((SK)y)z)E! : rWd x=tm(((SK)p)q)!;y=tmE!;p=tmy!;q=tmz!
+tmE(((SK)y)z)E! : rWd x=tmE!;y=tm(((SK)y)z)E!
+tm(yz)! : rTm y=tmz!;x=tmy!
+tm(pz)! : rTm x=tmp!;y=tmz!
+tm(Kz)! : rTm x=tmK!;y=tmz!
+tm((Kz)(yz))! : rTm x=tm(Kz)!;y=tm(pz)!
+tm((Kz)(pz))E! : rWd x=tm((Kz)(yz))!;y=tmE!
+tmE((Kz)(yz))E! : rWd x=tmE!;y=tm((Kz)(pz))E!;p=tmy!
+tmzE! : rWd x=tmz!;y=tmE!
+tmEzE! : rWd x=tmE!;y=tmzE!
+
+## Proof
+thIdStep1! : rSubst d=tmE!;x=tmK!;b=tmE!
+thIdStep2! : rConst d=tmE!;x=tmz!;y=tm(yz)!;b=tmE!
+thIdStep3! : rEpsIntroL x=tm(((SK)y)z)E!
+thIdStep4! : rHs a=tmE(((SK)y)z)E!;b=tmE((Kz)(yz))E!;c=tmEzE! thIdStep1! thIdStep2!
+thIdStep5! : rHs a=tm(((SK)y)z)E!;b=tmE(((SK)y)z)E!;c=tmEzE! thIdStep3! thIdStep4!
+thIdStep6! : rEpsIntroR x=tm(((SK)y)z)!
+thIdStep7! : rHs a=tm(((SK)y)z)!;b=tm(((SK)y)z)E!;c=tmEzE! thIdStep6! thIdStep5!
+thIdStep8! : rEpsElimL x=tmzE!
+thIdStep9! : rHs a=tm(((SK)y)z)!;b=tmEzE!;c=tmzE! thIdStep7! thIdStep8!
+thIdStep10! : rEpsElimR x=tmz!
+thId : rHs a=tm(((SK)y)z)!;b=tmzE!;c=tmz! thIdStep9! thIdStep10!
