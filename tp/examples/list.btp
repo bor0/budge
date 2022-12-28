@@ -4,11 +4,11 @@ rTmZ : 0
 tmZ! : rTmZ
 
 # Successor
-rTmS : S(x) # term
+rTmS : Sx # term
 
 # Inequality
-rLtZ : LT(0, S(x))
-rLtS : LT(x, y) -> LT(S(x), S(y))
+rLtZ : LT(0, Sx)
+rLtS : LT(x, y) -> LT(Sx, Sy)
 
 ## Bools
 rTmT : TRUE
@@ -41,7 +41,7 @@ rMemberNeqR : LT(x, a) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
 
 # Summing lists
 rSumInit : SUM(0, z)
-rSumRec : SUM(x, (S(y) z)) -> SUM(S(x), (y z))
+rSumRec : SUM(x, (Sy z)) -> SUM(Sx, (y z))
 rSumRecSkip : SUM(x, (0 z)) -> SUM(x, z)
 rSumNil : SUM(x, NIL) -> x
 
@@ -51,6 +51,19 @@ rMaxRecL : LT(x, z) -> MAX((x y), z) -> MAX(y, z)
 rMaxRecR : LT(z, x) -> MAX((x y), z) -> MAX(y, x)
 rMaxSame : MAX((x y), x) -> MAX(y, x)
 rMaxNil : MAX(NIL, y) -> y
+
+# Substitution (all)
+# a[x/y] => b <=> SUBST(x, y, a, b)
+rSubstNil : NIL[x/y] => NIL
+rSubstEq : a[x/y] => b -> (x a)[x/y] => (y b)
+rSubstNeqL : LT(x, z) -> a[x/y] => b -> (z a)[x/y] => (z b)
+rSubstNeqR : LT(z, x) -> a[x/y] => b -> (z a)[x/y] => (z b)
+
+# Substitution (some)
+# a{x/y} => b <=> SUBST'(x, y, a, b)
+rSubst'Nil : NIL{x/y} => NIL
+rSubst'Eq  : a{x/y} => b -> (x a){x/y} => (y b)
+rSubst'Neq : a{x/y} => b -> (z a){x/y} => (z b)
 
 ## Examples
 
@@ -72,6 +85,7 @@ thL1! : rMkList x=tmOne!;y=tmNil!
 thL2! : rMkList x=tmOne!;y=thL1!
 thL3! : rMkList x=tmTwo!;y=tmNil!
 thL4! : rMkList x=tmTwo!;y=thL1!
+thL5! : rMkList x=tmTwo!;y=thL3!
 
 tappS1 : rAppendNil y=thL1! # [] ++ [1] = [1]
 tappS2 : rAppendRec x=tmNil!;y=thL1!;z=thL1!;a=tmOne! tappS1 # [1] ++ [1] = [1, 1]
@@ -100,3 +114,13 @@ tmaxEg1 : rMaxInit x=thL4!
 tmaxEg2 : rMaxRecR z=tmZ!;x=tmTwo!;y=thL1! tLTEg3 tmaxEg1
 tmaxEg3 : rMaxRecL z=tmTwo!;x=tmOne!;y=tmNil! tLTEg2 tmaxEg2
 tmaxEg4 : rMaxNil y=tmTwo! tmaxEg3
+
+# Example 7: Substitute element in a list
+tSubEg1 : rSubstNil x=tmOne!;y=tmTwo!
+tSubEg2 : rSubstEq x=tmOne!;y=tmTwo!;a=tmNil!;b=tmNil! tSubEg1
+tSubEg3 : rSubstNeqL x=tmOne!;y=tmTwo!;z=tmTwo!;a=thL1!;b=thL3! tLTEg2 tSubEg2
+
+# Example 8: Substitute some elements in a list
+tSub'Eg1 : rSubst'Nil x=tmOne!;y=tmTwo!
+tSub'Eg2 : rSubst'Eq x=tmOne!;y=tmTwo!;a=tmNil!;b=tmNil! tSub'Eg1
+tSub'Eg3 : rSubst'Neq x=tmOne!;y=tmTwo!;z=tmOne!;a=thL1!;b=thL3! tSub'Eg2
