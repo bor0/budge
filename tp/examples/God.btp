@@ -1,0 +1,51 @@
+# A simpler variant of https://en.wikipedia.org/wiki/Ontological_argument#Anselm
+
+# Terms
+## Zero is a natural number (term)
+rTmZ : 0
+tmZ! : rTmZ
+
+## Successor
+rTmS : S(x) # term
+
+## And
+rTmAnd : AND(x, y)
+
+## The God term
+rTmGod : GOD
+tmGod! : rTmGod
+
+## Ideas (terms)
+rIdea : IDEA(x)
+tmIdea : rIdea ;
+
+## Stuff exist in reality (terms)
+rReality : REALITY(x)
+tmReality : rReality ;
+
+## God exists as an idea in the mind.
+tmGodExist : rIdea x=tmGod!
+
+## Inequality
+rGtT : ⊢GT(a, b) -> ⊢GT(b, c) -> ⊢GT(a, c)
+
+# Proof
+
+## God is a being than which none greater can be imagined
+rGodLargestIdea : ⊢GT(IDEA(GOD), IDEA(x))
+thmGodLargestIdea : rGodLargestIdea ;
+
+## An idea in the mind and in reality is greater than a being that exists only as an idea in the mind.
+rIdeaRealityGTIdea : ⊢GT(AND(IDEA(x), REALITY(x)), IDEA(x))
+thmIdeaRealityGTIdeaGod : rIdeaRealityGTIdea x=tmGod!
+
+## Show some example ideas encoded as naturals
+tm1! : rTmS x=tmZ!
+tm2! : rTmS x=tm1!
+tmIdeaEg1 : rIdea x=tm1!
+tmIdeaEg2 : rIdea x=tm2!
+
+tmGodReality! : rReality x=tmGod!
+tmAndIdeaGodRealityGod! : rTmAnd x=tmGodExist;y=tmGodReality!
+
+thmGodAsIdeaAndRealityLargerThanAllIdeas : rGtT a=tmAndIdeaGodRealityGod!;b=tmGodExist;c=tmIdea thmIdeaRealityGTIdeaGod thmGodLargestIdea
