@@ -27,14 +27,23 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 
 ## Example
 
-In the [MU puzzle](./examples/miu.btp) example we provide a simple usage of a small formal system.
+In the `examples` folder you can find the following proofs:
 
-We implement number addition and multiplication with the [PQ](./examples/pq.btp) and [TQ](examples/tq.btp) system respectively. Prime numbers with the [DND](examples/dnd.btp) system. See [Peano's axioms](./examples/peano.btp) for a more detailed example on numbers.
-
-See [Boolean](./examples/boolean.btp), [CL](./examples/cl.btp), [Gentzen](./examples/gentzen.btp), [SKI calculus](./examples/ski.btp) and [Hilbert's system](./examples/hilbert.btp) for logical systems.
-
-A simple finite-state machine is in the [Automaton](./examples/automaton.btp) example.
-
-There is an implementation of [lists](examples/list.btp), as well as a system for [coordinates](./examples/coord.btp) and a small [game](./examples/coordgame.btp). Based on lists, there's a simple [Run-Length Encoder decompressor](./examples/rle.btp).
-
-There's also an implementation of a [two-register Budge system](./examples/budge-pl.btp), based on my [Budge programming language](https://github.com/bor0/budge).
+- [God](./examples/God.btp) - Simpler variant of Anselm's argument
+- [Automaton](./examples/automaton.btp) - A finite-state machine
+- [Boolean](./examples/boolean.btp) - Boolean logic
+- [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
+- [CL](./examples/cl.btp) - Combinatory logic
+- [Coord](./examples/coord.btp) - Coordinates implementation
+- [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation
+- [DND](./examples/dnd.btp) - Prime numbers (divisibility)
+- [Gentzen](./examples/gentzen.btp) - Gentzen system
+- [Hanoi](./examples/hanoi.btp) - An implementation of the rules for Hanoi's tower
+- [Hilbert's system](./examples/hilbert.btp) - Hilbert's logical system
+- [List](examples/list.btp) - List implementation and some example functions on them
+- [MU puzzle](./examples/miu.btp) - A simple usage of a small formal system
+- [Peano's axioms](./examples/peano.btp) - A more detailed example on numbers
+- [PQ](./examples/pq.btp) - Number addition
+- [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
+- [SKI calculus](./examples/ski.btp) - SKI calculus
+- [TQ](./examples/tq.btp) - Number multiplication

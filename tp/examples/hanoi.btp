@@ -1,0 +1,85 @@
+# Rules
+
+## Rules for creating a list (stack) and numbers
+rMkList : (x y)
+rTmNil : NIL
+rTm0 : 0
+rTmS : Sx
+
+## Inequality
+rLtZ : LT(0, Sx)
+rLtS : LT(x, y) -> LT(Sx, Sy)
+
+## Hanoi specific
+
+### Initial configuration
+rHanoiInit : x y z
+
+# The following rules can be made more compact if by either changing LT(a, b) to LT(a, b) | a = NIL or by adding a LT(NIL, Sx). But the developer experience is much better this way as we don't have to construct terms for the disjunction approach, or construct additional theorems for the LT(NIL, Sx) case.
+
+#### First and second pillar
+rHanoiAB : (a x) (b y) z -> LT(a, b) -> x (a (b y)) z
+rHanoiABNil : (a x) NIL z -> x (a NIL) z
+rHanoiBA : (a x) (b y) z -> LT(b, a) -> (b (a x)) y z
+rHanoiBANil : NIL (a y) z -> (a NIL) y z
+
+#### Second and third pillar
+rHanoiBC : x (a y) (b z) -> LT(a, b) -> x y (a (b z))
+rHanoiBCNil : x (a y) NIL -> x y (a NIL)
+rHanoiCB : x (a y) (b z) -> LT(b, a) -> x (b (a y)) z
+rHanoiCBNil : x NIL (a z) -> x (a NIL) z
+
+#### First and third pillar
+rHanoiAC : (a x) y (b z) -> LT(a, b) -> x y (a (b z))
+rHanoiACNil : (a x) y NIL -> x y (a NIL)
+rHanoiCA : (a x) y (b z) -> LT(b, a) -> (b (a x)) y z
+rHanoiCANil : NIL y (a z) -> (a NIL) y z
+
+# Example of a game
+
+## Terms (numbers) we need for the game
+t0! : rTm0
+t1! : rTmS x=t0!
+t2! : rTmS x=t1!
+t3! : rTmS x=t2!
+t4! : rTmS x=t3!
+tNil! : rTmNil
+
+## Some lists needed for the game
+tList4! : rMkList x=t4!;y=tNil!
+tList34! : rMkList x=t3!;y=tList4!
+tList234! : rMkList x=t2!;y=tList34!
+tList1234! : rMkList x=t1!;y=tList234!
+tList1! : rMkList x=t1!;y=tNil!
+tList2! : rMkList x=t2!;y=tNil!
+tList12! : rMkList x=t1!;y=tList2!
+tList3! : rMkList x=t3!;y=tNil!
+tList14! : rMkList x=t1!;y=tList4!
+tList23! : rMkList x=t2!;y=tList3!
+tList123! : rMkList x=t1!;y=tList23!
+
+## Inequalities needed for the game
+tLT01! : rLtZ x=t0!
+tLT12! : rLtS x=t0!;y=t1! tLT01!
+tLT03! : rLtZ x=t2!
+tLT14! : rLtS x=t0!;y=t3! tLT03!
+tLT23! : rLtS x=t1!;y=t2! tLT12!
+tLT34! : rLtS x=t2!;y=t3! tLT23!
+
+## Proof for the game of Hanoi with 4 disks
+t1 : rHanoiInit x=tList1234!;y=tNil!;z=tNil!
+t2 : rHanoiABNil a=t1!;x=tList234!;z=tNil! t1
+t3 : rHanoiACNil a=t2!;x=tList34!;y=tList1! t2
+t4 : rHanoiBC x=tList34!;a=t1!;y=tNil!;b=t2!;z=tNil! t3 tLT12!
+t5 : rHanoiABNil a=t3!;x=tList4!;z=tList12! t4
+t6 : rHanoiCA a=t4!;x=tNil!;y=tList3!;b=t1!;z=tList2! t5 tLT14!
+t7 : rHanoiCB x=tList14!;a=t3!;y=tNil!;b=t2!;z=tNil! t6 tLT23!
+t8 : rHanoiAB a=t1!;x=tList4!;b=t2!;y=tList3!;z=tNil! t7 tLT12!
+t9 : rHanoiACNil a=t4!;x=tNil!;y=tList123! t8
+t10 : rHanoiBC x=tNil!;a=t1!;y=tList23!;b=t4!;z=tNil! t9 tLT14!
+t11 : rHanoiBANil a=t2!;y=tList3!;z=tList14! t10
+t12 : rHanoiCA a=t2!;x=tNil!;y=tList3!;b=t1!;z=tList4! t11 tLT12!
+t13 : rHanoiBC x=tList12!;a=t3!;y=tNil!;b=t4!;z=tNil! t12 tLT34!
+t14 : rHanoiABNil a=t1!;x=tList2!;z=tList34! t13
+t15 : rHanoiAC a=t2!;x=tNil!;y=tList1!;b=t3!;z=tList4! t14 tLT23!
+t16 : rHanoiBC x=tNil!;a=t1!;y=tNil!;b=t2!;z=tList34! t15 tLT12!
