@@ -1,7 +1,7 @@
 ### Rules
 
-# Rules for creating a list and numbers
-rMkList : (x y)
+# Rules for creating a pair (list) and numbers
+rMkPair : (x y)
 rTmNil : NIL
 rTm0 : 0
 rTmS : Sx
@@ -38,22 +38,22 @@ t2! : rTmS x=t1!
 tNil! : rTmNil
 
 # Represent the pairs 1,1 and 2,2 in a list
-tPair1! : rMkList x=t2!;y=t2!
-tPair2! : rMkList x=t1!;y=t1!
+tPair1! : rMkPair x=t2!;y=t2!
+tPair2! : rMkPair x=t1!;y=t1!
 
-tListPair1! : rMkList x=tPair1!;y=tNil!
-tListPair2! : rMkList x=tPair2!;y=tListPair1!
-tListPair3! : rMkList x=tPair2!;y=tNil!
-tListPair4! : rMkList x=tPair1!;y=tListPair3!
+tListPair1! : rMkPair x=tPair1!;y=tNil!
+tListPair2! : rMkPair x=tPair2!;y=tListPair1!
+tListPair3! : rMkPair x=tPair2!;y=tNil!
+tListPair4! : rMkPair x=tPair1!;y=tListPair3!
 
 # Some lists needed for the proof
-tList1! : rMkList x=t1!;y=tNil!
-tList2! : rMkList x=t2!;y=tNil!
-tList21! : rMkList x=t2!;y=tList1!
+tList1! : rMkPair x=t1!;y=tNil!
+tList2! : rMkPair x=t2!;y=tNil!
+tList21! : rMkPair x=t2!;y=tList1!
 
-tList22! : rMkList x=t2!;y=tList2!
-tList122! : rMkList x=t1!;y=tList22!
-tList221! : rMkList x=t2!;y=tList21!
+tList22! : rMkPair x=t2!;y=tList2!
+tList122! : rMkPair x=t1!;y=tList22!
+tList221! : rMkPair x=t2!;y=tList21!
 
 # Lemmas for unreversing a list
 tLemma1! : rReverseInit x=tList221!

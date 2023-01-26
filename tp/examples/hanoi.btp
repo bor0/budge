@@ -1,7 +1,7 @@
 # Rules
 
-## Rules for creating a list (stack) and numbers
-rMkList : (x y)
+## Rules for creating a pair (stack) and numbers
+rMkPair : (x y)
 rTmNil : NIL
 rTm0 : 0
 rTmS : Sx
@@ -59,17 +59,17 @@ tLT23! : rLtS x=t1!;y=t2! tLT12!
 tLT34! : rLtS x=t2!;y=t3! tLT23!
 
 ## Some lists needed for the game
-tList4! : rMkList x=t4!;y=tNil!
-tList34! : rMkList x=t3!;y=tList4!
-tList234! : rMkList x=t2!;y=tList34!
-tList1234! : rMkList x=t1!;y=tList234!
-tList1! : rMkList x=t1!;y=tNil!
-tList2! : rMkList x=t2!;y=tNil!
-tList12! : rMkList x=t1!;y=tList2!
-tList3! : rMkList x=t3!;y=tNil!
-tList14! : rMkList x=t1!;y=tList4!
-tList23! : rMkList x=t2!;y=tList3!
-tList123! : rMkList x=t1!;y=tList23!
+tList4! : rMkPair x=t4!;y=tNil!
+tList34! : rMkPair x=t3!;y=tList4!
+tList234! : rMkPair x=t2!;y=tList34!
+tList1234! : rMkPair x=t1!;y=tList234!
+tList1! : rMkPair x=t1!;y=tNil!
+tList2! : rMkPair x=t2!;y=tNil!
+tList12! : rMkPair x=t1!;y=tList2!
+tList3! : rMkPair x=t3!;y=tNil!
+tList14! : rMkPair x=t1!;y=tList4!
+tList23! : rMkPair x=t2!;y=tList3!
+tList123! : rMkPair x=t1!;y=tList23!
 
 # Initial configuration is sorted
 tSortNil! : rSortNil

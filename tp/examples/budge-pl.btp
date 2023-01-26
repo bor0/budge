@@ -1,5 +1,5 @@
-# Rules for creating a list and numbers (succ, pred)
-rMkList : (x y)
+# Rules for creating a pair (list) and numbers (succ, pred)
+rMkPair : (x y)
 rTmNil : NIL
 rTm0 : 0
 rTmS : Sx
@@ -36,13 +36,13 @@ t3! : rTmS x=t2!
 tNil! : rTmNil
 
 # Represent the program ((2,-2,1)), with some extra terms needed for the proofs
-tEgList1! : rMkList x=t1!;y=tNil!
-tEgList2! : rMkList x=t-2!;y=tEgList1!
-tEgList3! : rMkList x=t2!;y=tEgList2!
-tEgList : rMkList x=tEgList3!;y=tNil!
-tEgList4! : rMkList x=t-2!;y=tNil!
-tEgList5! : rMkList x=t1!;y=tEgList
-tEgList6! : rMkList x=t-2!;y=tEgList5!
+tEgList1! : rMkPair x=t1!;y=tNil!
+tEgList2! : rMkPair x=t-2!;y=tEgList1!
+tEgList3! : rMkPair x=t2!;y=tEgList2!
+tEgList : rMkPair x=tEgList3!;y=tNil!
+tEgList4! : rMkPair x=t-2!;y=tNil!
+tEgList5! : rMkPair x=t1!;y=tEgList
+tEgList6! : rMkPair x=t-2!;y=tEgList5!
 
 tAp1! : rAppendNil y=tEgList
 tAp2! : rAppendRec x=tNil!;y=tEgList;z=tEgList;a=t1! tAp1!

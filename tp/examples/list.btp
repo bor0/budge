@@ -18,8 +18,8 @@ rTmF : FALSE
 tmF! : rTmF
 
 ## Lists
-# Constructing lists
-rMkList : (x y)
+# Constructing pairs (lists)
+rMkPair : (x y)
 
 # NIL (term)
 rTmNil : NIL
@@ -73,19 +73,19 @@ tmTwo! : rTmS x=tmOne!
 tmThree! : rTmS x=tmTwo!
 
 # Example 1: Car and cdr
-thLstep1! : rMkList x=tmThree!;y=tmNil!
-thLstep2! : rMkList x=tmTwo!;y=thLstep1!
-thL : rMkList x=tmOne!;y=thLstep2!
+thLstep1! : rMkPair x=tmThree!;y=tmNil!
+thLstep2! : rMkPair x=tmTwo!;y=thLstep1!
+thL : rMkPair x=tmOne!;y=thLstep2!
 
 thCarEg : rCar x=tmOne!;y=thLstep2! thL # head [1, 2, 3] = 1
 thCdrEg : rCdr x=tmOne!;y=thLstep2! thL # tail [1, 2, 3] = [2, 3]
 
 # Example 2: Appending lists
-thL1! : rMkList x=tmOne!;y=tmNil!
-thL2! : rMkList x=tmOne!;y=thL1!
-thL3! : rMkList x=tmTwo!;y=tmNil!
-thL4! : rMkList x=tmTwo!;y=thL1!
-thL5! : rMkList x=tmTwo!;y=thL3!
+thL1! : rMkPair x=tmOne!;y=tmNil!
+thL2! : rMkPair x=tmOne!;y=thL1!
+thL3! : rMkPair x=tmTwo!;y=tmNil!
+thL4! : rMkPair x=tmTwo!;y=thL1!
+thL5! : rMkPair x=tmTwo!;y=thL3!
 
 tappS1 : rAppendNil y=thL1! # [] ++ [1] = [1]
 tappS2 : rAppendRec x=tmNil!;y=thL1!;z=thL1!;a=tmOne! tappS1 # [1] ++ [1] = [1, 1]
