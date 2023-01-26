@@ -1,0 +1,32 @@
+## Numbers
+
+# Zero is a natural number (term)
+rTmZ : 0
+tmZ! : rTmZ
+
+# Zero is a natural number (proof)
+rThmZ : N(0)
+thmZ! : rThmZ
+
+# Successor (term)
+rTmS : Sx
+
+# Successor (proof)
+rThmS : N(x) -> N(Sx)
+
+## Lists
+# Constructing pairs (lists)
+rMkPair : (x y)
+
+# NIL (term)
+rTmNil : NIL
+tmNil! : rTmNil
+
+## Example
+
+# Compared e.g. to `list.btp`, here we can construct `SNIL` (term)
+termNil : rTmS x=tmNil!
+# But we cannot construct N(SNIL) (theorem), since `rThmS x=tmNil!` requires N(NIL) which is not derivable
+
+term1 : rTmS x=tmZ!
+theorem1 : rThmS x=tmZ! thmZ!
