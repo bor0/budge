@@ -10,12 +10,17 @@ rTmS : Sx
 rLtZ : LT(0, Sx)
 rLtS : LT(x, y) -> LT(Sx, Sy)
 
+## Sorted lists
+rSortNil : SORTED NIL
+rSortSingle : SORTED (a NIL)
+rSortRec : SORTED (b x) -> LT(a, b) -> SORTED (a (b x))
+
 ## Hanoi specific
 
 ### Initial configuration
-rHanoiInit : x y z
+rHanoiInit : SORTED x -> SORTED y -> SORTED z -> x y z
 
-# The following rules can be made more compact if by either changing LT(a, b) to LT(a, b) | a = NIL or by adding a LT(NIL, Sx). But the developer experience is much better this way as we don't have to construct terms for the disjunction approach, or construct additional theorems for the LT(NIL, Sx) case.
+# The following rules can be made more compact by either changing LT(a, b) to LT(a, b) | a = NIL or by adding LT(NIL, Sx). But the developer experience is much better this way as we don't have to construct terms for the disjunction approach, or construct additional theorems for the LT(NIL, Sx) case.
 
 #### First and second pillar
 rHanoiAB : (a x) (b y) z -> LT(a, b) -> x (a (b y)) z
@@ -45,6 +50,14 @@ t3! : rTmS x=t2!
 t4! : rTmS x=t3!
 tNil! : rTmNil
 
+## Inequalities needed for the game
+tLT01! : rLtZ x=t0!
+tLT12! : rLtS x=t0!;y=t1! tLT01!
+tLT03! : rLtZ x=t2!
+tLT14! : rLtS x=t0!;y=t3! tLT03!
+tLT23! : rLtS x=t1!;y=t2! tLT12!
+tLT34! : rLtS x=t2!;y=t3! tLT23!
+
 ## Some lists needed for the game
 tList4! : rMkList x=t4!;y=tNil!
 tList34! : rMkList x=t3!;y=tList4!
@@ -58,16 +71,15 @@ tList14! : rMkList x=t1!;y=tList4!
 tList23! : rMkList x=t2!;y=tList3!
 tList123! : rMkList x=t1!;y=tList23!
 
-## Inequalities needed for the game
-tLT01! : rLtZ x=t0!
-tLT12! : rLtS x=t0!;y=t1! tLT01!
-tLT03! : rLtZ x=t2!
-tLT14! : rLtS x=t0!;y=t3! tLT03!
-tLT23! : rLtS x=t1!;y=t2! tLT12!
-tLT34! : rLtS x=t2!;y=t3! tLT23!
+# Initial configuration is sorted
+tSortNil! : rSortNil
+tSort4! : rSortSingle a=t4!
+tSort34! : rSortRec b=t4!;x=tNil!;a=t3! tSort4! tLT34!
+tSort234! : rSortRec b=t3!;x=tList4!;a=t2! tSort34! tLT23!
+tSort1234! : rSortRec b=t2!;x=tList34!;a=t1! tSort234! tLT12!
 
 ## Proof for the game of Hanoi with 4 disks
-t1 : rHanoiInit x=tList1234!;y=tNil!;z=tNil!
+t1 : rHanoiInit x=tList1234!;y=tNil!;z=tNil! tSort1234! tSortNil! tSortNil!
 t2 : rHanoiABNil a=t1!;x=tList234!;z=tNil! t1
 t3 : rHanoiACNil a=t2!;x=tList34!;y=tList1! t2
 t4 : rHanoiBC x=tList34!;a=t1!;y=tNil!;b=t2!;z=tNil! t3 tLT12!
