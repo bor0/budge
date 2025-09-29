@@ -1,0 +1,40 @@
+# Growth starts with differentiation — noticing what is mine and what is not, what belongs to now and what belongs to then. It’s becoming aware of the boundaries between experiences, of what stands in figure and what stays in ground. When I sense the tension in my shoulders, the sound of the wind, or the thought in my mind, I’m not analyzing — I’m simply separating one thing from another to see it clearly.
+
+# Without this, everything blurs together. Once differentiated, awareness shapes a clear figure from its ground. Differentiation is how awareness breathes.
+
+rTmX : THOUGHT_X
+tmX! : rTmX
+
+rTmY : FEELING_Y
+tmY! : rTmY
+
+rTmZ : BEHAVIOR_Z
+tmZ! : rTmZ
+
+rTmAnd : x∧y
+
+ruleJoin : x -> y -> (x∧y)
+ruleElimL : (x∧y) -> y
+ruleElimR : (x∧y) -> x
+
+th1step1! : ruleJoin x=tmX!;y=tmY! tmX! tmY!
+th1_confusion : ruleJoin x=th1step1!;y=tmZ! th1step1! tmZ!
+
+# th1_confusion is too complex, fused, leading to confusion. Humans can't deal with it. We need to untangle, unfuse to unconfuse, to bring clarity.
+
+# The way this is done, in a cycle:
+# - Zoom in on a particular atom in th1
+# - Then zoom out
+# And then th1 finally makes sense
+
+# Zoom in
+th2_focus_behavior : ruleElimL x=th1step1!;y=tmZ! th1_confusion
+# Zoom in lvl 1
+th3_zoom_lvl1 : ruleElimR x=th1step1!;y=tmZ! th1_confusion
+# Zoom in lvl 1 right
+th4_zoom_lvl2 : ruleElimR x=tmX!;y=tmY! th3_zoom_lvl1
+# Zoom in lvl 2 left
+th5_zoom_lvl2 : ruleElimL x=tmX!;y=tmY! th3_zoom_lvl1
+
+# Now Zoom out, rejoin, once we had "contact" with the atoms
+th1_clear : ruleJoin x=th3_zoom_lvl1;y=tmZ! th3_zoom_lvl1 tmZ!
