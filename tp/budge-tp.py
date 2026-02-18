@@ -52,7 +52,7 @@ def parse_theorems(theorems):
         arguments = list(filter(lambda x: x, theorems[name].split(' ')))
 
         if len(arguments) < 1:
-            raise Exception(f"Invalid syntax for theorem '{name}")
+            raise Exception(f"Invalid syntax for theorem '{name}'")
 
         rule = arguments[0]
         replacements = arguments[1] if len(arguments) > 1 else None
@@ -69,28 +69,28 @@ def calculate_environment(code):
     env = {'rules': {}, 'theorems': {}}
     types = {'r': 'rules', 't': 'theorems'}
 
-    code = filter(lambda x: x, code.split('\n'))
-    code = filter(lambda x: x, map(
-        lambda line: line.split('#')[0], code))  # strip comments
-
     # Process every line in the code, checking for valid syntax and storing
     # the data for further parsing
-    for line in code:
+    for lineno, raw_line in enumerate(code.split('\n'), 1):
+        line = raw_line.split('#')[0].strip()  # strip comments and whitespace
+        if not line:
+            continue
+
         parsed_line = list(
             filter(lambda x: x, map(str.strip, line.split(':', 1))))
 
         if len(parsed_line) != 2:
-            raise Exception(f"Invalid syntax: '{line}'")
+            raise Exception(f"Line {lineno}: Invalid syntax: '{line}'")
 
         [name, expr] = parsed_line
 
         if name[0] not in types:
-            raise Exception(f"Invalid variable name: '{name}'")
+            raise Exception(f"Line {lineno}: Invalid variable name: '{name}'")
 
         tip = types[name[0]]
 
         if name in env[tip]:
-            raise Exception(f"Name redeclaration: '{name}'")
+            raise Exception(f"Line {lineno}: Name redeclaration: '{name}'")
 
         env[tip][name] = expr
 
@@ -102,8 +102,8 @@ def calculate_environment(code):
 
 def apply_rule_or_theorem(env, theorem, theorem_name):
     """Main method used to apply a rule or a theorem"""
-    replacements = theorem['replacements']
-    th_hypotheses = theorem['hypotheses']
+    replacements = dict(theorem['replacements'])
+    th_hypotheses = list(theorem['hypotheses'])
     rule = theorem['rule']
 
     if rule in env['rules']:
