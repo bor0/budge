@@ -69,7 +69,10 @@ tmXMulOne! : rTmM x=tmX!;y=tmOne!
 tmXAddXMulZero! : rTmA x=tmX!;y=tmXMulZero!
 tmXAddZero! : rTmA x=tmX!;y=tmZ!
 rtmS : S
-tmS! : rtmS # for the inductive predicate
+tmS! : rtmS  # for the inductive predicate
+rTmN : n
+tmN!  : rTmN
+tmSN! : rTmS x=tmN!  # S(n), for the schematic inductive step
 
 # Theorem 1: One plus one is two
 th1step1! : rAS x=tmOne!;y=tmZ!
@@ -90,8 +93,8 @@ th3 : rEvS x=tmZ! thEvZ!
 
 # Theorem 4: Example induction
 th4step1! : rS x=tmZ! thZ!
-th4step2! : rSO x=tmOne!
-th4       : rInd p=tmS!;n=tmZ! th4step1! th4step2!
+th4step2! : rSO x=tmSN!
+th4       : rInd p=tmS! th4step1! th4step2!
 
 # Theorem 5: Example function: f(1) = 2
 rF : ⊢EQ(F(x),ADD(x,S(0))) # f(x) = x+1
