@@ -52,3 +52,4 @@ In the `examples` folder you can find the following proofs:
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication
 - [Typed](./examples/typed.btp) - Shows the distinction between terms and theorems
+- [Whirlpool](./examples/whirlpool.btp) - The self-referential trap of searching for escape, and cognitive defusion

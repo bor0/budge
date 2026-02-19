@@ -1,0 +1,52 @@
+# The Whirlpool and the Observer
+
+## Terms
+
+rTmEscape    : ESCAPE_WHIRLPOOL
+tmEscape!    : rTmEscape
+
+rTmSearch    : SEARCH(x)
+rTmFused     : FUSED(x)
+rTmNoticing  : NOTICING(x)
+
+## Part 1 — The Paradox
+
+# Any mental search is already a whirlpool
+rSearchIsWhirlpool : SEARCH(x) -> WHIRLPOOL(SEARCH(x))
+
+pOpening : The programmer mind defaults to SEARCH — reaching for a system, a fix, an escape.
+
+# The programmer, stuck, reaches for a system to escape
+tmSearchForEscape!  : rTmSearch x=tmEscape!
+
+# That search is itself a whirlpool
+thParadox           : rSearchIsWhirlpool x=tmEscape! tmSearchForEscape!
+
+pDeepens : Noticing the trap, the mind searches for escape from that whirlpool too. It deepens.
+
+# Searching for escape from *that* whirlpool deepens it further
+tmSearchDeeper!     : rTmSearch x=thParadox
+thDeepened          : rSearchIsWhirlpool x=thParadox tmSearchDeeper!
+
+## Part 2 — Two Responses
+
+pFusion : Response A: fuse with it. Become the whirlpool. It grows.
+
+# Response A: Fusion — identifying with the whirlpool amplifies it
+rFusedAmplifies     : FUSED(x) -> AMPLIFY(x)
+
+tmFused!            : rTmFused x=thDeepened
+thAmplified         : rFusedAmplifies x=thDeepened tmFused!
+
+pNoticing : Response B: notice it. Step back. The observer is not the whirlpool.
+
+# Response B: Noticing — observing the whirlpool from outside defuses it
+rNoticingDefuses    : NOTICING(x) -> DEFUSE(x)
+rDefuseToPresent    : DEFUSE(x) -> PRESENT
+
+tmNoticing!         : rTmNoticing x=thParadox
+thDefused           : rNoticingDefuses x=thParadox tmNoticing!
+
+pResolution : The whirlpool does not vanish. It is simply no longer you.
+
+thPresent           : rDefuseToPresent x=thParadox thDefused
