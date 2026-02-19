@@ -81,17 +81,17 @@ thm2 : thm2step7! a=tmp!;b=tmq!;c=tmr!
 tm((a=>b)=>(a=>b))! : rTmImp p=tm(a=>b)!;q=tm(a=>b)!
 tm((a=>b)=>a)! : rTmImp p=tm(a=>b)!;q=tma!
 tm((a=>b)=>b)! : rTmImp p=tm(a=>b)!;q=tmb!
-tm(((a=>b)=>a)=>((a=>b)=>b)))! : rTmImp p=tm((a=>b)=>a)!;q=tm((a=>b)=>b)!
+tm(((a=>b)=>a)=>((a=>b)=>b))! : rTmImp p=tm((a=>b)=>a)!;q=tm((a=>b)=>b)!
 tm(a=>((a=>b)=>a))! : rTmImp p=tma!;q=tm((a=>b)=>a)!
 tm(a=>((a=>b)=>b))! : rTmImp p=tma!;q=tm((a=>b)=>b)!
 tm((a=>((a=>b)=>a))=>(a=>((a=>b)=>b)))! : rTmImp p=tm(a=>((a=>b)=>a))!;q=tm(a=>((a=>b)=>b))!
 ## Proof
 thm3step1! : thm1 p=tm(a=>b)!
 thm3step2! : r2 p=tm(a=>b)!;q=tma!;r=tmb!
-thm3step3! : rMp p=tm((a=>b)=>(a=>b))!;q=tm(((a=>b)=>a)=>((a=>b)=>b)))! thm3step1! thm3step2!
+thm3step3! : rMp p=tm((a=>b)=>(a=>b))!;q=tm(((a=>b)=>a)=>((a=>b)=>b))! thm3step1! thm3step2!
 thm3step4! : thm2 p=tma!;q=tm((a=>b)=>a)!;r=tm((a=>b)=>b)!
 thm3step5! : r1 p=tma!;q=tm(a=>b)!
-thm3step6! : rMp p=tm(((a=>b)=>a)=>((a=>b)=>b)))!;q=tm((a=>((a=>b)=>a))=>(a=>((a=>b)=>b)))! thm3step3! thm3step4!
+thm3step6! : rMp p=tm(((a=>b)=>a)=>((a=>b)=>b))!;q=tm((a=>((a=>b)=>a))=>(a=>((a=>b)=>b)))! thm3step3! thm3step4!
 # Replace vars to be able to use lifted theorem
 thm3step7! : rMp p=tm(a=>((a=>b)=>a))!;q=tm(a=>((a=>b)=>b))! thm3step5! thm3step6!
 thm3 : thm3step7! a=tmp!;b=tmq!
