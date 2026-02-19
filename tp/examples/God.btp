@@ -1,51 +1,50 @@
-# A simpler variant of https://en.wikipedia.org/wiki/Ontological_argument#Anselm
+# Anselm's Ontological Argument (Proslogion, Chapter II, ~1078 AD)
+#
+# God is defined as "that than which nothing greater can be conceived."
+#
+# Reductio: suppose God exists only in the understanding (in intellectu).
+# Then AND(IDEA(GOD), REALITY(GOD)) is conceivable and — by rRealGreater —
+# greater than IDEA(GOD). But God is greatest, so IDEA(GOD) > that too.
+# This gives GT(x, x): a contradiction. Therefore God exists in reality (in re).
 
-# Terms
-## Zero is a natural number (term)
-rTmZ : 0
-tmZ! : rTmZ
-
-## Successor
-rTmS : S(x) # term
-
-## And
-rTmAnd : AND(x, y)
-
-## The God term
+## Terms
 rTmGod : GOD
 tmGod! : rTmGod
 
-## Ideas (terms)
-rIdea : IDEA(x)
-tmIdea : rIdea ;
+## Predicates
+rIdea    : IDEA(x)    # x exists in the understanding (in intellectu)
+rReality : REALITY(x) # x exists in reality (in re)
+rTmAnd   : AND(x, y)
 
-## Stuff exist in reality (terms)
-rReality : REALITY(x)
-tmReality : rReality ;
-
-## God exists as an idea in the mind.
-tmGodExist : rIdea x=tmGod!
-
-## Inequality
+## Transitivity of "greater than"
 rGtT : ⊢GT(a, b) -> ⊢GT(b, c) -> ⊢GT(a, c)
+
+# Premises
+
+## (1) God is that than which nothing greater can be conceived
+rGodGreatest : ⊢GT(IDEA(GOD), x)
+
+## (2) A being existing in reality is greater than one existing only in mind
+rRealGreater : ⊢GT(AND(IDEA(x), REALITY(x)), IDEA(x))
+
+## (3) Reductio: if something turns out greater than itself, the assumption
+##     (God not in reality) was false — so God must exist in reality
+rReductio : ⊢GT(x, x) -> ⊢REALITY(GOD)
 
 # Proof
 
-## God is a being than which none greater can be imagined
-rGodLargestIdea : ⊢GT(IDEA(GOD), IDEA(x))
-thmGodLargestIdea : rGodLargestIdea ;
+tmGodIdea!        : rIdea x=tmGod!
+tmGodReality!     : rReality x=tmGod!
+tmGodAndReality!  : rTmAnd x=tmGodIdea!;y=tmGodReality!
 
-## An idea in the mind and in reality is greater than a being that exists only as an idea in the mind.
-rIdeaRealityGTIdea : ⊢GT(AND(IDEA(x), REALITY(x)), IDEA(x))
-thmIdeaRealityGTIdeaGod : rIdeaRealityGTIdea x=tmGod!
+## AND(IDEA(GOD), REALITY(GOD)) > IDEA(GOD)  — real existence adds greatness
+thmRealGreater!   : rRealGreater x=tmGod!
 
-## Show some example ideas encoded as naturals
-tm1! : rTmS x=tmZ!
-tm2! : rTmS x=tm1!
-tmIdeaEg1 : rIdea x=tm1!
-tmIdeaEg2 : rIdea x=tm2!
+## IDEA(GOD) > AND(IDEA(GOD), REALITY(GOD))  — God is the greatest conceivable
+thmGodGreatest!   : rGodGreatest x=tmGodAndReality!
 
-tmGodReality! : rReality x=tmGod!
-tmAndIdeaGodRealityGod! : rTmAnd x=tmGodExist;y=tmGodReality!
+## AND(IDEA(GOD), REALITY(GOD)) > AND(IDEA(GOD), REALITY(GOD))  — contradiction
+thmContradiction! : rGtT a=tmGodAndReality!;b=tmGodIdea!;c=tmGodAndReality! thmRealGreater! thmGodGreatest!
 
-thmGodAsIdeaAndRealityLargerThanAllIdeas : rGtT a=tmAndIdeaGodRealityGod!;b=tmGodExist;c=tmIdea thmIdeaRealityGTIdeaGod thmGodLargestIdea
+## God must exist in reality
+thmGodExistsInReality : rReductio x=tmGodAndReality! thmContradiction!
