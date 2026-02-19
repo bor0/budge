@@ -9,11 +9,19 @@ rEqS : ⊢EQ(x,y) -> ⊢EQ(y,x)
 rEqT : ⊢EQ(x,y) -> ⊢EQ(y,z) -> ⊢EQ(x,z)
 
 # Inequality
-rNeq : ⊢!EQ(x,ADD(S(x),y))
+rNeqS : ⊢!EQ(x,y) -> ⊢!EQ(y,x)
 rNeqT : ⊢!EQ(x,y) -> ⊢EQ(y,z) -> ⊢!EQ(x,z)
 
-# Zero is a natural number
-rZ : ⊢0
+# Axiom 6: zero is not the successor of any natural number
+rNeq : ⊢!EQ(S(x),0)
+
+# Axiom 7: injectivity of successor (equality and inequality directions)
+rIL    : ⊢EQ(x,y) -> ⊢EQ(S(x),S(y))
+rIR    : ⊢EQ(S(x),S(y)) -> ⊢EQ(x,y)
+rNeqIL : ⊢!EQ(x,y) -> ⊢!EQ(S(x),S(y))
+
+# Zero is a natural number (proof witness)
+rZ  : ⊢0
 thZ! : rZ
 
 # Zero is a natural number (term)
@@ -21,15 +29,8 @@ rTmZ : 0
 tmZ! : rTmZ
 
 # Successor
-rS : ⊢x -> ⊢S(x)
+rS   : ⊢x -> ⊢S(x)
 rTmS : S(x) # term
-# Successor (object-level)
-rSO : ⊢x=>S(x)
-
-# Inj left
-rIL : ⊢EQ(m,n) -> ⊢EQ(S(m),S(n))
-# Inj right
-rIR : ⊢EQ(S(m),S(n)) -> ⊢EQ(m,n)
 
 # Some variables at the object level
 rTmX : X
@@ -37,21 +38,21 @@ tmX! : rTmX
 
 # Equality respects function application (addition), i.e. m=n -> a+m=a+n.
 # TODO: This can probably be derived as a theorem from `rIL` and `rIR`
-rcongAdd : ⊢EQ(m,n) -> ⊢EQ(ADD(a,m),ADD(a,n))
+rCongAdd : ⊢EQ(x,y) -> ⊢EQ(ADD(z,x),ADD(z,y))
 
 # Induction
-rInd      : ⊢p(0) -> ⊢p(n)=>p(S(n)) -> ⊢∀X,p(X)
+rInd : ⊢p(0) -> ⊢p(n)=>p(S(n)) -> ⊢∀X,p(X)
 # --------------
 
 # Addition
-rAZ     : ⊢EQ(ADD(x,0),x)
-rAS     : ⊢EQ(ADD(x,S(y)),S(ADD(x,y)))
-rTmA    : ADD(x,y)
+rAZ  : ⊢EQ(ADD(x,0),x)
+rAS  : ⊢EQ(ADD(x,S(y)),S(ADD(x,y)))
+rTmA : ADD(x,y)
 
 # Multiplication
-rMZ     : ⊢EQ(MUL(x,0),0)
-rMS     : ⊢EQ(MUL(x,S(y)),ADD(x,MUL(x,y)))
-rTmM    : MUL(x,y)
+rMZ  : ⊢EQ(MUL(x,0),0)
+rMS  : ⊢EQ(MUL(x,S(y)),ADD(x,MUL(x,y)))
+rTmM : MUL(x,y)
 
 # Evenness
 rEvZ : ⊢EV(0)
@@ -59,53 +60,47 @@ thEvZ! : rEvZ
 rEvS : ⊢EV(x) -> ⊢EV(S(S(x)))
 
 # Terms needed for some of the theorems
-tmOne! : rTmS x=tmZ!
-tmOneAddZero! : rTmA x=tmOne!;y=tmZ!
-tmOneAddOne! : rTmA x=tmOne!;y=tmOne!
-tmSOneAddZero! : rTmS x=tmOneAddZero!
-tmTwo! : rTmS x=tmOne!
-tmXMulZero! : rTmM x=tmX!;y=tmZ!
-tmXMulOne! : rTmM x=tmX!;y=tmOne!
+tmOne!          : rTmS x=tmZ!
+tmTwo!          : rTmS x=tmOne!
+tmOneAddZero!   : rTmA x=tmOne!;y=tmZ!
+tmOneAddOne!    : rTmA x=tmOne!;y=tmOne!
+tmSOneAddZero!  : rTmS x=tmOneAddZero!
+tmXMulZero!     : rTmM x=tmX!;y=tmZ!
+tmXMulOne!      : rTmM x=tmX!;y=tmOne!
 tmXAddXMulZero! : rTmA x=tmX!;y=tmXMulZero!
-tmXAddZero! : rTmA x=tmX!;y=tmZ!
-rtmS : S
-tmS! : rtmS  # for the inductive predicate
-rTmN : n
-tmN!  : rTmN
-tmSN! : rTmS x=tmN!  # S(n), for the schematic inductive step
+tmXAddZero!     : rTmA x=tmX!;y=tmZ!
 
 # Theorem 1: One plus one is two
 th1step1! : rAS x=tmOne!;y=tmZ!
 th1step2! : rAZ x=tmOne!
-th1step3! : rIL m=tmOneAddZero!;n=tmOne! th1step2!
-th1       : rEqT x=tmOneAddOne!;y=tmSOneAddZero!;z=tmTwo! th1step1! th1step3!
+th1step3! : rIL x=tmOneAddZero!;y=tmOne! th1step2!
+thOnePlusOneIsTwo : rEqT x=tmOneAddOne!;y=tmSOneAddZero!;z=tmTwo! th1step1! th1step3!
 
 # Theorem 2: X times one is X
 tmXmulZisX! : rMZ x=tmX!
 th2step1!   : rMS x=tmX!;y=tmZ!
-th2step2!   : rcongAdd m=tmXMulZero!;n=tmZ!;a=tmX! tmXmulZisX!
+th2step2!   : rCongAdd x=tmXMulZero!;y=tmZ!;z=tmX! tmXmulZisX!
 th2step3!   : rEqT x=tmXMulOne!;y=tmXAddXMulZero!;z=tmXAddZero! th2step1! th2step2!
 th2step4!   : rAZ x=tmX!
-th2         : rEqT x=tmXMulOne!;y=tmXAddZero!;z=tmX! th2step3! th2step4!
+thXMulOneIsX : rEqT x=tmXMulOne!;y=tmXAddZero!;z=tmX! th2step3! th2step4!
 
 # Theorem 3: Two is even
-th3 : rEvS x=tmZ! thEvZ!
+thTwoIsEven : rEvS x=tmZ! thEvZ!
 
 # Theorem 4: Example induction
-th4step1! : rS x=tmZ! thZ!
-th4step2! : rSO x=tmSN!
-th4       : rInd p=tmS! th4step1! th4step2!
+thFourIsEven : rEvS x=tmTwo! thTwoIsEven
 
 # Theorem 5: Example function: f(1) = 2
-rF : ⊢EQ(F(x),ADD(x,S(0))) # f(x) = x+1
-rtmF : F(x)
+rF   : ⊢EQ(F(x),ADD(x,S(0)))
+rTmF : F(x)
 
 tmF1Eq2! : rF x=tmOne!
-tmF1! : rtmF x=tmOne!
+tmF1!    : rTmF x=tmOne!
 
-th5 : rEqT x=tmF1!;y=tmOneAddOne!;z=tmTwo! tmF1Eq2! th1
+thF1IsTwo : rEqT x=tmF1!;y=tmOneAddOne!;z=tmTwo! tmF1Eq2! thOnePlusOneIsTwo
 
 # Theorem 6: 0!=1
-th6step1! : rNeq x=tmZ!;y=tmZ!
-th6step2! : rAZ x=tmOne!
-th6 : rNeqT x=tmZ!;y=tmOneAddZero!;z=tmOne! th6step1! th6step2!
+thOneNeqZero : rNeq x=tmZ!
+
+# Theorem 7: 0 ≠ 1  (by symmetry of inequality)
+thZeroNeqOne : rNeqS x=tmOne!;y=tmZ! thOneNeqZero
