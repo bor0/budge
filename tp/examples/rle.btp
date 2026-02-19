@@ -1,85 +1,117 @@
-### Rules
+# Run-length encoding (RLE): compress/decompress lists of values.
+# Encoded format: a list of pairs (count, value).
+# E.g. [1,2,2] encodes as [(1,1),(2,2)] and decodes back.
 
-# Rules for creating a pair (list) and numbers
+# Rules
+
+# Pair (cons cell) and base terms
 rMkPair : (x y)
-rTmNil : NIL
-rTm0 : 0
-rTmS : Sx
+rTmNil  : NIL
+rTm0    : 0
+rTmS    : Sx
 
-# Inequality
+# Less-than: needed to distinguish different-value runs during encoding
 rLtZ : LT(0, Sx)
 rLtS : LT(x, y) -> LT(Sx, Sy)
 
-# Reversing a list
+# List reversal via accumulator: REV original current_tail accumulator
+# Starts as REV L L NIL; each step peels the head of current_tail onto
+# accumulator; terminates at REV L NIL reversed_L
 rReverseInit : REV x x NIL
 rReverseSucc : REV x (p y) z -> REV x y (p z)
 
-# Rules for decompressing
+# Decompression rules
 rInitStateDecode : CODED=l REVDECODED=NIL
-rLoopDecode : CODED=((Sx y) z) REVDECODED=s -> CODED=((x y) z) REVDECODED=(y s)
-rBaseDecode : CODED=((0 y) z) REVDECODED=s -> CODED=z REVDECODED=s
-rUnrevDecode : CODED=NIL REVDECODED=x -> REV x NIL y -> CODED=NIL DECODED=y
+rLoopDecode      : CODED=((Sx y) z) REVDECODED=s -> CODED=((x y) z) REVDECODED=(y s)
+rBaseDecode      : CODED=((0 y) z) REVDECODED=s -> CODED=z REVDECODED=s
+rUnrevDecode     : CODED=NIL REVDECODED=x -> REV x NIL y -> CODED=NIL DECODED=y
 
-# Rules for compressing
-rInitStateCode : REVCODED=NIL DECODED=l
-rLoopCodeSame : REVCODED=((x y) z) DECODED=(y s) -> REVCODED=((Sx y) z) DECODED=s
-rLoopCodeDiffL : REVCODED=((x y) z) DECODED=(a s) -> LT(x, a) -> REVCODED=((S0 a) ((x y) z)) DECODED=s
-rLoopCodeDiffR : REVCODED=((x y) z) DECODED=(a s) -> LT(a, x) -> REVCODED=((S0 a) ((x y) z)) DECODED=s
-rBaseCode : REVCODED=NIL DECODED=(a s) -> REVCODED=((S0 a) NIL) DECODED=s
-rUnrevCode : REVCODED=x DECODED=NIL -> REV x NIL y -> CODED=y DECODED=NIL
+# Compression rules
+# rLoopCodeDiffL: new element > current run value  (LT(y, a): old value < new)
+# rLoopCodeDiffR: new element < current run value  (LT(a, y): new value < old)
+rInitStateCode   : REVCODED=NIL DECODED=l
+rLoopCodeSame    : REVCODED=((x y) z) DECODED=(y s) -> REVCODED=((Sx y) z) DECODED=s
+rLoopCodeDiffL   : REVCODED=((x y) z) DECODED=(a s) -> LT(y, a) -> REVCODED=((S0 a) ((x y) z)) DECODED=s
+rLoopCodeDiffR   : REVCODED=((x y) z) DECODED=(a s) -> LT(a, y) -> REVCODED=((S0 a) ((x y) z)) DECODED=s
+rBaseCode        : REVCODED=NIL DECODED=(a s) -> REVCODED=((S0 a) NIL) DECODED=s
+rUnrevCode       : REVCODED=x DECODED=NIL -> REV x NIL y -> CODED=y DECODED=NIL
 
-### Proofs begin here
+# Terms
 
-## Terms
-# Terms (numbers) we need for the proofs
-t0! : rTm0
-t1! : rTmS x=t0!
-t2! : rTmS x=t1!
-tNil! : rTmNil
+# Basic values
+tm0!   : rTm0
+tm1!   : rTmS x=tm0!
+tm2!   : rTmS x=tm1!
+tmNil! : rTmNil
 
-# Represent the pairs 1,1 and 2,2 in a list
-tPair1! : rMkPair x=t2!;y=t2!
-tPair2! : rMkPair x=t1!;y=t1!
+# Run-length pairs (count, value)
+tmRunOneOne! : rMkPair x=tm1!;y=tm1!   # (1,1): one occurrence of 1
+tmRunTwoTwo! : rMkPair x=tm2!;y=tm2!   # (2,2): two occurrences of 2
+tmRunOneTwo! : rMkPair x=tm1!;y=tm2!   # (1,2): one occurrence of 2
 
-tListPair1! : rMkPair x=tPair1!;y=tNil!
-tListPair2! : rMkPair x=tPair2!;y=tListPair1!
-tListPair3! : rMkPair x=tPair2!;y=tNil!
-tListPair4! : rMkPair x=tPair1!;y=tListPair3!
+# Encoded list [(1,1),(2,2)] and its parts
+tmCodedTail! : rMkPair x=tmRunTwoTwo!;y=tmNil!        # [(2,2)]
+tmCoded!     : rMkPair x=tmRunOneOne!;y=tmCodedTail!  # [(1,1),(2,2)]
 
-# Some lists needed for the proof
-tList1! : rMkPair x=t1!;y=tNil!
-tList2! : rMkPair x=t2!;y=tNil!
-tList21! : rMkPair x=t2!;y=tList1!
+# Flat lists
+tmList1!  : rMkPair x=tm1!;y=tmNil!     # [1]
+tmList2!  : rMkPair x=tm2!;y=tmNil!     # [2]
+tmList21! : rMkPair x=tm2!;y=tmList1!   # [2,1]
+tmList22! : rMkPair x=tm2!;y=tmList2!   # [2,2]
 
-tList22! : rMkPair x=t2!;y=tList2!
-tList122! : rMkPair x=t1!;y=tList22!
-tList221! : rMkPair x=t2!;y=tList21!
+# Decoded [1,2,2] and its reversed accumulator form [2,2,1]
+tmDecoded!    : rMkPair x=tm1!;y=tmList22!    # [1,2,2]
+tmRevDecoded! : rMkPair x=tm2!;y=tmList21!    # [2,2,1]
 
-# Lemmas for unreversing a list
-tLemma1! : rReverseInit x=tList221!
-tLemma2! : rReverseSucc x=tList221!;p=t2!;y=tList21!;z=tNil! tLemma1!
-tLemma3! : rReverseSucc x=tList221!;p=t2!;y=tList1!;z=tList2! tLemma2!
-tLemma4! : rReverseSucc x=tList221!;p=t1!;y=tNil!;z=tList22! tLemma3!
-tLemma5! : rReverseInit x=tListPair4!
-tLemma6! : rReverseSucc x=tListPair4!;p=tPair1!;y=tListPair3!;z=tNil! tLemma5!
-tLemma7! : rReverseSucc x=tListPair4!;p=tPair2!;y=tNil!;z=tListPair1! tLemma6!
+# Reverse-coded intermediates for encoding [1,2,2] → [(1,1),(2,2)]
+tmRevCoded1! : rMkPair x=tmRunOneOne!;y=tmNil!        # [(1,1)]
+tmRevCoded2! : rMkPair x=tmRunTwoTwo!;y=tmRevCoded1!  # [(2,2),(1,1)]
 
-tLTEg1! : rLtZ x=t0! # 0 < 1
-tLTEg2! : rLtS x=t0!;y=t1! tLTEg1! # 1 < 2
+# Reverse-coded intermediates for encoding [2,1] → [(1,2),(1,1)]
+tmRevCodedA! : rMkPair x=tmRunOneTwo!;y=tmNil!        # [(1,2)]
+tmRevCodedB! : rMkPair x=tmRunOneOne!;y=tmRevCodedA!  # [(1,1),(1,2)]
+tmCoded21!   : rMkPair x=tmRunOneTwo!;y=tmRevCoded1!  # [(1,2),(1,1)]
 
-## Proofs
-# Example: (1,1), (2,2) -> 1, 2, 2
-tDecodeStep1 : rInitStateDecode l=tListPair2!
-tDecodeStep2 : rLoopDecode x=t0!;y=t1!;z=tListPair1!;s=tNil! tDecodeStep1
-tDecodeStep3 : rBaseDecode y=t1!;z=tListPair1!;s=tList1! tDecodeStep2
-tDecodeStep4 : rLoopDecode x=t1!;y=t2!;z=tNil!;s=tList1! tDecodeStep3
-tDecodeStep5 : rLoopDecode x=t0!;y=t2!;z=tNil!;s=tList21! tDecodeStep4
-tDecodeStep6 : rBaseDecode x=t0!;y=t2!;z=tNil!;s=tList221! tDecodeStep5
-tDecodeStep7 : rUnrevDecode x=tList221!;y=tList122! tDecodeStep6 tLemma4!
+# Less-than lemmas
+thLT01! : rLtZ x=tm0!                 # LT(0, S0):  0 < 1
+thLT12! : rLtS x=tm0!;y=tm1! thLT01!  # LT(S0, SS0): 1 < 2
 
-# Example: 1, 2, 2 -> (1,1), (2,2)
-tCodeStep1 : rInitStateCode l=tList122!
-tCodeStep2 : rBaseCode a=t1!;s=tList22! tCodeStep1
-tCodeStep3 : rLoopCodeDiffL x=t1!;y=t1!;z=tNil!;a=t2!;s=tList2! tCodeStep2 tLTEg2!
-tCodeStep4 : rLoopCodeSame x=t1!;y=t2!;z=tListPair3!;s=tNil! tCodeStep3
-tCodeStep5 : rUnrevCode x=tListPair4!;y=tListPair2! tCodeStep4 tLemma7!
+# Reversal lemmas for tmRevDecoded! = [2,2,1] → [1,2,2]
+thRevDec0! : rReverseInit x=tmRevDecoded!
+thRevDec1! : rReverseSucc x=tmRevDecoded!;p=tm2!;y=tmList21!;z=tmNil!  thRevDec0!
+thRevDec2! : rReverseSucc x=tmRevDecoded!;p=tm2!;y=tmList1!;z=tmList2! thRevDec1!
+thRevDec3! : rReverseSucc x=tmRevDecoded!;p=tm1!;y=tmNil!;z=tmList22!  thRevDec2!
+
+# Reversal lemmas for tmRevCoded2! = [(2,2),(1,1)] → [(1,1),(2,2)]
+thRevCod0! : rReverseInit x=tmRevCoded2!
+thRevCod1! : rReverseSucc x=tmRevCoded2!;p=tmRunTwoTwo!;y=tmRevCoded1!;z=tmNil! thRevCod0!
+thRevCod2! : rReverseSucc x=tmRevCoded2!;p=tmRunOneOne!;y=tmNil!;z=tmCodedTail! thRevCod1!
+
+# Reversal lemmas for tmRevCodedB! = [(1,1),(1,2)] → [(1,2),(1,1)]
+thRevCodB0! : rReverseInit x=tmRevCodedB!
+thRevCodB1! : rReverseSucc x=tmRevCodedB!;p=tmRunOneOne!;y=tmRevCodedA!;z=tmNil! thRevCodB0!
+thRevCodB2! : rReverseSucc x=tmRevCodedB!;p=tmRunOneTwo!;y=tmNil!;z=tmRevCoded1! thRevCodB1!
+
+# Proofs
+
+# Example 1: Decode [(1,1),(2,2)] → [1,2,2]
+thDecodeStep1 : rInitStateDecode l=tmCoded!
+thDecodeStep2 : rLoopDecode  x=tm0!;y=tm1!;z=tmCodedTail!;s=tmNil! thDecodeStep1
+thDecodeStep3 : rBaseDecode  y=tm1!;z=tmCodedTail!;s=tmList1!      thDecodeStep2
+thDecodeStep4 : rLoopDecode  x=tm1!;y=tm2!;z=tmNil!;s=tmList1!     thDecodeStep3
+thDecodeStep5 : rLoopDecode  x=tm0!;y=tm2!;z=tmNil!;s=tmList21!    thDecodeStep4
+thDecodeStep6 : rBaseDecode  y=tm2!;z=tmNil!;s=tmRevDecoded!       thDecodeStep5
+thDecodeStep7 : rUnrevDecode x=tmRevDecoded!;y=tmDecoded!          thDecodeStep6 thRevDec3!
+
+# Example 2: Encode [1,2,2] → [(1,1),(2,2)]  (exercises rLoopCodeDiffL)
+thCodeStep1 : rInitStateCode  l=tmDecoded!
+thCodeStep2 : rBaseCode       a=tm1!;s=tmList22!                       thCodeStep1
+thCodeStep3 : rLoopCodeDiffL  x=tm1!;y=tm1!;z=tmNil!;a=tm2!;s=tmList2! thCodeStep2 thLT12!
+thCodeStep4 : rLoopCodeSame   x=tm1!;y=tm2!;z=tmRevCoded1!;s=tmNil!    thCodeStep3
+thCodeStep5 : rUnrevCode      x=tmRevCoded2!;y=tmCoded!                thCodeStep4 thRevCod2!
+
+# Example 3: Encode [2,1] → [(1,2),(1,1)]  (exercises rLoopCodeDiffR)
+thCode21Step1 : rInitStateCode  l=tmList21!
+thCode21Step2 : rBaseCode       a=tm2!;s=tmList1!                      thCode21Step1
+thCode21Step3 : rLoopCodeDiffR  x=tm1!;y=tm2!;z=tmNil!;a=tm1!;s=tmNil! thCode21Step2 thLT12!
+thCode21Step4 : rUnrevCode      x=tmRevCodedB!;y=tmCoded21!            thCode21Step3 thRevCodB2!
