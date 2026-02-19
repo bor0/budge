@@ -9,11 +9,14 @@ Every statement in a Budge-TP code is of the form:
 ```
 r<name> : <expr> [-> <expr> -> ... -> <expr>]
 t<name> : <ruleN> [x=X;y=Y;...] [arg1] [arg2] [...] [argn]
+p<name> : <text>
 ```
 
 The syntax for `<name>` and `<expr>` is any string of characters except `':'` and `' '` (whitespace). Square brackets represent optional values.
 
 Lowercase characters in a rule expression are considered a variable and will be used for substitution within the expressions.
+
+Prose statements (`p<name>`) print their text prefixed with `-- `, interleaved with theorem results in source order. The prefix distinguishes prose from derived theorems (which always use `name : value` form) so prose cannot spoof a theorem result. Prose supports `!` suppression like theorems.
 
 ## Semantics
 
@@ -29,6 +32,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 
 In the `examples` folder you can find the following proofs:
 
+- [Gestalt](./examples/gestalt.btp) - Differentiation and contact in Gestalt therapy
 - [God](./examples/God.btp) - Simpler variant of Anselm's argument
 - [Automaton](./examples/automaton.btp) - A finite-state machine
 - [Boolean](./examples/boolean.btp) - Boolean logic

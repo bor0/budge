@@ -14,16 +14,18 @@ for f in examples/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" 
 ## Language syntax
 
 ```
-r<name> : <expr> [-> <expr> -> ... -> <expr>]   # rule
+r<name> : <expr> [-> <expr> -> ... -> <expr>]  # rule
 t<name> : <rule> [x=T1;y=T2;...] [hyp1] [hyp2] # theorem
+p<name> : <text>                               # prose (printed as-is, in source order)
 ```
 
 - `->` separates hypotheses from conclusion (last expression is the conclusion)
 - Lowercase single letters in rule expressions are variables — substituted literally as strings
 - `x=T` in a theorem replaces `x` in the rule with the *value* of theorem `T`
 - Hypotheses (`hyp1 hyp2 ...`) are theorems whose values must match the rule's hypotheses after substitution
-- Names ending in `!` are suppressed from output
+- Names ending in `!` are suppressed from output (applies to theorems and prose)
 - Lines starting with `#` are comments (everything after `#` on any line is stripped)
+- Prose statements print as `-- <text>` interleaved with theorem output in source order; the `-- ` prefix prevents prose from spoofing a theorem result
 
 ## How substitution works
 

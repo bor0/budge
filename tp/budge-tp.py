@@ -65,9 +65,9 @@ def parse_theorems(theorems):
 
 
 def calculate_environment(code):
-    """Calculate rules, theorems"""
-    env = {'rules': {}, 'theorems': {}}
-    types = {'r': 'rules', 't': 'theorems'}
+    """Calculate rules, theorems, prose"""
+    env = {'rules': {}, 'theorems': {}, 'prose': {}, 'order': []}
+    types = {'r': 'rules', 't': 'theorems', 'p': 'prose'}
 
     # Process every line in the code, checking for valid syntax and storing
     # the data for further parsing
@@ -93,6 +93,9 @@ def calculate_environment(code):
             raise Exception(f"Line {lineno}: Name redeclaration: '{name}'")
 
         env[tip][name] = expr
+
+        if tip in ('theorems', 'prose'):
+            env['order'].append((tip, name))
 
     env['rules'] = parse_rules(env['rules'])
     env['theorems'] = parse_theorems(env['theorems'])
@@ -171,10 +174,13 @@ def main():
         env['theorems'][theorem_name] = apply_rule_or_theorem(
             env, theorem, theorem_name)
 
-    for theorem_name in env['theorems']:
-        if theorem_name[-1] == '!':
+    for kind, name in env['order']:
+        if name[-1] == '!':
             continue
-        print(f"{theorem_name} : {env['theorems'][theorem_name]}")
+        if kind == 'prose':
+            print(f"-- {env['prose'][name]}")
+        else:
+            print(f"{name} : {env['theorems'][name]}")
 
 
 if __name__ == '__main__':
