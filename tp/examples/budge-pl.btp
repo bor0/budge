@@ -1,61 +1,116 @@
-# Rules for creating a pair (list) and numbers (succ, pred)
-rMkPair : (x y)
+# Rules for creating a cons cell and encoding numbers
+rCons  : (x y)
 rTmNil : NIL
-rTm0 : 0
-rTmS : Sx
-rTmP : Px
+rTm0   : 0
+rTmS   : Sx
+rTmP   : Px
 
 # Appending lists
 rAppendNil : APPEND NIL y y
 rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 
-## Two-register Budge rules ##
+## Budge-PL operational semantics ##
+#
+# Machine state: (program) (register-list)
+# where register-list = (r1 (r2 (r3 ... NIL)))
+#
+# Command encoding (signed unary):
+#   S0=+1, SS0=+2, SSS0=+3, ...   (n leading S's = increment register n)
+#   P0=-1, PP0=-2, PPP0=-3, ...   (n leading P's = decrement register n, or skip if zero)
+# This mirrors Budge-PL's signed integer commands directly.
 
-# Initial program
-rInitState : p (a b)
+# Initial state: load program p with register list s
+rInitState : p s
 
-# Commands 1, -1, 2, -2 respectively
-rNextState+1 : (S0 x) (a b) -> x (Sa b)
-rNextState-1 : (P0 x) (Sa b) -> x (a b)
-rNextState+2 : (SS0 x) (a b) -> x (a Sb)
-rNextState-2 : (PP0 x) (a Sb) -> x (a b)
+# Register 1 (head of register list, value = a, rest = s)
+rNextState+1 : (S0 x) (a s) -> x (Sa s)         # r1 += 1
+rNextState-1 : (P0 x) (Sa s) -> x (a s)          # r1 -= 1 (guard: r1 >= 1)
+rSkip-1      : (P0 x) (0 s) -> x (0 s)           # skip -1 when r1 = 0
 
-# Commands for looping on the second register
-rLoop2Base : ((SS0 x) y) (a 0) -> y (a 0)
-rLoop2Succ : ((SS0 x) y) (a Sb) -> APPEND x ((SS0 x) y) z -> z (a Sb)
+# Register 2 (second element; navigate past r1 using variables a and b)
+rNextState+2 : (SS0 x) (a (b s)) -> x (a (Sb s))    # r2 += 1
+rNextState-2 : (PP0 x) (a (Sb s)) -> x (a (b s))    # r2 -= 1 (guard: r2 >= 1)
+rSkip-2      : (PP0 x) (a (0 s)) -> x (a (0 s))     # skip -2 when r2 = 0
 
-# Proofs begin here
+# Loop on register 1: exit when r1=0, re-enter by splicing body via APPEND
+rLoop1Base : ((S0 x) y) (0 s) -> y (0 s)
+rLoop1Succ : ((S0 x) y) (Sa s) -> APPEND x ((S0 x) y) z -> z (Sa s)
 
-# Terms (numbers) we need for the proofs
-t0! : rTm0
-t-1! : rTmP x=t0!
-t-2! : rTmP x=t-1!
-t1! : rTmS x=t0!
-t2! : rTmS x=t1!
-t3! : rTmS x=t2!
-tNil! : rTmNil
+# Loop on register 2: exit when r2=0, re-enter by splicing body via APPEND
+rLoop2Base : ((SS0 x) y) (a (0 s)) -> y (a (0 s))
+rLoop2Succ : ((SS0 x) y) (a (Sb s)) -> APPEND x ((SS0 x) y) z -> z (a (Sb s))
 
-# Represent the program ((2,-2,1)), with some extra terms needed for the proofs
-tEgList1! : rMkPair x=t1!;y=tNil!
-tEgList2! : rMkPair x=t-2!;y=tEgList1!
-tEgList3! : rMkPair x=t2!;y=tEgList2!
-tEgList : rMkPair x=tEgList3!;y=tNil!
-tEgList4! : rMkPair x=t-2!;y=tNil!
-tEgList5! : rMkPair x=t1!;y=tEgList
-tEgList6! : rMkPair x=t-2!;y=tEgList5!
+# Halt: empty instruction list means the machine has stopped
+rHalt : NIL s -> HALTED s
 
-tAp1! : rAppendNil y=tEgList
-tAp2! : rAppendRec x=tNil!;y=tEgList;z=tEgList;a=t1! tAp1!
-tAp : rAppendRec x=tEgList1!;y=tEgList;z=tEgList5!;a=t-2! tAp2!
+# Numerals
+tm0!   : rTm0
+tm1!   : rTmS x=tm0!
+tm2!   : rTmS x=tm1!
+tm3!   : rTmS x=tm2!
+tmP1!  : rTmP x=tm0!
+tmP2!  : rTmP x=tmP1!
+tmNil! : rTmNil
 
-t1Init : rInitState p=tEgList;a=t1!;b=t2!
+# Program ((2,-2,1)): a loop on r2 with body [-2,+1]
+tmBody1! : rCons x=tm1!;y=tmNil!       # [+1]              -- lone +1 command
+tmBody!  : rCons x=tmP2!;y=tmBody1!    # [-2, +1]          -- loop body
+tmLoop!  : rCons x=tm2!;y=tmBody!      # (loop r2 [-2,+1]) -- loop element
+tmProg!  : rCons x=tmLoop!;y=tmNil!    # [loop]            -- the full program
 
-t1Loop1 : rLoop2Succ x=tEgList2!;y=tNil!;a=t1!;b=t1!;z=tEgList6! t1Init tAp
-t1DecR2 : rNextState-2 x=tEgList5!;a=t1!;b=t1! t1Loop1
-t1IncR1 : rNextState+1 x=tEgList;a=t1!;b=t1! t1DecR2
+# Continuations used by rLoop2Succ to splice the body before re-entry:
+#   APPEND [-2,+1] [loop] = [-2,+1,loop]
+tmCont1! : rCons x=tm1!;y=tmProg!      # [+1, loop]
+tmCont!  : rCons x=tmP2!;y=tmCont1!    # [-2, +1, loop]
 
-t1Loop2 : rLoop2Succ x=tEgList2!;y=tNil!;a=t2!;b=t0!;z=tEgList6! t1IncR1 tAp
-t1DecR2' : rNextState-2 x=tEgList5!;a=t2!;b=t0! t1Loop2
-t1IncR1' : rNextState+1 x=tEgList;a=t2!;b=t0! t1DecR2'
+tmApNil! : rAppendNil y=tmProg!
+tmAp1!   : rAppendRec x=tmNil!;y=tmProg!;z=tmProg!;a=tm1! tmApNil!
+tmAp!    : rAppendRec x=tmBody1!;y=tmProg!;z=tmCont1!;a=tmP2! tmAp1!
 
-t1 : rLoop2Base x=tEgList2!;y=tNil!;a=t3!;b=t0! t1IncR1'
+# Register list snapshots during execution
+tmR2_2! : rCons x=tm2!;y=tmNil!        # (SS0 NIL):  [r2=2]
+tmR2_1! : rCons x=tm1!;y=tmNil!        # (S0 NIL):   [r2=1]
+tmR2_0! : rCons x=tm0!;y=tmNil!        # (0 NIL):    [r2=0]
+tmSt_1_2! : rCons x=tm1!;y=tmR2_2!    # (S0 (SS0 NIL)):   r1=1, r2=2  (initial)
+tmSt_3_0! : rCons x=tm3!;y=tmR2_0!    # (SSS0 (0 NIL)):   r1=3, r2=0  (final)
+
+# Proof: ((2,-2,1)) on input (r1=1, r2=2) produces (r1=3, r2=0), i.e. 1+2=3
+pDesc : Budge-PL addition: program ((2,-2,1)) computes r1 := r1 + r2 by transferring marbles from jar 2 to jar 1.
+
+pInput : Input: r1=1, r2=2. State is (program) (register-list) where register-list = (r1 (r2 NIL)).
+
+thInit : rInitState p=tmProg!;s=tmSt_1_2!
+
+pIter1 : Iteration 1: r2=2 > 0, so the loop fires. The body [-2,+1] is spliced before the loop for re-entry.
+
+thLoop1  : rLoop2Succ x=tmBody!;y=tmNil!;a=tm1!;b=tm1!;s=tmNil!;z=tmCont! thInit tmAp!
+
+pDecR2a : Execute -2: remove one marble from jar 2.
+
+thDecR2a : rNextState-2 x=tmCont1!;a=tm1!;b=tm1!;s=tmNil! thLoop1
+
+pIncR1a : Execute +1: add one marble to jar 1.
+
+thIncR1a : rNextState+1 x=tmProg!;a=tm1!;s=tmR2_1! thDecR2a
+
+pIter2 : Iteration 2: r2=1 > 0, so the loop fires again.
+
+thLoop2  : rLoop2Succ x=tmBody!;y=tmNil!;a=tm2!;b=tm0!;s=tmNil!;z=tmCont! thIncR1a tmAp!
+
+pDecR2b : Execute -2: remove one marble from jar 2.
+
+thDecR2b : rNextState-2 x=tmCont1!;a=tm2!;b=tm0!;s=tmNil! thLoop2
+
+pIncR1b : Execute +1: add one marble to jar 1.
+
+thIncR1b : rNextState+1 x=tmProg!;a=tm2!;s=tmR2_0! thDecR2b
+
+pExit : r2=0: the loop condition fails, execution halts.
+
+thAdd : rLoop2Base x=tmBody!;y=tmNil!;a=tm3!;s=tmNil! thIncR1b
+
+pHalt : The instruction list is empty; the machine has stopped.
+
+thHalt : rHalt s=tmSt_3_0! thAdd
+
+pResult : Result: r1=3, r2=0. The program correctly computed 1+2=3.
