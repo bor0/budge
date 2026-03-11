@@ -39,7 +39,33 @@ Given rule `rFoo : ⊢p -> ⊢p=>q -> ⊢q` and theorem `tBar : rFoo p=tmA!;q=tm
 
 **Implication**: a variable like `p` in a rule gets replaced everywhere it appears as the literal character `p`. This means variable names must not appear as substrings of other terms (e.g., `p` must not appear inside `q`'s value if they're both substituted).
 
+## Substitution mechanics (implementation detail)
+
+Replacements are applied in the **order specified**, each via Python `.replace()` on the accumulated string. Because `.replace()` is case-sensitive, uppercase-only object-level term values are never touched by lowercase meta-variable substitutions — no cascading occurs. This is the reason the convention "uppercase for object-level" exists: it is a **correctness technique**, not just style.
+
+## Hypotheses without substitutions
+
+The parser unconditionally treats `arguments[1]` as the replacements field. If a rule has hypotheses but requires no substitution, use a bare `;` as a placeholder:
+
+```
+# Wrong — hyp gets parsed as a replacement string and errors:
+tFoo : rBar hyp1
+
+# Correct — semicolon produces an empty replacement dict:
+tFoo : rBar ; hyp1
+```
+
 ## Key patterns
+
+### Aligning predicate names with program variable letters
+
+When writing rules that involve substitution into predicates (e.g., the assignment axiom), name the predicate using the **same uppercase letters as the program variables**. Budge's string substitution then naturally mirrors the mathematical Q[a/x] side condition.
+
+Example: invariant `SUM(I,S)` for program variables `I` and `S` gives:
+- `SUM(I,S)[0/S]` = `SUM(I,0)` → `{SUM(I,0)} S:=0 {SUM(I,S)}` derived by `rAssign`
+- `SUM(I,0)[0/I]` = `SUM(0,0)` → `{SUM(0,0)} I:=0 {SUM(I,0)}` derived by `rAssign`
+
+Both initialization steps follow from `rAssign` alone with no extra axioms. See `hoare.btp`.
 
 ### Term lifting
 
