@@ -1,0 +1,116 @@
+# Toy RSA public-key cryptography: encrypt with the public key, decrypt with
+# the private key.
+#
+# Key generation: p=2, q=5, so n=pq=10 and phi(n)=(p-1)(q-1)=4.
+# Public exponent e=3, private exponent d=7, since d*e=21 = 1 (mod 4).
+# Public key: (e,n) = (3,10).  Private key: (d,n) = (7,10).
+#
+# Encrypt m=7: c = 7^3 mod 10 = 343 mod 10 = 3
+# Decrypt c=3: m = 3^7 mod 10 = 2187 mod 10 = 7
+#
+# Numbers are written as tallies (3 = |||). Adding two tallies is just
+# writing them side by side, so `zx` in a rule means z+x.
+# All statements are of the form `... MOD n` and mean "congruent modulo n".
+
+# Rules
+
+# Tally numbers
+rTmOne : |
+rTmS   : x|
+
+# Modular multiplication: x*y is x added to itself y times
+rMulOne  : x*|=x MOD n
+rMulSucc : x*y=z MOD n -> x*y|=zx MOD n
+rMulRed  : x*y=zn MOD n -> x*y=z MOD n          # subtract n once
+
+# Modular exponentiation: b^(k+1) = b^k * b
+rPowOne  : x^|=x MOD n
+rPowSucc : b^k=a MOD n -> a*b=c MOD n -> b^k|=c MOD n
+
+# Encryption uses the public key (e,n), decryption the private key (d,n)
+rEncrypt : m^e=c MOD n -> ENCRYPT m WITH PUBLIC KEY (e,n) = c
+rDecrypt : c^d=m MOD n -> DECRYPT c WITH PRIVATE KEY (d,n) = m
+
+# Terms
+
+tm1!  : rTmOne
+tm2!  : rTmS x=tm1!
+tm3!  : rTmS x=tm2!
+tm4!  : rTmS x=tm3!
+tm5!  : rTmS x=tm4!
+tm6!  : rTmS x=tm5!
+tm7!  : rTmS x=tm6!
+tm8!  : rTmS x=tm7!
+tm9!  : rTmS x=tm8!
+tm10! : rTmS x=tm9!
+
+# Multiplication lemmas (mod 10)
+
+# 7*7 = 49 = 9 (mod 10); along the way 7*3 = 21 = 1 (mod 10)
+thA1!  : rMulOne  x=tm7!;n=tm10!                          # 7*1 = 7
+thA2!  : rMulSucc x=tm7!;y=tm1!;z=tm7!;n=tm10! thA1!      # 7*2 = 14
+thA2r! : rMulRed  x=tm7!;y=tm2!;z=tm4!;n=tm10! thA2!      #     = 4
+thA3!  : rMulSucc x=tm7!;y=tm2!;z=tm4!;n=tm10! thA2r!     # 7*3 = 11
+thA3r! : rMulRed  x=tm7!;y=tm3!;z=tm1!;n=tm10! thA3!      #     = 1
+thA4!  : rMulSucc x=tm7!;y=tm3!;z=tm1!;n=tm10! thA3r!     # 7*4 = 8
+thA5!  : rMulSucc x=tm7!;y=tm4!;z=tm8!;n=tm10! thA4!      # 7*5 = 15
+thA5r! : rMulRed  x=tm7!;y=tm5!;z=tm5!;n=tm10! thA5!      #     = 5
+thA6!  : rMulSucc x=tm7!;y=tm5!;z=tm5!;n=tm10! thA5r!     # 7*6 = 12
+thA6r! : rMulRed  x=tm7!;y=tm6!;z=tm2!;n=tm10! thA6!      #     = 2
+thA7!  : rMulSucc x=tm7!;y=tm6!;z=tm2!;n=tm10! thA6r!     # 7*7 = 9
+
+# 9*7 = 63 = 3 (mod 10); along the way 9*3 = 27 = 7 (mod 10)
+thB1!  : rMulOne  x=tm9!;n=tm10!                          # 9*1 = 9
+thB2!  : rMulSucc x=tm9!;y=tm1!;z=tm9!;n=tm10! thB1!      # 9*2 = 18
+thB2r! : rMulRed  x=tm9!;y=tm2!;z=tm8!;n=tm10! thB2!      #     = 8
+thB3!  : rMulSucc x=tm9!;y=tm2!;z=tm8!;n=tm10! thB2r!     # 9*3 = 17
+thB3r! : rMulRed  x=tm9!;y=tm3!;z=tm7!;n=tm10! thB3!      #     = 7
+thB4!  : rMulSucc x=tm9!;y=tm3!;z=tm7!;n=tm10! thB3r!     # 9*4 = 16
+thB4r! : rMulRed  x=tm9!;y=tm4!;z=tm6!;n=tm10! thB4!      #     = 6
+thB5!  : rMulSucc x=tm9!;y=tm4!;z=tm6!;n=tm10! thB4r!     # 9*5 = 15
+thB5r! : rMulRed  x=tm9!;y=tm5!;z=tm5!;n=tm10! thB5!      #     = 5
+thB6!  : rMulSucc x=tm9!;y=tm5!;z=tm5!;n=tm10! thB5r!     # 9*6 = 14
+thB6r! : rMulRed  x=tm9!;y=tm6!;z=tm4!;n=tm10! thB6!      #     = 4
+thB7!  : rMulSucc x=tm9!;y=tm6!;z=tm4!;n=tm10! thB6r!     # 9*7 = 13
+thB7r! : rMulRed  x=tm9!;y=tm7!;z=tm3!;n=tm10! thB7!      #     = 3
+
+# 3*3 = 9 (mod 10)
+thC1!  : rMulOne  x=tm3!;n=tm10!                          # 3*1 = 3
+thC2!  : rMulSucc x=tm3!;y=tm1!;z=tm3!;n=tm10! thC1!      # 3*2 = 6
+thC3!  : rMulSucc x=tm3!;y=tm2!;z=tm6!;n=tm10! thC2!      # 3*3 = 9
+
+# 1*3 = 3 (mod 10)
+thD1!  : rMulOne  x=tm1!;n=tm10!                          # 1*1 = 1
+thD2!  : rMulSucc x=tm1!;y=tm1!;z=tm1!;n=tm10! thD1!      # 1*2 = 2
+thD3!  : rMulSucc x=tm1!;y=tm2!;z=tm2!;n=tm10! thD2!      # 1*3 = 3
+
+# Proofs
+
+# Key check: d*e = 7*3 = 21 = 1 (mod phi(n) = 4)
+pKeys  : Key check: d*e = 7*3 = 1 (mod 4)
+thK1!  : rMulOne  x=tm7!;n=tm4!                           # 7*1 = 7
+thK1r! : rMulRed  x=tm7!;y=tm1!;z=tm3!;n=tm4! thK1!       #     = 3
+thK2!  : rMulSucc x=tm7!;y=tm1!;z=tm3!;n=tm4! thK1r!      # 7*2 = 10
+thK2r! : rMulRed  x=tm7!;y=tm2!;z=tm6!;n=tm4! thK2!       #     = 6
+thK2s! : rMulRed  x=tm7!;y=tm2!;z=tm2!;n=tm4! thK2r!      #     = 2
+thK3!  : rMulSucc x=tm7!;y=tm2!;z=tm2!;n=tm4! thK2s!      # 7*3 = 9
+thK3r! : rMulRed  x=tm7!;y=tm3!;z=tm5!;n=tm4! thK3!       #     = 5
+thKeys : rMulRed  x=tm7!;y=tm3!;z=tm1!;n=tm4! thK3r!      #     = 1
+
+# Example 1: Encrypt m=7 with public key (3,10) -> c=3
+pEnc      : Encrypt m=7 with public key (e=3, n=10): 7^3 = 343 = 3 (mod 10)
+thEnc1    : rPowOne  x=tm7!;n=tm10!                                       # 7^1 = 7
+thEnc2    : rPowSucc b=tm7!;k=tm1!;a=tm7!;c=tm9!;n=tm10! thEnc1 thA7!     # 7^2 = 9
+thEnc3    : rPowSucc b=tm7!;k=tm2!;a=tm9!;c=tm3!;n=tm10! thEnc2 thB7r!    # 7^3 = 3
+thEncrypt : rEncrypt m=tm7!;e=tm3!;c=tm3!;n=tm10! thEnc3
+
+# Example 2: Decrypt c=3 with private key (7,10) -> m=7
+pDec      : Decrypt c=3 with private key (d=7, n=10): 3^7 = 2187 = 7 (mod 10)
+thDec1    : rPowOne  x=tm3!;n=tm10!                                       # 3^1 = 3
+thDec2    : rPowSucc b=tm3!;k=tm1!;a=tm3!;c=tm9!;n=tm10! thDec1 thC3!     # 3^2 = 9
+thDec3    : rPowSucc b=tm3!;k=tm2!;a=tm9!;c=tm7!;n=tm10! thDec2 thB3r!    # 3^3 = 7
+thDec4    : rPowSucc b=tm3!;k=tm3!;a=tm7!;c=tm1!;n=tm10! thDec3 thA3r!    # 3^4 = 1
+thDec5    : rPowSucc b=tm3!;k=tm4!;a=tm1!;c=tm3!;n=tm10! thDec4 thD3!     # 3^5 = 3
+thDec6    : rPowSucc b=tm3!;k=tm5!;a=tm3!;c=tm9!;n=tm10! thDec5 thC3!     # 3^6 = 9
+thDec7    : rPowSucc b=tm3!;k=tm6!;a=tm9!;c=tm7!;n=tm10! thDec6 thB3r!    # 3^7 = 7
+thDecrypt : rDecrypt c=tm3!;d=tm7!;m=tm7!;n=tm10! thDec7

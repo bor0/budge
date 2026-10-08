@@ -106,6 +106,20 @@ This works because the rule's `p(n)=>p(S(n))` after substituting only `p` become
 Add `rMp : ⊢p -> ⊢p=>q -> ⊢q` when you need to fire object-level implications.
 Note: **no outer parentheses** around `p=>q` in the template, because `rZPEQImpl`-style rules produce `⊢A=>B` without them. (Contrast with `hilbert.btp`'s `rMp : ⊢p -> ⊢(p=>q) -> ⊢q`, which works there because all `tm...!` terms are built with explicit parens via `rTmImp`.)
 
+### Tally numbers (free addition)
+
+Peano `SS0` needs one step per unit to add. Tallies (`|||` = 3) make addition
+free: the rule template `zx` concatenates the values, so it *is* z+x.
+
+```
+rMulSucc : x*y=z MOD n -> x*y|=zx MOD n   # x*(y+1) = x*y + x, one step
+rMulRed  : x*y=zn MOD n -> x*y=z MOD n    # subtract n in one step
+```
+
+Caveats: there is no zero (a term can't have an empty value), so pick inputs
+whose intermediate results are never 0; and `rMulRed` only proves congruence,
+not that the result is fully reduced below `n`. See `rsa.btp`.
+
 ### Instantiation from universals
 
 `rInd` produces `⊢∀X,PRED(X)` but there is no built-in universal instantiation.
