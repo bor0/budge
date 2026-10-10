@@ -1,0 +1,194 @@
+# The simplest possible "LLM": a bigram language model.
+#
+# An LLM is trained to predict the next token from the previous ones, and then
+# generates text by repeatedly appending its prediction. Here the context is
+# just ONE token (a bigram model, the n=2 ancestor of GPT), the "weights" are
+# bigram counts learned from a tiny corpus, and decoding is greedy (always pick
+# the most frequent next token, i.e. temperature 0).
+#
+# Pipeline, all as derivations:
+#   1. Corpus   : one axiom, consumed token by token from the left
+#   2. Tokenize : read every adjacent pair (bigram) out of the corpus
+#   3. Train    : count each bigram with tally numbers (|| = 2)
+#   4. Weights  : PREDICT(w)=v when v is the most frequent successor of w
+#   5. Generate : append PREDICT(last token) until the end token `.`
+#
+# Because the model only sees one token of context, it happily stitches
+# sentences together at shared words, producing text that is NOT in the corpus.
+#
+# Only the corpus axiom (tagged DATA) can be tokenized, so prompts and
+# generated text can never leak into training.
+#
+# Caveats (things Budge cannot enforce, the prover must be honest about):
+#   - rMore can count the same observation twice
+#   - rArgmax/rOnly don't check that every competing successor was considered
+
+# Rules
+
+# Tokens (the vocabulary) and concatenation
+rTmTHE    : THE
+rTmA      : A
+rTmQUEEN  : QUEEN
+rTmCAT    : CAT
+rTmDOG    : DOG
+rTmEATS   : EATS
+rTmCHASES : CHASES
+rTmCAKE   : CAKE
+rTmFISH   : FISH
+rTmDOT    : .
+rTmOne    : |
+rTmS      : x|
+rTmCat    : x y
+
+# Training data
+rCorpus : DATA THE QUEEN EATS CAKE . THE CAT EATS FISH . A CAT EATS FISH . A DOG CHASES THE CAT .
+rShift  : DATA w s -> DATA s
+
+# Tokenizer: data starting with `w v` contains the bigram w->v
+rRead    : DATA w v s -> OBS w v
+rReadEnd : DATA w v -> OBS w v
+
+# Training: count bigram observations (tallies, so n| is n+1)
+rFirst : OBS w v -> COUNT(w,v)=|
+rMore  : COUNT(w,v)=n -> OBS w v -> COUNT(w,v)=n|
+
+# Weights: the predicted next token is the most frequent successor
+rArgmax : COUNT(w,v)=nm -> COUNT(w,u)=n -> PREDICT(w)=v  # v seen strictly more than u
+rOnly   : COUNT(w,v)=n -> PREDICT(w)=v                   # v is the only successor
+
+# Greedy decoding: append the prediction for the last token
+rGen  : s w -> PREDICT(w)=v -> s w v
+rStop : s . -> REPLY: s
+
+# Terms
+
+tmTHE!    : rTmTHE
+tmA!      : rTmA
+tmQUEEN!  : rTmQUEEN
+tmCAT!    : rTmCAT
+tmDOG!    : rTmDOG
+tmEATS!   : rTmEATS
+tmCHASES! : rTmCHASES
+tmCAKE!   : rTmCAKE
+tmFISH!   : rTmFISH
+tmDOT!    : rTmDOT
+tmONE!    : rTmOne
+tmTWO!    : rTmS x=tmONE!
+
+# 1. Corpus
+
+# Suffixes of the corpus (built right to left), used to name `s` in rShift/rRead
+tmC20!   : rTmCat x=tmCAT!;y=tmDOT!
+tmC19!   : rTmCat x=tmTHE!;y=tmC20!
+tmC18!   : rTmCat x=tmCHASES!;y=tmC19!
+tmC17!   : rTmCat x=tmDOG!;y=tmC18!
+tmC16!   : rTmCat x=tmA!;y=tmC17!
+tmC15!   : rTmCat x=tmDOT!;y=tmC16!
+tmC14!   : rTmCat x=tmFISH!;y=tmC15!
+tmC13!   : rTmCat x=tmEATS!;y=tmC14!
+tmC12!   : rTmCat x=tmCAT!;y=tmC13!
+tmC11!   : rTmCat x=tmA!;y=tmC12!
+tmC10!   : rTmCat x=tmDOT!;y=tmC11!
+tmC9!    : rTmCat x=tmFISH!;y=tmC10!
+tmC8!    : rTmCat x=tmEATS!;y=tmC9!
+tmC7!    : rTmCat x=tmCAT!;y=tmC8!
+tmC6!    : rTmCat x=tmTHE!;y=tmC7!
+tmC5!    : rTmCat x=tmDOT!;y=tmC6!
+tmC4!    : rTmCat x=tmCAKE!;y=tmC5!
+tmC3!    : rTmCat x=tmEATS!;y=tmC4!
+tmC2!    : rTmCat x=tmQUEEN!;y=tmC3!
+
+thCorpus : rCorpus
+
+# Consume the corpus from the left, one token at a time
+thD2!  : rShift w=tmTHE!;s=tmC2!            thCorpus
+thD3!  : rShift w=tmQUEEN!;s=tmC3!          thD2!
+thD4!  : rShift w=tmEATS!;s=tmC4!           thD3!
+thD5!  : rShift w=tmCAKE!;s=tmC5!           thD4!
+thD6!  : rShift w=tmDOT!;s=tmC6!            thD5!
+thD7!  : rShift w=tmTHE!;s=tmC7!            thD6!
+thD8!  : rShift w=tmCAT!;s=tmC8!            thD7!
+thD9!  : rShift w=tmEATS!;s=tmC9!           thD8!
+thD10! : rShift w=tmFISH!;s=tmC10!          thD9!
+thD11! : rShift w=tmDOT!;s=tmC11!           thD10!
+thD12! : rShift w=tmA!;s=tmC12!             thD11!
+thD13! : rShift w=tmCAT!;s=tmC13!           thD12!
+thD14! : rShift w=tmEATS!;s=tmC14!          thD13!
+thD15! : rShift w=tmFISH!;s=tmC15!          thD14!
+thD16! : rShift w=tmDOT!;s=tmC16!           thD15!
+thD17! : rShift w=tmA!;s=tmC17!             thD16!
+thD18! : rShift w=tmDOG!;s=tmC18!           thD17!
+thD19! : rShift w=tmCHASES!;s=tmC19!        thD18!
+thD20! : rShift w=tmTHE!;s=tmC20!           thD19!
+
+# 2. Tokenize into bigrams
+
+thO1!  : rRead w=tmTHE!;v=tmQUEEN!;s=tmC3!           thCorpus  # THE QUEEN
+thO2!  : rRead w=tmQUEEN!;v=tmEATS!;s=tmC4!          thD2!     # QUEEN EATS
+thO3!  : rRead w=tmEATS!;v=tmCAKE!;s=tmC5!           thD3!     # EATS CAKE
+thO4!  : rRead w=tmCAKE!;v=tmDOT!;s=tmC6!            thD4!     # CAKE .
+thO5!  : rRead w=tmDOT!;v=tmTHE!;s=tmC7!             thD5!     # . THE
+thO6!  : rRead w=tmTHE!;v=tmCAT!;s=tmC8!             thD6!     # THE CAT
+thO7!  : rRead w=tmCAT!;v=tmEATS!;s=tmC9!            thD7!     # CAT EATS
+thO8!  : rRead w=tmEATS!;v=tmFISH!;s=tmC10!          thD8!     # EATS FISH
+thO9!  : rRead w=tmFISH!;v=tmDOT!;s=tmC11!           thD9!     # FISH .
+thO10! : rRead w=tmDOT!;v=tmA!;s=tmC12!              thD10!    # . A
+thO11! : rRead w=tmA!;v=tmCAT!;s=tmC13!              thD11!    # A CAT
+thO12! : rRead w=tmCAT!;v=tmEATS!;s=tmC14!           thD12!    # CAT EATS
+thO13! : rRead w=tmEATS!;v=tmFISH!;s=tmC15!          thD13!    # EATS FISH
+thO14! : rRead w=tmFISH!;v=tmDOT!;s=tmC16!           thD14!    # FISH .
+thO15! : rRead w=tmDOT!;v=tmA!;s=tmC17!              thD15!    # . A
+thO16! : rRead w=tmA!;v=tmDOG!;s=tmC18!              thD16!    # A DOG
+thO17! : rRead w=tmDOG!;v=tmCHASES!;s=tmC19!         thD17!    # DOG CHASES
+thO18! : rRead w=tmCHASES!;v=tmTHE!;s=tmC20!         thD18!    # CHASES THE
+thO19! : rRead w=tmTHE!;v=tmCAT!;s=tmDOT!            thD19!    # THE CAT
+thO20! : rReadEnd w=tmCAT!;v=tmDOT!                 thD20!    # CAT .
+
+# 3. Train: count the bigrams we need
+
+thTHE_QUEEN    : rFirst w=tmTHE!;v=tmQUEEN! thO1!
+thTHE_CAT1!    : rFirst w=tmTHE!;v=tmCAT! thO6!
+thTHE_CAT      : rMore  w=tmTHE!;v=tmCAT!;n=tmONE! thTHE_CAT1! thO19!
+thQUEEN_EATS   : rFirst w=tmQUEEN!;v=tmEATS! thO2!
+thEATS_CAKE    : rFirst w=tmEATS!;v=tmCAKE! thO3!
+thEATS_FISH1!  : rFirst w=tmEATS!;v=tmFISH! thO8!
+thEATS_FISH    : rMore  w=tmEATS!;v=tmFISH!;n=tmONE! thEATS_FISH1! thO13!
+thCAT_EATS1!   : rFirst w=tmCAT!;v=tmEATS! thO7!
+thCAT_EATS     : rMore  w=tmCAT!;v=tmEATS!;n=tmONE! thCAT_EATS1! thO12!
+thCAT_DOT      : rFirst w=tmCAT!;v=tmDOT! thO20!
+thFISH_DOT1!   : rFirst w=tmFISH!;v=tmDOT! thO9!
+thFISH_DOT     : rMore  w=tmFISH!;v=tmDOT!;n=tmONE! thFISH_DOT1! thO14!
+thDOG_CHASES   : rFirst w=tmDOG!;v=tmCHASES! thO17!
+thCHASES_THE   : rFirst w=tmCHASES!;v=tmTHE! thO18!
+
+# 4. Weights: argmax next token for each context
+
+pWeights      : Learned weights (greedy next-token table)
+thPredictTHE     : rArgmax w=tmTHE!;v=tmCAT!;u=tmQUEEN!;n=tmONE!;m=tmONE! thTHE_CAT thTHE_QUEEN
+thPredictEATS    : rArgmax w=tmEATS!;v=tmFISH!;u=tmCAKE!;n=tmONE!;m=tmONE! thEATS_FISH thEATS_CAKE
+thPredictCAT     : rArgmax w=tmCAT!;v=tmEATS!;u=tmDOT!;n=tmONE!;m=tmONE! thCAT_EATS thCAT_DOT
+thPredictQUEEN   : rOnly w=tmQUEEN!;v=tmEATS!;n=tmONE! thQUEEN_EATS
+thPredictFISH    : rOnly w=tmFISH!;v=tmDOT!;n=tmTWO! thFISH_DOT
+thPredictDOG     : rOnly w=tmDOG!;v=tmCHASES!;n=tmONE! thDOG_CHASES
+thPredictCHASES  : rOnly w=tmCHASES!;v=tmTHE!;n=tmONE! thCHASES_THE
+
+# 5. Generate
+
+# The queen only ever ate cake in the corpus, but EATS -> FISH outvotes it
+pPrompt1 : Prompt: THE QUEEN
+tmP1!    : rTmCat x=tmTHE!;y=tmQUEEN!
+thG1!    : rGen s=tmTHE!;w=tmQUEEN!;v=tmEATS! tmP1! thPredictQUEEN   # THE QUEEN EATS
+thG2!    : rGen s=tmP1!;w=tmEATS!;v=tmFISH!   thG1! thPredictEATS    # ... FISH
+thG3!    : rGen s=thG1!;w=tmFISH!;v=tmDOT!    thG2! thPredictFISH    # ... .
+thReply1 : rStop s=thG2! thG3!
+
+# The dog chases the cat, and then the cat's sentence takes over
+pPrompt2 : Prompt: A DOG
+tmP2!    : rTmCat x=tmA!;y=tmDOG!
+thH1!    : rGen s=tmA!;w=tmDOG!;v=tmCHASES! tmP2! thPredictDOG       # A DOG CHASES
+thH2!    : rGen s=tmP2!;w=tmCHASES!;v=tmTHE! thH1! thPredictCHASES   # ... THE
+thH3!    : rGen s=thH1!;w=tmTHE!;v=tmCAT!    thH2! thPredictTHE      # ... CAT
+thH4!    : rGen s=thH2!;w=tmCAT!;v=tmEATS!   thH3! thPredictCAT      # ... EATS
+thH5!    : rGen s=thH3!;w=tmEATS!;v=tmFISH!  thH4! thPredictEATS     # ... FISH
+thH6!    : rGen s=thH4!;w=tmFISH!;v=tmDOT!   thH5! thPredictFISH     # ... .
+thReply2 : rStop s=thH5! thH6!
