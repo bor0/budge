@@ -1,0 +1,141 @@
+# Hoare logic for a tiny imperative language
+#
+# Keywords are uppercase (WHILE/IF/ELSE) to keep lowercase letters out of
+# object-level strings. Program variables are $I, $S (assigned) and $N
+# (read-only input).
+#
+# Partial correctness: {p} c {q} -- if c terminates from p, q holds.
+#
+# Program: count the odd numbers below $N. It uses every Hoare rule.
+#
+#   $I = 0; $S = 0;
+#   WHILE ($I != $N) {
+#       IF ($I % 2 == 1) { $S = $S + 1; } ELSE { ; }
+#       $I = $I + 1;
+#   }
+#
+# Goal: {TRUE} prog {$S == INTDIV($N, 2)}
+#
+# INTDIV(a, b) is integer division (a / b rounded down).
+
+## Hoare rules ##
+
+# Assignment. Q[e/x] can't be computed by string replacement on a value, so
+# assertions are kept in the shape a == f($I, k), where f is a function name
+# and a, f, k do not mention $I; rAssignS needs g not to mention $S. Under that
+# shape, Q[e/x] is just filling e into the template.
+rAssignI : {a == f(e, k)} $I = e; {a == f($I, k)}
+rAssignS : {e == g} $S = e; {$S == g}
+
+rSkip     : {p} ; {p}                                   # empty statement
+rSeq      : {p} a {q} -> {q} b {r} -> {p} a b {r}
+rIf       : {p && b} c {q} -> {p && !(b)} d {q} -> {p} IF (b) { c } ELSE { d } {q}
+rWhile    : {p && b} c {p} -> {p} WHILE (b) { c } {p && !(b)}
+rConsPre  : ⊢p ⇒ q -> {q} c {r} -> {p} c {r}
+rConsPost : {p} c {q} -> ⊢q ⇒ r -> {p} c {r}
+
+## Arithmetic facts about INTDIV (axiomatised; object-level implications) ##
+
+rDivInit : ⊢TRUE ⇒ 0 == INTDIV(0, 2)
+rDivOdd  : ⊢b == INTDIV(a, 2) && q && a % 2 == 1 ⇒ b + 1 == INTDIV(a + 1, 2)     # a odd: a+1 even
+rDivEven : ⊢b == INTDIV(a, 2) && q && !(a % 2 == 1) ⇒ b == INTDIV(a + 1, 2)     # a even: a+1 odd
+rDivExit : ⊢b == INTDIV(a, 2) && !(a != c) ⇒ b == INTDIV(c, 2)                  # a = c
+
+## Terms ##
+
+rTmI    : $I
+rTmS    : $S
+rTmN    : $N
+rTm0    : 0
+rTm1    : 1
+rTm2    : 2
+rTmTRUE : TRUE
+rTmINTDIV : INTDIV
+rTmAdd  : a + b
+rTmNeq  : a != b
+rTmOdd  : a % 2 == 1
+rTmEq   : a == b
+rTmApp  : f(a, b)
+rTmAnd  : p && q
+rTmNot  : !(p)
+rTmSeq  : a b
+rTmAsg  : a = b;
+rTmSkip : ;
+rTmWhile : WHILE (b) { c }
+rTmIf   : IF (b) { c } ELSE { d }
+
+tmI!    : rTmI
+tmS!    : rTmS
+tmN!    : rTmN
+tm0!    : rTm0
+tm1!    : rTm1
+tm2!    : rTm2
+tmTRUE! : rTmTRUE
+tmINTDIV! : rTmINTDIV
+
+# Expressions
+tmIp1!   : rTmAdd a=tmI!;b=tm1!               # $I + 1
+tmSp1!   : rTmAdd a=tmS!;b=tm1!               # $S + 1
+tmGuard! : rTmNeq a=tmI!;b=tmN!               # $I != $N
+tmNotG!  : rTmNot p=tmGuard!                  # !($I != $N)
+tmCond!  : rTmOdd a=tmI!                      # $I % 2 == 1
+tmNotC!  : rTmNot p=tmCond!                   # !($I % 2 == 1)
+tmDI!    : rTmApp f=tmINTDIV!;a=tmI!;b=tm2!            # INTDIV($I, 2)
+tmDI1!   : rTmApp f=tmINTDIV!;a=tmIp1!;b=tm2!          # INTDIV($I + 1, 2)
+tmDN!    : rTmApp f=tmINTDIV!;a=tmN!;b=tm2!            # INTDIV($N, 2)
+
+# Code fragments
+tmCI0!   : rTmAsg a=tmI!;b=tm0!               # $I = 0;
+tmCS0!   : rTmAsg a=tmS!;b=tm0!               # $S = 0;
+tmInit!  : rTmSeq a=tmCI0!;b=tmCS0!
+tmCS!    : rTmAsg a=tmS!;b=tmSp1!             # $S = $S + 1;
+tmCI1!   : rTmAsg a=tmI!;b=tmIp1!             # $I = $I + 1;
+tmSkip!  : rTmSkip
+tmIf!    : rTmIf b=tmCond!;c=tmCS!;d=tmSkip!  # IF ($I % 2 == 1) { $S = $S + 1; } ELSE { ; }
+tmBody!  : rTmSeq a=tmIf!;b=tmCI1!
+tmLoop!  : rTmWhile b=tmGuard!;c=tmBody!
+
+# Assertions
+tmInv!   : rTmEq a=tmS!;b=tmDI!               # $S == INTDIV($I, 2)
+tmInvB!  : rTmAnd p=tmInv!;q=tmGuard!         # $S == INTDIV($I, 2) && $I != $N
+tmInvBC! : rTmAnd p=tmInvB!;q=tmCond!         # ... && $I % 2 == 1
+tmInvBN! : rTmAnd p=tmInvB!;q=tmNotC!         # ... && !($I % 2 == 1)
+tmMid!   : rTmEq a=tmS!;b=tmDI1!              # $S == INTDIV($I + 1, 2)
+tmThenP! : rTmEq a=tmSp1!;b=tmDI1!            # $S + 1 == INTDIV($I + 1, 2)
+tmExit!  : rTmAnd p=tmInv!;q=tmNotG!          # $S == INTDIV($I, 2) && !($I != $N)
+tmGoal!  : rTmEq a=tmS!;b=tmDN!               # $S == INTDIV($N, 2)
+tmInit0! : rTmEq a=tm0!;b=tmDI!               # 0 == INTDIV($I, 2)
+tmInit1! : rTmApp f=tmINTDIV!;a=tm0!;b=tm2!            # INTDIV(0, 2)
+tmInitP! : rTmEq a=tm0!;b=tmInit1!            # 0 == INTDIV(0, 2)
+
+## Proof ##
+
+pGoal : Prove {TRUE} $I = 0; $S = 0; WHILE ($I != $N) { IF ($I % 2 == 1) { $S = $S + 1; } ELSE { ; } $I = $I + 1; } {$S == INTDIV($N, 2)}
+
+pBody : Loop body, backwards from the invariant $S == INTDIV($I, 2).
+
+thInc!    : rAssignI a=tmS!;f=tmINTDIV!;k=tm2!;e=tmIp1!  # {$S == INTDIV($I + 1, 2)} $I = $I + 1; {$S == INTDIV($I, 2)}
+thThen0!  : rAssignS e=tmSp1!;g=tmDI1!          # {$S + 1 == INTDIV($I + 1, 2)} $S = $S + 1; {$S == INTDIV($I + 1, 2)}
+thOdd!    : rDivOdd a=tmI!;b=tmS!;q=tmGuard!
+thThen!   : rConsPre p=tmInvBC!;q=tmThenP!;c=tmCS!;r=tmMid! thOdd! thThen0!
+thElse0!  : rSkip p=tmMid!                      # {$S == INTDIV($I + 1, 2)} ; {$S == INTDIV($I + 1, 2)}
+thEven!   : rDivEven a=tmI!;b=tmS!;q=tmGuard!
+thElse!   : rConsPre p=tmInvBN!;q=tmMid!;c=tmSkip!;r=tmMid! thEven! thElse0!
+thIf!     : rIf p=tmInvB!;b=tmCond!;c=tmCS!;d=tmSkip!;q=tmMid! thThen! thElse!
+thBodyInv : rSeq p=tmInvB!;a=tmIf!;q=tmMid!;b=tmCI1!;r=tmInv! thIf! thInc!
+
+pLoop : While rule with invariant $S == INTDIV($I, 2), then weaken the exit condition.
+
+thLoop!    : rWhile p=tmInv!;b=tmGuard!;c=tmBody! thBodyInv
+thExit!    : rDivExit a=tmI!;b=tmS!;c=tmN!
+thLoopGoal : rConsPost p=tmInv!;c=tmLoop!;q=tmExit!;r=tmGoal! thLoop! thExit!
+
+pInit : Initialisation establishes the invariant.
+
+thInitS!  : rAssignS e=tm0!;g=tmDI!             # {0 == INTDIV($I, 2)} $S = 0; {$S == INTDIV($I, 2)}
+thInitI!  : rAssignI a=tm0!;f=tmINTDIV!;k=tm2!;e=tm0!    # {0 == INTDIV(0, 2)} $I = 0; {0 == INTDIV($I, 2)}
+thInit0!  : rSeq p=tmInitP!;a=tmCI0!;q=tmInit0!;b=tmCS0!;r=tmInv! thInitI! thInitS!
+thTrue!   : rDivInit
+thInit    : rConsPre p=tmTRUE!;q=tmInitP!;c=tmInit!;r=tmInv! thTrue! thInit0!
+
+thProgram : rSeq p=tmTRUE!;a=tmInit!;q=tmInv!;b=tmLoop!;r=tmGoal! thInit thLoopGoal

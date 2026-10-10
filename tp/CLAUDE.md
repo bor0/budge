@@ -57,15 +57,30 @@ tFoo : rBar ; hyp1
 
 ## Key patterns
 
-### Aligning predicate names with program variable letters
+### Hoare assignment: fixed-shape assertions
 
-When writing rules that involve substitution into predicates (e.g., the assignment axiom), name the predicate using the **same uppercase letters as the program variables**. Budge's string substitution then naturally mirrors the mathematical Q[a/x] side condition.
+The assignment axiom `{Q[e/x]} x:=e {Q}` cannot be written generically:
+substitution only happens in rule templates, never inside a value, so one
+value can't yield both `Q` and `Q[e/x]`. (A rule like `{q} x:=e {p}` with
+`p`, `q` supplied separately is unsound — it accepts any precondition.)
 
-Example: invariant `SUM(I,S)` for program variables `I` and `S` gives:
-- `SUM(I,S)[0/S]` = `SUM(I,0)` → `{SUM(I,0)} S:=0 {SUM(I,S)}` derived by `rAssign`
-- `SUM(I,0)[0/I]` = `SUM(0,0)` → `{SUM(0,0)} I:=0 {SUM(I,0)}` derived by `rAssign`
+Workaround: fix the shape of assertions so the assigned variable sits in a
+known slot, and give each program variable its own axiom:
 
-Both initialization steps follow from `rAssign` alone with no extra axioms. See `hoare.btp`.
+```
+rAssignI : {a == f(e, k)} $I = e; {a == f($I, k)}   # a, f, k must not mention $I
+rAssignS : {e == g} $S = e; {$S == g}               # g must not mention $S
+```
+
+Under that shape, Q[e/x] is just filling `e` into the template. The side
+conditions are not checked by Budge. Order the program so intermediate
+assertions stay in shape: in `hoare.btp` the increment comes *after* the
+`IF`, so stepping back over `$I = $I + 1` gives `$S == INTDIV($I + 1, 2)`,
+which already fits — no helper predicates needed.
+
+PHP keywords and function names are case-insensitive, so `WHILE`, `IF`,
+`INTDIV` and `$I`/`$S` keep all program text uppercase and safe from
+meta-variable substitution, while assertions stay valid PHP expressions.
 
 ### Term lifting
 
