@@ -44,12 +44,16 @@ In the `examples` folder you can find the following proofs:
 - [Gentzen](./examples/gentzen.btp) - Gentzen system
 - [Hanoi](./examples/hanoi.btp) - An implementation of the rules for Hanoi's tower
 - [Hilbert's system](./examples/hilbert.btp) - Hilbert's logical system
-- [List](examples/list.btp) - List implementation and some example functions on them
+- [Hoare logic](./examples/hoare.btp) - Partial correctness proof of a tiny imperative program
+- [List](./examples/list.btp) - List implementation and some example functions on them
+- [LLM](./examples/llm.btp) - A toy bigram language model with greedy decoding
 - [MU puzzle](./examples/miu.btp) - A simple usage of a small formal system
 - [Peano's axioms](./examples/peano.btp) - A more detailed example on numbers
 - [PQ](./examples/pq.btp) - Number addition
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
+- [RSA](./examples/rsa.btp) - Toy RSA encryption and decryption using tally numbers
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication
 - [Typed](./examples/typed.btp) - Shows the distinction between terms and theorems
 - [Whirlpool](./examples/whirlpool.btp) - The self-referential trap of searching for escape, and cognitive defusion
+- [Zero plus n](./examples/zero_plus_n_induction.btp) - Proof that 0 + n = n by induction
