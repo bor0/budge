@@ -1,74 +1,166 @@
-# Proving that 0 + n = n for all natural numbers using induction
-# We use a predicate ZPEQ(x) that represents "0 + x = x"
+# Proving that 0 + n = n for all natural numbers using induction, Hilbert-style
 #
-# WHY THE WRAPPER?
-# rInd: ⊢p(0) -> ⊢p(n)=>p(S(n)) -> ⊢∀X,p(X)
-# We want p = "EQ(ADD(0,x),x)" but budge substitutes p literally:
-# p(0) → "EQ(ADD(0,x),x)(0)" instead of "EQ(ADD(0,0),0)".
-# ZPEQ(x) wraps the predicate so p(0) → "ZPEQ(0)" which works correctly.
+# The inductive step ZPEQ(n) => ZPEQ(S(n)) is *proved*, not assumed. Budge has
+# no hypothetical reasoning ("assume A, derive B, conclude A=>B"), so instead
+# every fact used under the assumption is stated as an object-level implication
+# and the implications are chained with modus ponens and hypothetical syllogism
+# (itself derived from axioms K and S below). This is what the deduction
+# theorem says is always possible.
+#
+# ZPEQ(x) is a *defined* predicate: rZPEQI/rZPEQE say ZPEQ(x) <=> 0+x=x. It is
+# needed because rInd's p(0) substitutes p literally, so p must be a bare name.
+#
+# Side condition (not checked by Budge): rInd must be applied with n left
+# schematic, i.e. never pass n=... to it or to the inductive step.
+
+# Propositional logic: axioms K and S, modus ponens
+rK  : ⊢(p=>(q=>p))
+rS  : ⊢((p=>(q=>r))=>((p=>q)=>(p=>r)))
+rMp : ⊢p -> ⊢(p=>q) -> ⊢q
 
 # Equality
 rEqR : ⊢EQ(x,x)
-rEqS : ⊢EQ(x,y) -> ⊢EQ(y,x)
-rEqT : ⊢EQ(x,y) -> ⊢EQ(y,z) -> ⊢EQ(x,z)
+rEqS : ⊢(EQ(x,y)=>EQ(y,x))
+rEqT : ⊢(EQ(x,y)=>(EQ(y,z)=>EQ(x,z)))
 
 # Addition
 rAZ : ⊢EQ(ADD(x,0),x)
 rAS : ⊢EQ(ADD(x,S(y)),S(ADD(x,y)))
 
-# Congruence: m = n => S(m) = S(n)
-rCongS : ⊢EQ(m,n) -> ⊢EQ(S(m),S(n))
+# Congruence: x = y => S(x) = S(y)
+rCongS : ⊢(EQ(x,y)=>EQ(S(x),S(y)))
 
-# Induction
-rInd : ⊢p(0) -> ⊢p(n)=>p(S(n)) -> ⊢∀X,p(X)
+# Induction and universal instantiation
+rInd  : ⊢p(0) -> ⊢(p(n)=>p(S(n))) -> ⊢∀X,p(X)
+rInst : ⊢∀X,p(X) -> ⊢p(x)
 
-# Object-level modus ponens: ⊢A and ⊢(A=>B) gives ⊢B
-rMp : ⊢p -> ⊢p=>q -> ⊢q
+# Definition of ZPEQ: ZPEQ(x) iff ADD(0,x) = x
+rZPEQ  : ZPEQ
+rZPEQI : ⊢(EQ(ADD(0,x),x)=>ZPEQ(x))
+rZPEQE : ⊢(ZPEQ(x)=>EQ(ADD(0,x),x))
 
-# ZPEQ predicate: ZPEQ(x) iff ADD(0,x) = x
-rZPEQ        : ZPEQ
-tmZPEQ!      : rZPEQ
-rTmZPEQ      : ZPEQ(x)
-rZPEQBase    : ⊢EQ(ADD(0,x),x) -> ⊢ZPEQ(x)
-rZPEQExtract : ⊢ZPEQ(x) -> ⊢EQ(ADD(0,x),x)
-# Inductive step as axiom: budge cannot derive object-level implications from
-# meta-level reasoning; this is consistent with rAS + rCongS + rEqT + rZPEQBase
-rZPEQImpl    : ⊢ZPEQ(n)=>ZPEQ(S(n))
-# Instantiation: from ⊢∀X,ZPEQ(X), derive ⊢ZPEQ(x) for any concrete term x
-rInstZPEQ    : ⊢∀X,ZPEQ(X) -> ⊢ZPEQ(x)
+# Term constructors
+rTmImp  : (p=>q)
+rTmEq   : EQ(x,y)
+rTmAdd  : ADD(x,y)
+rTmS    : S(x)
+rTmZPEQ : ZPEQ(x)
+rTmZ    : 0
+rTmN    : n
+ra : a
+rb : b
+rc : c
+
+# Hypothetical syllogism: ⊢((b=>c)=>((a=>b)=>(a=>c))), derived from K and S
+# (same derivation as in hilbert.btp)
+tma! : ra
+tmb! : rb
+tmc! : rc
+tm(b=>c)! : rTmImp p=tmb!;q=tmc!
+tm(a=>(b=>c))! : rTmImp p=tma!;q=tm(b=>c)!
+tm(a=>b)! : rTmImp p=tma!;q=tmb!
+tm(a=>c)! : rTmImp p=tma!;q=tmc!
+tm((a=>b)=>(a=>c))! : rTmImp p=tm(a=>b)!;q=tm(a=>c)!
+tm((a=>(b=>c))=>((a=>b)=>(a=>c)))! : rTmImp p=tm(a=>(b=>c))!;q=tm((a=>b)=>(a=>c))!
+tm((b=>c)=>((a=>(b=>c))=>((a=>b)=>(a=>c))))! : rTmImp p=tm(b=>c)!;q=tm((a=>(b=>c))=>((a=>b)=>(a=>c)))!
+tm((b=>c)=>(a=>(b=>c)))! : rTmImp p=tm(b=>c)!;q=tm(a=>(b=>c))!
+tm((b=>c)=>((a=>b)=>(a=>c)))! : rTmImp p=tm(b=>c)!;q=tm((a=>b)=>(a=>c))!
+tm(((b=>c)=>(a=>(b=>c)))=>((b=>c)=>((a=>b)=>(a=>c))))! : rTmImp p=tm((b=>c)=>(a=>(b=>c)))!;q=tm((b=>c)=>((a=>b)=>(a=>c)))!
+thHS1! : rS p=tma!;q=tmb!;r=tmc!
+thHS2! : rK p=tm((a=>(b=>c))=>((a=>b)=>(a=>c)))!;q=tm(b=>c)!
+thHS3! : rMp p=tm((a=>(b=>c))=>((a=>b)=>(a=>c)))!;q=tm((b=>c)=>((a=>(b=>c))=>((a=>b)=>(a=>c))))! thHS1! thHS2!
+thHS4! : rS p=tm(b=>c)!;q=tm(a=>(b=>c))!;r=tm((a=>b)=>(a=>c))!
+thHS5! : rK p=tm(b=>c)!;q=tma!
+thHS6! : rMp p=tm((b=>c)=>((a=>(b=>c))=>((a=>b)=>(a=>c))))!;q=tm(((b=>c)=>(a=>(b=>c)))=>((b=>c)=>((a=>b)=>(a=>c))))! thHS3! thHS4!
+thHS!  : rMp p=tm((b=>c)=>(a=>(b=>c)))!;q=tm((b=>c)=>((a=>b)=>(a=>c)))! thHS5! thHS6!
 
 # Terms
-rTmZ : 0
-tmZ! : rTmZ
-rTmS : S(x)
+tmZ!     : rTmZ
 tmOne!   : rTmS x=tmZ!
 tmTwo!   : rTmS x=tmOne!
 tmThree! : rTmS x=tmTwo!
+tmN!     : rTmN                        # n, left schematic
+tmSN!    : rTmS x=tmN!                 # S(n)
+tmA00!   : rTmAdd x=tmZ!;y=tmZ!        # ADD(0,0)
+tmA0N!   : rTmAdd x=tmZ!;y=tmN!        # ADD(0,n)
+tmA0SN!  : rTmAdd x=tmZ!;y=tmSN!       # ADD(0,S(n))
+tmSA0N!  : rTmS x=tmA0N!               # S(ADD(0,n))
+tmZPEQ!  : rZPEQ                       # ZPEQ (bare predicate name, for rInd)
 
-# Term forms of ZPEQ propositions (needed for rMp substitution)
-tmZPEQ0! : rTmZPEQ x=tmZ!    # ZPEQ(0)
-tmZPEQ1! : rTmZPEQ x=tmOne!  # ZPEQ(S(0))
+# Propositions used in the proof
+tmE0! : rTmEq x=tmA00!;y=tmZ!          # EQ(ADD(0,0),0)
+tmP0! : rTmZPEQ x=tmZ!                 # ZPEQ(0)
+tmP!  : rTmZPEQ x=tmN!                 # P = ZPEQ(n)
+tmE!  : rTmEq x=tmA0N!;y=tmN!          # E = EQ(ADD(0,n),n)
+tmF!  : rTmEq x=tmSA0N!;y=tmSN!        # F = EQ(S(ADD(0,n)),S(n))
+tmG!  : rTmEq x=tmA0SN!;y=tmSN!        # G = EQ(ADD(0,S(n)),S(n))
+tmH!  : rTmEq x=tmA0SN!;y=tmSA0N!      # H = EQ(ADD(0,S(n)),S(ADD(0,n)))
+tmQ!  : rTmZPEQ x=tmSN!                # Q = ZPEQ(S(n))
+tm(P=>E)! : rTmImp p=tmP!;q=tmE!
+tm(E=>F)! : rTmImp p=tmE!;q=tmF!
+tm(P=>F)! : rTmImp p=tmP!;q=tmF!
+tm(F=>G)! : rTmImp p=tmF!;q=tmG!
+tm(P=>G)! : rTmImp p=tmP!;q=tmG!
+tm(G=>Q)! : rTmImp p=tmG!;q=tmQ!
+tm(P=>Q)! : rTmImp p=tmP!;q=tmQ!
+tm((P=>E)=>(P=>F))! : rTmImp p=tm(P=>E)!;q=tm(P=>F)!
+tm((P=>F)=>(P=>G))! : rTmImp p=tm(P=>F)!;q=tm(P=>G)!
+tm((P=>G)=>(P=>Q))! : rTmImp p=tm(P=>G)!;q=tm(P=>Q)!
 
 # BASE CASE: ⊢ZPEQ(0)
-thBaseAddEq! : rAZ x=tmZ!                    # ⊢EQ(ADD(0,0),0)
-thBase!      : rZPEQBase x=tmZ! thBaseAddEq! # ⊢ZPEQ(0)
+thBaseEq!   : rAZ x=tmZ!                                  # ⊢EQ(ADD(0,0),0)
+thBaseImp!  : rZPEQI x=tmZ!                               # ⊢(EQ(ADD(0,0),0)=>ZPEQ(0))
+thBase!     : rMp p=tmE0!;q=tmP0! thBaseEq! thBaseImp!    # ⊢ZPEQ(0)
 
-# INDUCTIVE STEP: ⊢ZPEQ(n)=>ZPEQ(S(n))  (schematic — n is not fixed to any value)
-thIndStep! : rZPEQImpl
+# INDUCTIVE STEP: ⊢(ZPEQ(n)=>ZPEQ(S(n)))
+# Informally: assume ZPEQ(n), so 0+n=n, so S(0+n)=S(n); and 0+S(n)=S(0+n),
+# so 0+S(n)=S(n) by transitivity, i.e. ZPEQ(S(n)).
 
-# Verify for n=0: derive ⊢ZPEQ(S(0)) by modus ponens from thBase! and the step at n=0
-thIndStep0!    : rZPEQImpl n=tmZ!
-thZPEQ1ViaMp! : rMp p=tmZPEQ0!;q=tmZPEQ1! thBase! thIndStep0!
+# P=>E: unfold the definition
+thPE! : rZPEQE x=tmN!
+
+# E=>F: congruence, then chain to P=>F
+thEF!   : rCongS x=tmA0N!;y=tmN!
+thPF1!  : thHS! a=tmP!;b=tmE!;c=tmF!                                # ⊢((E=>F)=>((P=>E)=>(P=>F)))
+thPF2!  : rMp p=tm(E=>F)!;q=tm((P=>E)=>(P=>F))! thEF! thPF1!
+thPF!   : rMp p=tm(P=>E)!;q=tm(P=>F)! thPE! thPF2!                 # ⊢(P=>F)
+
+# F=>G: transitivity with H = 0+S(n) = S(0+n), then chain to P=>G
+thH!    : rAS x=tmZ!;y=tmN!                                         # ⊢H
+thHFG!  : rEqT x=tmA0SN!;y=tmSA0N!;z=tmSN!                          # ⊢(H=>(F=>G))
+thFG!   : rMp p=tmH!;q=tm(F=>G)! thH! thHFG!                        # ⊢(F=>G)
+thPG1!  : thHS! a=tmP!;b=tmF!;c=tmG!
+thPG2!  : rMp p=tm(F=>G)!;q=tm((P=>F)=>(P=>G))! thFG! thPG1!
+thPG!   : rMp p=tm(P=>F)!;q=tm(P=>G)! thPF! thPG2!                 # ⊢(P=>G)
+
+# G=>Q: fold the definition, then chain to P=>Q
+thGQ!   : rZPEQI x=tmSN!
+thPQ1!  : thHS! a=tmP!;b=tmG!;c=tmQ!
+thPQ2!  : rMp p=tm(G=>Q)!;q=tm((P=>G)=>(P=>Q))! thGQ! thPQ1!
+thIndStep : rMp p=tm(P=>G)!;q=tm(P=>Q)! thPG! thPQ2!               # ⊢(ZPEQ(n)=>ZPEQ(S(n)))
 
 # FINAL THEOREM: ⊢∀X,ZPEQ(X)  (for all X, ADD(0,X) = X)
-thZeroPlusN : rInd p=tmZPEQ! thBase! thIndStep!
+thZeroPlusN : rInd p=tmZPEQ! thBase! thIndStep
 
-# Concrete instances derived from the general theorem via rInstZPEQ
-th0Plus1Zpeq! : rInstZPEQ x=tmOne!   thZeroPlusN  # ⊢ZPEQ(S(0))
-th0Plus2Zpeq! : rInstZPEQ x=tmTwo!   thZeroPlusN  # ⊢ZPEQ(S(S(0)))
-th0Plus3Zpeq! : rInstZPEQ x=tmThree! thZeroPlusN  # ⊢ZPEQ(S(S(S(0))))
+# Concrete instances: instantiate, then unfold the definition
+tmP1! : rTmZPEQ x=tmOne!
+tmP2! : rTmZPEQ x=tmTwo!
+tmP3! : rTmZPEQ x=tmThree!
+tmA01! : rTmAdd x=tmZ!;y=tmOne!
+tmA02! : rTmAdd x=tmZ!;y=tmTwo!
+tmA03! : rTmAdd x=tmZ!;y=tmThree!
+tmE1! : rTmEq x=tmA01!;y=tmOne!
+tmE2! : rTmEq x=tmA02!;y=tmTwo!
+tmE3! : rTmEq x=tmA03!;y=tmThree!
 
-# Extract equations: 0+1=1, 0+2=2, 0+3=3
-th0Plus1 : rZPEQExtract x=tmOne!   th0Plus1Zpeq!
-th0Plus2 : rZPEQExtract x=tmTwo!   th0Plus2Zpeq!
-th0Plus3 : rZPEQExtract x=tmThree! th0Plus3Zpeq!
+th0Plus1Zpeq! : rInst p=tmZPEQ!;x=tmOne!   thZeroPlusN     # ⊢ZPEQ(S(0))
+th0Plus2Zpeq! : rInst p=tmZPEQ!;x=tmTwo!   thZeroPlusN     # ⊢ZPEQ(S(S(0)))
+th0Plus3Zpeq! : rInst p=tmZPEQ!;x=tmThree! thZeroPlusN     # ⊢ZPEQ(S(S(S(0))))
+th0Plus1Imp!  : rZPEQE x=tmOne!
+th0Plus2Imp!  : rZPEQE x=tmTwo!
+th0Plus3Imp!  : rZPEQE x=tmThree!
+
+# 0+1=1, 0+2=2, 0+3=3
+th0Plus1 : rMp p=tmP1!;q=tmE1! th0Plus1Zpeq! th0Plus1Imp!
+th0Plus2 : rMp p=tmP2!;q=tmE2! th0Plus2Zpeq! th0Plus2Imp!
+th0Plus3 : rMp p=tmP3!;q=tmE3! th0Plus3Zpeq! th0Plus3Imp!

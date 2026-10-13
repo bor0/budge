@@ -91,14 +91,34 @@ rTmFoo : Foo(x)         # term rule, conclusion is the term shape
 tmFoo! : rTmFoo x=tmX!  # applies it, giving value Foo(X)
 ```
 
-### Predicate wrapping for induction
+### Defined predicates for induction
 
-`rInd : ⊢p(0) -> ⊢p(n)=>p(S(n)) -> ⊢∀X,p(X)` substitutes `p` literally.
+`rInd : ⊢p(0) -> ⊢(p(n)=>p(S(n))) -> ⊢∀X,p(X)` substitutes `p` literally.
 So `p=EQ(ADD(0,x),x)` gives `p(0)` → `EQ(ADD(0,x),x)(0)` (wrong).
 
-Fix: wrap the predicate as a named symbol `PRED`, define intro/elim rules, use `p=tmPRED!`.
+Fix: introduce a named predicate `PRED` by definition — two axioms
+`rPREDI : ⊢(BODY(x)=>PRED(x))` and `rPREDE : ⊢(PRED(x)=>BODY(x))`, i.e.
+`PRED(x) <=> BODY(x)` — and pass the bare name: `p=tmPRED!`. This is a
+definitional extension (conservative), not a workaround.
 
 See `zero_plus_n_induction.btp` for the full pattern.
+
+### Proving the inductive step (Hilbert-style)
+
+Budge has no hypothetical reasoning ("assume A, derive B, conclude A=>B"), so
+the step `⊢(PRED(n)=>PRED(S(n)))` can't be built from meta-level rules like
+`⊢EQ(x,y) -> ⊢EQ(S(x),S(y))` — those only fire on already-proved facts.
+Instead, by the deduction theorem, prove it Hilbert-style:
+
+- state the facts used under the assumption as object-level implications
+  (`rCongS : ⊢(EQ(x,y)=>EQ(S(x),S(y)))`, curried `rEqT : ⊢(EQ(x,y)=>(EQ(y,z)=>EQ(x,z)))`)
+- chain them with `rMp` and hypothetical syllogism `⊢((b=>c)=>((a=>b)=>(a=>c)))`,
+  derived from axioms K and S as in `hilbert.btp`
+- an unconditional fact (e.g. `⊢H` from `rAS`) feeds into a curried implication
+  via `rMp`, leaving `⊢(F=>G)` to chain
+
+Do **not** axiomatise the step itself (`rImpl : ⊢PRED(n)=>PRED(S(n))`) — that
+assumes the content of the proof.
 
 ### Schematic inductive step (important)
 
@@ -106,20 +126,25 @@ When applying `rInd`, do **not** fix `n` to a specific value. Leave it schematic
 
 ```
 # Wrong — inductive step only verified at n=0:
-thStep! : rMyImpl n=tmZ!
+thStep! : ... built with n=tmZ! ...
 thResult : rInd p=tmP!;n=tmZ! thBase! thStep!
 
 # Correct — inductive step is schematic for any n:
-thStep!  : rMyImpl          # n stays as literal 'n'
+rTmN : n
+tmN! : rTmN                 # use x=tmN! wherever a rule needs n
 thResult : rInd p=tmP! thBase! thStep!
 ```
 
-This works because the rule's `p(n)=>p(S(n))` after substituting only `p` becomes `PRED(n)=>PRED(S(n))`, which matches an unsubstituted `rMyImpl` conclusion.
+This works because the rule's `(p(n)=>p(S(n)))` after substituting only `p`
+becomes `(PRED(n)=>PRED(S(n)))`, which matches a step proved with literal `n`.
+Budge does **not** check this side condition; soundness relies on the convention.
+Never use `n` as a substitution key in such files, since values contain it.
 
-### Object-level modus ponens
+### Object-level implications and modus ponens
 
-Add `rMp : ⊢p -> ⊢p=>q -> ⊢q` when you need to fire object-level implications.
-Note: **no outer parentheses** around `p=>q` in the template, because `rZPEQImpl`-style rules produce `⊢A=>B` without them. (Contrast with `hilbert.btp`'s `rMp : ⊢p -> ⊢(p=>q) -> ⊢q`, which works there because all `tm...!` terms are built with explicit parens via `rTmImp`.)
+Use `rMp : ⊢p -> ⊢(p=>q) -> ⊢q` and write **every** implication fully
+parenthesised, `(A=>B)`, in axioms and in terms built via `rTmImp : (p=>q)`.
+Matching is exact string equality, so mixing `A=>B` and `(A=>B)` breaks proofs.
 
 ### Tally numbers (free addition)
 
@@ -138,16 +163,17 @@ not that the result is fully reduced below `n`. See `rsa.btp`.
 ### Instantiation from universals
 
 `rInd` produces `⊢∀X,PRED(X)` but there is no built-in universal instantiation.
-Add a predicate-specific rule: `rInstPRED : ⊢∀X,PRED(X) -> ⊢PRED(x)`.
-Then derive concrete instances by applying it to the universal theorem.
+Add one general rule, `rInst : ⊢∀X,p(X) -> ⊢p(x)`, and apply it with
+`p=tmPRED!;x=...` (works because `p` is a bare predicate name).
 
 ## Known limitations
 
 - **No general unification** — matching is exact string equality after substitution
 - **No backtracking or proof search** — theorems are evaluated strictly in source order
-- **No lambda / beta-reduction** — predicates cannot be passed as higher-order arguments; use the wrapper pattern instead
-- **No universal instantiation built in** — must add per-predicate instantiation rules
-- **Object-level implications cannot be derived** from meta-level hypothetical reasoning; they must be axiomatised (`rImpl : ⊢A=>B`) and the comment should note why it's justified
+- **No lambda / beta-reduction** — predicates cannot be passed as higher-order arguments; use a defined predicate instead
+- **No universal instantiation built in** — add a general `rInst` rule
+- **No hypothetical reasoning** — object-level implications can't come from meta-level rules; derive them Hilbert-style (see above)
+- **No free-variable tracking** — the schematic-`n` side condition of `rInd` is a convention, not checked
 - **Single lowercase letters only** as substitution variables
 
 ## Conventions used in examples
