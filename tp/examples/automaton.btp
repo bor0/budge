@@ -1,4 +1,6 @@
 # Simple FSM
+
+<?py load('lib/strings.btp') ?>
 rBase : ⊢01
 rSucc : ⊢ab -> ⊢a01b
 
@@ -6,10 +8,9 @@ rTm0 : 0
 rTm1 : 1
 tm0! : rTm0
 tm1! : rTm1
-rMkTm : ab
 
-tm00! : rMkTm a=tm0!;b=tm0!
-tm11! : rMkTm a=tm1!;b=tm1!
+tm00! : rTmMk x=tm0!;y=tm0!
+tm11! : rTmMk x=tm1!;y=tm1!
 
 thm1 : rBase
 thm2 : rSucc a=tm0!;b=tm1! thm1

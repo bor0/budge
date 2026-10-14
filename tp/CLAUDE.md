@@ -120,6 +120,9 @@ MEMBER, SUM, MAX, substitution, REV, SORTED; exports `tmNil!`, `tmT!`, `tmF!`.
 `boolean.btp` (loads fol): Huntington's axioms over fol's terms (∧, ∨, ¬, 0, 1), with ∧/∨
 congruence and the syntax rules for 1. Equality is fol's: a meta-level `⊢EQ(x,y) -> ⊢EQ(y,x)`
 in an example would duplicate `rEqS`.
+`strings.btp` (loads nothing): concatenation `xy`, sequences `x y`, GEB's hyphen strings
+(`tm-!`…`tm----!`). Same text with a different meaning (`0` as a bit, `K` as a combinator) is
+not a duplicate: don't load a library for a coincidental symbol.
 
 **Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
 `rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;

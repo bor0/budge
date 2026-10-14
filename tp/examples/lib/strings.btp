@@ -1,0 +1,16 @@
+# Strings
+#
+# Concatenation xy builds strings (x y when items are words). GEB's formal
+# systems (pq, tq, dnd) are strings of hyphens: --- stands for 3, so adding is
+# concatenating. Bar tallies with arithmetic are in tally.btp.
+
+## Concatenation, and sequences written with a space between items
+rTmMk  : xy
+rTmSeq : x y
+
+## Hyphen tallies (GEB)
+rTm- : -
+tm-!    : rTm-
+tm--!   : rTmMk x=tm-!;y=tm-!
+tm---!  : rTmMk x=tm--!;y=tm-!
+tm----! : rTmMk x=tm--!;y=tm--!

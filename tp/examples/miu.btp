@@ -1,11 +1,10 @@
+<?py load('lib/strings.btp') ?>
 rTmM : M
 rTmI : I
 rTmU : U
 tmM! : rTmM
 tmI! : rTmI
 tmU! : rTmU
-
-rTmxy : xy
 
 rMI : |- MI
 thMI : rMI
@@ -16,7 +15,7 @@ r3 : |- xIIIy -> |- xUy
 
 thMII : r2 x=tmI! thMI
 
-tmII! : rTmxy x=tmI!;y=tmI!
+tmII! : rTmMk x=tmI!;y=tmI!
 thMIIII : r2 x=tmII! thMII
 
 thMUI : r3 x=tmM!;y=tmI! thMIIII

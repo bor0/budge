@@ -1,10 +1,6 @@
-# The PQ system, as per GEB.
+# Prime numbers, as per GEB (ch. III): "does not divide" (DND), "divisor free" (DF), prime (P).
 
-# Term construction
-rTm- : -
-tm-! : rTm-
-rTmMk : xy
-
+<?py load('lib/strings.btp') ?>
 # Rules
 rDNDBase : xyDNDx # not (x+y)|x
 rDNDSucc : xDNDy -> xDNDxy # not x|y -> not x|(x+y)
@@ -14,9 +10,6 @@ rPBase : P--
 rPSucc : x-DFx -> Px- # if (x+1) divisor free up to x then x+1 prime
 
 # Terms needed for the proofs
-tm--! : rTmMk x=tm-!;y=tm-!
-tm---! : rTmMk x=tm--!;y=tm-!
-tm----! : rTmMk x=tm--!;y=tm--!
 
 thmPrimeTwo : rPBase
 

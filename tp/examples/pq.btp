@@ -1,17 +1,11 @@
 # The PQ system, as per GEB.
 
-# Term construction
-rTm- : -
-tm-! : rTm-
-rTmMk : xy
-
+<?py load('lib/strings.btp') ?>
 # Rules
 rBase : xP-Qx- # x+1 = x+1
 rSucc : xPyQz -> xPy-Qz- # x+y = z -> x+y+1=z+1
 
 # Terms needed for the proofs
-tm--! : rTmMk x=tm-!;y=tm-!
-tm---! : rTmMk x=tm--!;y=tm-!
 
 thmTwoPlusOne : rBase x=tm--!
 thmTwoPlusTwo : rSucc x=tm--!;y=tm-!;z=tm---! thmTwoPlusOne

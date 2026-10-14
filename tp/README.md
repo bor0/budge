@@ -48,6 +48,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [peano.btp](./examples/lib/peano.btp) - The defining equations of + and ·, congruence, and induction
 - [boolean.btp](./examples/lib/boolean.btp) - Boolean algebra (Huntington's axioms) over the terms of fol.btp
 - [list.btp](./examples/lib/list.btp) - Lists of numbers, with list relations: append, car/cdr, membership, sum, max, substitution, reversal, sortedness
+- [strings.btp](./examples/lib/strings.btp) - String concatenation and sequences, and GEB's hyphen strings
 
 ## Example
 
