@@ -52,6 +52,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [tally.btp](./examples/lib/tally.btp) - Tally numbers (||| is 3) with order, and multiplication and powers modulo n
 - [semiring.btp](./examples/lib/semiring.btp) - Commutativity, associativity and distributivity of + and ·, each proved by induction
 - [nd.btp](./examples/lib/nd.btp) - Natural deduction as derived Hilbert schemas: currying, permutation, contraction, contraposition, reductio, excluded middle
+- [order.btp](./examples/lib/order.btp) - ≤ and < as formulas: totality, cancellation, and their interaction with successor
 - [sum.btp](./examples/lib/sum.btp) - SUM(n) = 0 + 1 + ... + n, defined by recursion
 - [parity.btp](./examples/lib/parity.btp) - n mod 2 and n div 2 defined by recursion, with lemmas about them
 - [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: sequence, skip, if, while and consequence rules over a small imperative language
@@ -68,6 +69,7 @@ In the `examples` folder you can find the following proofs:
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
 - [CL](./examples/cl.btp) - Propositional logic with ∧ and ∨ by hand, using the library
 - [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation
+- [Division](./examples/division.btp) - Division with remainder: ∀b ≠ 0 ∀a ∃q ∃r. a = b·q + r ∧ r < b
 - [DND](./examples/dnd.btp) - Prime numbers (divisibility)
 - [Hanoi](./examples/hanoi.btp) - An implementation of the rules for Hanoi's tower
 - [Hoare logic](./examples/hoare.btp) - A program counting odd numbers, verified from Peano's axioms with Hoare logic

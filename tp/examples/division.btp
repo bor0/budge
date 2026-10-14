@@ -1,0 +1,84 @@
+# Division with remainder
+#
+# Proved by the Python block below; Budge checks every
+# step, including those of the imported library.
+#
+#   thDivision : ∀b ∀a. ¬(b = 0) => ∃q ∃r. a = b·q + r ∧ r < b
+#
+# where r < b is ∃k. b = S(r)+k (lib/order.btp). By induction on a, for a
+# fixed b ≠ 0. Base: 0 = b·0 + 0, and 0 < b (thPos). Step: take q, r, k with
+# a = b·q + r and b = S(r)+k, so S(a) = b·q + S(r). Cases on k (thZeroOrSucc):
+#   k = 0:    b = S(r), so S(a) = b·q + b = b·S(q) + 0;
+#   k = S(p): b = S(S(r))+p, so S(r) < b and S(a) = b·q + S(r).
+
+<?py load('lib/order.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+def div(a, b):
+    q = spare(a, b)
+    r = spare(a, b, q)
+    return exists(q, exists(r, AND(EQ(a, ADD(MUL(b, q), r)), lt(r, b))))
+
+
+def witness(c, h_eq, h_lt, a, q, r):
+    """From a = b·q + r and r < b conclude div(a, M) with these q, r."""
+    d = div(a, M_)
+    inner = instantiate(d[1], q)                   # ∃r. a = b·q + r ∧ r < b
+    h = c.ex_i(c.and_i(h_eq, h_lt), inner[1], r)
+    return c.ex_i(h, d[1], q)
+
+
+section('∀b ∀a. ¬(b = 0) => ∃q ∃r. a = b·q + r ∧ r < b', 'Dv', [
+    'Induction on a, for the parameter b = M.'])
+NZ = NOT(EQ(M_, Z))
+stmt = lambda a: IMP(NZ, div(a, M_))
+f = abstract(stmt(N_), N_)
+root = Ctx(reserved={N_, M_})
+
+# base
+cb = root.assume(NZ)
+pos = cb.thru(cb.hyp_(), inst('thPos', M_))       # 0 < M
+h0 = cb.chain(Z, [([], sym(aMZ(M_))), ([], sym(aAZ(MUL(M_, Z))))])      # 0 = M·0 + 0
+base = root.close(cb.discharge(witness(cb, h0, pos, Z, Z, Z)))
+
+# step
+c1 = root.assume(instantiate(f, N_))
+c2 = c1.assume(NZ)
+hd = c2.mp(c2.hyp_(NZ), c2.hyp_(instantiate(f, N_)))     # ∃q ∃r. N = M·q + r ∧ r < M
+
+
+def with_q(c3, q):
+    def with_r(c4, r):
+        h_eq = c4.and_l(c4.hyp_())                 # N = M·q + r
+        h_succ = c4.chain(S(N_), [([0], h_eq), ([], sym(aAS(MUL(M_, q), r)))])   # S(N) = M·q + S(r)
+
+        def with_k(c5, k):
+            hk = EQ(M_, ADD(S(r), k))
+
+            def k_zero(c6):
+                hm = c6.chain(M_, [([], c6.hyp_(hk)), ([1], c6.hyp_()), ([], aAZ(S(r)))])   # M = S(r)
+                h = c6.chain(S(N_), [([], h_succ), ([1], c6.sym(hm)), ([], sym(aMS(M_, q))),
+                                     ([], sym(aAZ(MUL(M_, S(q)))))])     # S(N) = M·S(q) + 0
+                pos6 = c6.thru(c6.hyp_(NZ), inst('thPos', M_))
+                return witness(c6, h, pos6, S(N_), S(q), Z)
+
+            def k_succ(c6):
+                def with_p(c7, p):
+                    h = c7.chain(M_, [([], c7.hyp_(hk)), ([1], c7.hyp_()), ([], aAS(S(r), p)),
+                                      ([], sym(inst('thSuccAdd', S(r), p)))])   # M = S(S(r))+p
+                    h_lt = c7.ex_i(h, lt(S(r), M_)[1], p)
+                    return witness(c7, h_succ, h_lt, S(N_), q, S(r))
+                return c6.ex_e(c6.hyp_(), with_p)
+            return c5.cases(c5.get(inst('thZeroOrSucc', k)), k_zero, k_succ)
+        return c4.ex_e(c4.and_r(c4.hyp_()), with_k)
+    return c3.ex_e(c3.hyp_(), with_r)
+
+
+step = root.close(c1.discharge(c2.discharge(c2.ex_e(hd, with_q))))
+h = gen(induction(f, base, step), M_, name='thDivision')
+assert val(h)[1] == forall(M_, forall(N_, stmt(N_))), r(val(h)[1])
+prose('pDivision', '∀b ∀a. b ≠ 0 => ∃q ∃r. a = b·q + r ∧ r < b')
+?>

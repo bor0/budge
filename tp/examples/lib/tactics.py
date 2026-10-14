@@ -108,6 +108,7 @@ def IMP(x, y): return ('IMP', x, y)
 def AND(x, y): return ('AND', x, y)
 def OR(x, y): return ('OR', x, y)
 def NOT(x): return ('NOT', x)
+def ALL(x): return ('ALL', x)
 def ASG(x, e): return ('ASG', x, e)
 def SEQ(a, b): return ('SEQ', a, b)
 def IF(b, c, d): return ('IF', b, c, d)
@@ -582,6 +583,7 @@ def instantiate(f, t, k=0):
     return (f[0], *(instantiate(a, t, k) for a in f[1:]))
 
 
+def forall(w, body): return ('ALL', abstract(body, w))
 def exists(w, body): return ('EX', abstract(body, w))
 def mentions(t, w): return t == w or (isinstance(t, tuple) and any(mentions(a, w) for a in t[1:]))
 
@@ -788,8 +790,53 @@ class Ctx:
         return self.get(acc)
 
 
+# ---------------------------------------------------------------- arithmetic formulas
+def spare(*terms):
+    """A parameter not occurring in terms, to build a bound variable from."""
+    for w in reversed(PARAMS):
+        if not any(mentions(t, w) for t in terms):
+            return w
+    raise Exception('no spare parameter')
+
+
+def le(a, b):
+    """a ≤ b := ∃k. b = a+k"""
+    k = spare(a, b)
+    return exists(k, EQ(b, ADD(a, k)))
+
+
+def lt(a, b):
+    """a < b := S(a) ≤ b"""
+    return le(S(a), b)
+
+
 # ---------------------------------------------------------------- shared proof helpers
 ONE, TWO = S(Z), S(S(Z))
+
+
+def snz(x): return apply('rSNZ', [('x', x)], [])             # ⊢¬EQ(S(x),0)
+def sinj(x, y): return apply('rSInj', [('x', x), ('y', y)], [])  # S(x) = S(y) => x = y
+def refl(x): return apply('rEqR', [('x', x)], [])
+
+
+def closed(body, *params):
+    """∀params. body, the first parameter outermost."""
+    for w in reversed(params):
+        body = forall(w, body)
+    return body
+
+
+def gen_all(h, *params):
+    """Generalise the parameters of h, the first one outermost."""
+    for w in reversed(params):
+        h = gen(h, w)
+    return h
+
+
+def lemma(name, statement, h):
+    """Check the proved theorem h against the intended statement, and name it."""
+    assert val(h)[1] == statement, (r(val(h)[1]), r(statement))
+    return visible(h, name)
 
 
 # ---------------------------------------------------------------- library symbols

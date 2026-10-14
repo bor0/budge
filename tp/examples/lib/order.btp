@@ -1,0 +1,277 @@
+# Order on the natural numbers
+#
+# Proved by the Python block below; Budge checks every
+# step. a ≤ b is ∃k. b = a+k and a < b is S(a) ≤ b, both written out as
+# formulas (no new symbols). Proves, for all numbers:
+#
+#   thZeroOrSucc   n = 0 ∨ ∃p. n = S(p)
+#   thAddCancel    ∀b∀c∀a. a+b = a+c => b = c
+#   thAddSNeq      ∀b∀a. ¬(a+S(b) = a)
+#   thAddZeroR     ∀a∀b. a+b = 0 => b = 0
+#   thLeTotal      ∀b∀a. a ≤ b ∨ b < a
+#   thLtSuccLe     ∀d∀n. d < S(n) => d ≤ n
+#   thLeSuccCases  ∀d∀n. d ≤ S(n) => d ≤ n ∨ d = S(n)
+#   thLeZero       ∀d. d ≤ 0 => d = 0
+#   thPos          ∀m. ¬(m = 0) => 0 < m
+#   thLeSuccL      ∀a∀b. S(a) ≤ b => a ≤ b
+#   thLeSuccNZ     ∀a∀b. S(a) ≤ b => ¬(b = 0)
+#   thLeTwoNotOne  ∀m. 2 ≤ m => ¬(m = 1)
+#
+# Proofs are natural deduction compiled to Hilbert steps (see nd.btp).
+
+<?py load('semiring.btp') ?>
+<?py load('nd.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.dirname(__file__))
+from tactics import *
+use(env, __file__)
+
+# ---- n = 0 ∨ ∃p. n = S(p)
+section('Lemma: n = 0 ∨ ∃p. n = S(p)', 'OrA', ['Induction on n; the step does not need the hypothesis.'])
+zs = lambda n: OR(EQ(n, Z), exists(spare(n), EQ(n, S(spare(n)))))
+f = abstract(zs(N_), N_)
+root = Ctx(reserved={N_})
+base = root.close(root.or_l(refl(Z), zs(Z)[2]))
+c = root.assume(instantiate(f, N_))
+hs_ = c.ex_i(c.get(refl(S(N_))), zs(S(N_))[2][1], N_)
+step = root.close(c.discharge(c.or_r(hs_, EQ(S(N_), Z))))
+ZeroOrSucc = lemma('thZeroOrSucc', ALL(f), induction(f, base, step))
+
+
+def zero_or_succ(ctx, t):
+    return ctx.get(inst(ZeroOrSucc, t))
+
+
+# ---- a+b = a+c => b = c
+section('Lemma: a+b = a+c => b = c', 'OrB', [
+    'Induction on a, b and c parameters. Step: S(a)+b = S(a+b), so S(a+b) = S(a+c)',
+    'and a+b = a+c by injectivity of S.'])
+cancel = lambda a: IMP(EQ(ADD(a, M_), ADD(a, K_)), EQ(M_, K_))
+f = abstract(cancel(N_), N_)
+root = Ctx(reserved={N_, M_, K_})
+cb = root.assume(EQ(ADD(Z, M_), ADD(Z, K_)))
+hb = cb.chain(M_, [([], sym(inst('thZeroAdd', M_))), ([], cb.hyp_()), ([], inst('thZeroAdd', K_))])
+base = root.close(cb.discharge(hb))
+c1 = root.assume(instantiate(f, N_))
+c2 = c1.assume(EQ(ADD(S(N_), M_), ADD(S(N_), K_)))
+h = c2.chain(S(ADD(N_, M_)), [([], sym(inst('thSuccAdd', N_, M_))), ([], c2.hyp_()),
+                              ([], inst('thSuccAdd', N_, K_))])
+h = c2.thru(h, sinj(ADD(N_, M_), ADD(N_, K_)))
+h = c2.mp(h, c2.hyp_(instantiate(f, N_)))
+step = root.close(c1.discharge(c2.discharge(h)))
+AddCancel = lemma('thAddCancel', closed(cancel(N_), M_, K_, N_),
+                  gen_all(induction(f, base, step), M_, K_))
+
+# ---- ¬(a+S(b) = a)
+section('Lemma: ¬(a+S(b) = a)', 'OrC', [
+    'Induction on a. Base: 0+S(b) = S(b) ≠ 0. Step: S(a)+S(b) = S(a+S(b)), and',
+    'S(a+S(b)) = S(a) would give a+S(b) = a.'])
+neq = lambda a: NOT(EQ(ADD(a, S(M_)), a))
+f = abstract(neq(N_), N_)
+root = Ctx(reserved={N_, M_})
+
+
+def base_contra(c):
+    h = c.chain(S(M_), [([], sym(inst('thZeroAdd', S(M_)))), ([], c.hyp_())])
+    return h, snz(M_)
+
+
+base = root.close(root.absurd(EQ(ADD(Z, S(M_)), Z), base_contra))
+c1 = root.assume(instantiate(f, N_))
+
+
+def step_contra(c):
+    h = c.chain(S(ADD(N_, S(M_))), [([], sym(inst('thSuccAdd', N_, S(M_)))), ([], c.hyp_())])
+    return c.thru(h, sinj(ADD(N_, S(M_)), N_)), c.hyp_(instantiate(f, N_))
+
+
+step = root.close(c1.discharge(c1.absurd(EQ(ADD(S(N_), S(M_)), S(N_)), step_contra)))
+AddSNeq = lemma('thAddSNeq', closed(neq(N_), M_, N_), gen_all(induction(f, base, step), M_))
+
+# ---- a+b = 0 => b = 0
+section('Lemma: a+b = 0 => b = 0', 'OrD', [
+    'Cases on b: if b = S(p) then a+b = S(a+p) ≠ 0.'])
+root = Ctx(reserved={M_, K_})
+c = root.assume(EQ(ADD(M_, K_), Z))
+
+
+def succ_case(c2):
+    def with_p(c3, p):
+        h = c3.chain(S(ADD(M_, p)), [([], sym(aAS(M_, p))), ([1], c3.sym(c3.hyp_())),
+                                     ([], c3.hyp_(EQ(ADD(M_, K_), Z)))])
+        return c3.efq(h, snz(ADD(M_, p)), EQ(K_, Z))
+    return c2.ex_e(c2.hyp_(), with_p)
+
+
+h = c.cases(zero_or_succ(c, K_), lambda c2: c2.hyp_(), succ_case)
+AddZeroR = lemma('thAddZeroR', closed(IMP(EQ(ADD(M_, K_), Z), EQ(K_, Z)), M_, K_),
+                 gen_all(root.close(c.discharge(h)), M_, K_))
+
+# ---- a ≤ b ∨ b < a
+section('Lemma: a ≤ b ∨ b < a', 'OrE', [
+    'Induction on a. Base: b = 0+b. Step from a ≤ b, i.e. b = a+k: if k = 0 then',
+    'b = a and S(a) = S(b)+0, so b < S(a); if k = S(p) then b = S(a)+p. Step from',
+    'b < a, i.e. a = S(b)+k: S(a) = S(b)+S(k).'])
+tot = lambda a: OR(le(a, M_), lt(M_, a))
+f = abstract(tot(N_), N_)
+root = Ctx(reserved={N_, M_})
+hb = root.ex_i(sym(inst('thZeroAdd', M_)), le(Z, M_)[1], M_)
+base = root.close(root.or_l(hb, lt(M_, Z)))
+c1 = root.assume(instantiate(f, N_))
+LE, LT = le(S(N_), M_), lt(M_, S(N_))
+
+
+def from_le(c2):
+    def with_k(c3, k):
+        hk = EQ(M_, ADD(N_, k))
+
+        def k_zero(c4):
+            hM = c4.chain(M_, [([], c4.hyp_(hk)), ([1], c4.hyp_()), ([], aAZ(N_))])      # M = N
+            h = c4.chain(S(N_), [([0], c4.sym(hM)), ([], sym(aAZ(S(M_))))])             # S(N) = S(M)+0
+            return c4.or_r(c4.ex_i(h, LT[1], Z), LE)
+
+        def k_succ(c4):
+            def with_p(c5, p):
+                h = c5.chain(M_, [([], c5.hyp_(hk)), ([1], c5.hyp_()), ([], aAS(N_, p)),
+                                  ([], sym(inst('thSuccAdd', N_, p)))])                  # M = S(N)+p
+                return c5.or_l(c5.ex_i(h, LE[1], p), LT)
+            return c4.ex_e(c4.hyp_(), with_p)
+        return c3.cases(zero_or_succ(c3, k), k_zero, k_succ)
+    return c2.ex_e(c2.hyp_(), with_k)
+
+
+def from_lt(c2):
+    def with_k(c3, k):
+        h = c3.chain(S(N_), [([0], c3.hyp_()), ([], sym(aAS(S(M_), k)))])               # S(N) = S(M)+S(k)
+        return c3.or_r(c3.ex_i(h, LT[1], S(k)), LE)
+    return c2.ex_e(c2.hyp_(), with_k)
+
+
+step = root.close(c1.discharge(c1.cases(c1.hyp_(), from_le, from_lt)))
+LeTotal = lemma('thLeTotal', closed(tot(N_), M_, N_), gen_all(induction(f, base, step), M_))
+
+# ---- d < S(n) => d ≤ n
+section('Lemma: d < S(n) => d ≤ n', 'OrF', ['S(n) = S(d)+k = S(d+k), so n = d+k.'])
+root = Ctx(reserved={M_, K_})
+c = root.assume(lt(M_, S(K_)))
+
+
+def with_k(c2, k):
+    h = c2.chain(S(K_), [([], c2.hyp_()), ([], inst('thSuccAdd', M_, k))])
+    return c2.ex_i(c2.thru(h, sinj(K_, ADD(M_, k))), le(M_, K_)[1], k)
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+LtSuccLe = lemma('thLtSuccLe', closed(IMP(lt(M_, S(K_)), le(M_, K_)), M_, K_), gen_all(h, M_, K_))
+
+# ---- d ≤ S(n) => d ≤ n ∨ d = S(n)
+section('Lemma: d ≤ S(n) => d ≤ n ∨ d = S(n)', 'OrG', [
+    'S(n) = d+k. If k = 0 then d = S(n); if k = S(p) then S(n) = S(d+p), n = d+p.'])
+root = Ctx(reserved={M_, K_})
+c = root.assume(le(M_, S(K_)))
+GOAL_L, GOAL_R = le(M_, K_), EQ(M_, S(K_))
+
+
+def with_k(c2, k):
+    hk = EQ(S(K_), ADD(M_, k))
+
+    def k_zero(c3):
+        h = c3.chain(M_, [([], sym(aAZ(M_))), ([1], c3.sym(c3.hyp_())), ([], c3.sym(c3.hyp_(hk)))])
+        return c3.or_r(h, GOAL_L)
+
+    def k_succ(c3):
+        def with_p(c4, p):
+            h = c4.chain(S(K_), [([], c4.hyp_(hk)), ([1], c4.hyp_()), ([], aAS(M_, p))])
+            h = c4.thru(h, sinj(K_, ADD(M_, p)))
+            return c4.or_l(c4.ex_i(h, GOAL_L[1], p), GOAL_R)
+        return c3.ex_e(c3.hyp_(), with_p)
+    return c2.cases(zero_or_succ(c2, k), k_zero, k_succ)
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+LeSuccCases = lemma('thLeSuccCases', closed(IMP(le(M_, S(K_)), OR(GOAL_L, GOAL_R)), M_, K_),
+                    gen_all(h, M_, K_))
+
+# ---- d ≤ 0 => d = 0
+section('Lemma: d ≤ 0 => d = 0', 'OrH', ['0 = d+k, so k+d = 0 and d = 0 (thAddZeroR).'])
+root = Ctx(reserved={M_})
+c = root.assume(le(M_, Z))
+
+
+def with_k(c2, k):
+    h = c2.chain(ADD(k, M_), [([], inst('thAddComm', k, M_)), ([], c2.sym(c2.hyp_()))])
+    return c2.thru(h, inst(AddZeroR, k, M_))
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+LeZero = lemma('thLeZero', closed(IMP(le(M_, Z), EQ(M_, Z)), M_), gen(h, M_))
+
+# ---- ¬(m = 0) => 0 < m
+section('Lemma: ¬(m = 0) => 0 < m', 'OrI', ['m = S(p) = S(0+p) = S(0)+p.'])
+root = Ctx(reserved={M_})
+c = root.assume(NOT(EQ(M_, Z)))
+POS = lt(Z, M_)
+
+
+def m_succ(c2):
+    def with_p(c3, p):
+        h = c3.chain(M_, [([], c3.hyp_()), ([0], sym(inst('thZeroAdd', p))),
+                          ([], sym(inst('thSuccAdd', Z, p)))])
+        return c3.ex_i(h, POS[1], p)
+    return c2.ex_e(c2.hyp_(), with_p)
+
+
+h = c.cases(zero_or_succ(c, M_), lambda c2: c2.efq(c2.hyp_(), c2.hyp_(NOT(EQ(M_, Z))), POS), m_succ)
+Pos = lemma('thPos', closed(IMP(NOT(EQ(M_, Z)), POS), M_), gen(root.close(c.discharge(h)), M_))
+
+# ---- S(a) ≤ b => a ≤ b
+section('Lemma: S(a) ≤ b => a ≤ b', 'OrJ', ['b = S(a)+k = S(a+k) = a+S(k).'])
+root = Ctx(reserved={M_, K_})
+c = root.assume(le(S(M_), K_))
+
+
+def with_k(c2, k):
+    h = c2.chain(K_, [([], c2.hyp_()), ([], inst('thSuccAdd', M_, k)), ([], sym(aAS(M_, k)))])
+    return c2.ex_i(h, le(M_, K_)[1], S(k))
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+LeSuccL = lemma('thLeSuccL', closed(IMP(le(S(M_), K_), le(M_, K_)), M_, K_), gen_all(h, M_, K_))
+
+# ---- S(a) ≤ b => ¬(b = 0)
+section('Lemma: S(a) ≤ b => ¬(b = 0)', 'OrK', ['b = S(a)+k = S(a+k), which is not 0.'])
+root = Ctx(reserved={M_, K_})
+c = root.assume(le(S(M_), K_))
+
+
+def with_k(c2, k):
+    def contra(c3):
+        h = c3.chain(S(ADD(M_, k)), [([], sym(inst('thSuccAdd', M_, k))),
+                                     ([], c3.sym(c3.hyp_(EQ(K_, ADD(S(M_), k))))), ([], c3.hyp_())])
+        return h, snz(ADD(M_, k))
+    return c2.absurd(EQ(K_, Z), contra)
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+LeSuccNZ = lemma('thLeSuccNZ', closed(IMP(le(S(M_), K_), NOT(EQ(K_, Z))), M_, K_), gen_all(h, M_, K_))
+
+# ---- 2 ≤ m => ¬(m = 1)
+section('Lemma: 2 ≤ m => ¬(m = 1)', 'OrL', [
+    'm = 2+k = S(1+k); if m = 1 then 1+k = 0, contradicting thLeSuccNZ (1 ≤ 1+k).'])
+root = Ctx(reserved={M_})
+c = root.assume(le(TWO, M_))
+
+
+def with_k(c2, k):
+    def contra(c3):
+        h = c3.chain(S(ADD(ONE, k)), [([], sym(inst('thSuccAdd', ONE, k))),
+                                      ([], c3.sym(c3.hyp_(EQ(M_, ADD(TWO, k))))), ([], c3.hyp_())])
+        h = c3.thru(h, sinj(ADD(ONE, k), Z))                      # 1+k = 0
+        one_le = c3.ex_i(refl(ADD(ONE, k)), le(ONE, ADD(ONE, k))[1], k)
+        return h, c3.thru(one_le, inst(LeSuccNZ, Z, ADD(ONE, k)))
+    return c2.absurd(EQ(M_, ONE), contra)
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+lemma('thLeTwoNotOne', closed(IMP(le(TWO, M_), NOT(EQ(M_, ONE))), M_), gen(h, M_))
+?>
