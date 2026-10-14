@@ -1,32 +1,27 @@
 ## Numbers
 
+<?py load('lib/list.btp') ?>
 # Zero is a natural number (term)
-rTmZ : 0
-tmZ! : rTmZ
 
 # Zero is a natural number (proof)
 rThmZ : N(0)
 thmZ! : rThmZ
 
 # Successor (term)
-rTmS : Sx
 
 # Successor (proof)
-rThmS : N(x) -> N(Sx)
+rThmS : N(x) -> N(S(x))
 
 ## Lists
 # Constructing pairs (lists)
-rMkPair : (x y)
 
 # NIL (term)
-rTmNil : NIL
-tmNil! : rTmNil
 
 ## Example
 
-# Compared e.g. to `list.btp`, here we can construct `SNIL` (term)
+# Compared e.g. to `list.btp`, here we can construct `S(NIL)` (term)
 termNil : rTmS x=tmNil!
-# But we cannot construct N(SNIL) (theorem), since `rThmS x=tmNil!` requires N(NIL) which is not derivable
+# But we cannot construct N(S(NIL)) (theorem), since `rThmS x=tmNil!` requires N(NIL) which is not derivable
 
-term1 : rTmS x=tmZ!
-theorem1 : rThmS x=tmZ! thmZ!
+term1 : rTmS x=tm0!
+theorem1 : rThmS x=tm0! thmZ!

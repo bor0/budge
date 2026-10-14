@@ -1,0 +1,71 @@
+# Lists of tally numbers
+#
+# Rules only, plus common terms. Lists are nested pairs ending in NIL, of the
+# numbers of fol.btp (0, S(0), ... with their order LT): (S(0) (S(S(0)) NIL))
+# is [1, 2]. Relations on lists: APPEND, CAR/CDR, MEMBER, SUM, MAX,
+# substitution, reversal (REV) and SORTED.
+
+<?py load('fol.btp') ?>
+## Pairs and lists
+rMkPair : (x y)
+rTmNil  : NIL
+
+## APPEND(x, y, z): z is x followed by y
+rAppendNil : APPEND(NIL, y, y)
+rAppendRec : APPEND(x, y, z) -> APPEND((a x), y, (a z))
+
+## Booleans (results of list predicates)
+rTmT : TRUE
+rTmF : FALSE
+
+## Head and tail (CAR, CDR)
+rCar : (x y) -> x
+rCdr : (x y) -> y
+
+## Membership: MEMBER(a, l, b) says whether a is in l (b is TRUE or FALSE)
+rMemberNil  : MEMBER(a, NIL, FALSE)                      # a not member of []
+rMemberEq   : MEMBER(a, b, c) -> MEMBER(a, (a b), TRUE)  # a member of (a b)
+rMemberNeqL : LT(a,x) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
+rMemberNeqR : LT(x,a) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
+
+## Sum: SUM(s, l) accumulates the sum s while consuming l
+rSumInit    : SUM(0, z)
+rSumRec     : SUM(x, (S(y) z)) -> SUM(S(x), (y z))
+rSumRecSkip : SUM(x, (0 z)) -> SUM(x, z)
+rSumNil     : SUM(x, NIL) -> x
+
+## Maximum: MAX(l, m) carries the maximum m seen so far
+rMaxInit : MAX(x, 0)
+rMaxRecL : LT(x,z) -> MAX((x y), z) -> MAX(y, z)
+rMaxRecR : LT(z,x) -> MAX((x y), z) -> MAX(y, x)
+rMaxSame : MAX((x y), x) -> MAX(y, x)
+rMaxNil : MAX(NIL, y) -> y
+
+## Substitution (all)
+# a[x/y] => b <=> SUBST(x, y, a, b)
+rSubstNil  : NIL[x/y] => NIL
+rSubstEq   : a[x/y] => b -> (x a)[x/y] => (y b)
+rSubstNeqL : LT(x,z) -> a[x/y] => b -> (z a)[x/y] => (z b)
+rSubstNeqR : LT(z,x) -> a[x/y] => b -> (z a)[x/y] => (z b)
+
+## Substitution (some)
+# a{x/y} => b <=> SUBST'(x, y, a, b)
+rSubst'Nil : NIL{x/y} => NIL
+rSubst'Eq  : a{x/y} => b -> (x a){x/y} => (y b)
+rSubst'Neq : a{x/y} => b -> (z a){x/y} => (z b)
+
+## Reversal: REV original current_tail accumulator. Starts as REV L L NIL;
+## each step moves the head of current_tail onto the accumulator; ends at
+## REV L NIL reversed_L
+rReverseInit : REV x x NIL
+rReverseSucc : REV x (p y) z -> REV x y (p z)
+
+## Sorted lists: SORTED l holds when l is strictly increasing
+rSortNil    : SORTED NIL
+rSortSingle : SORTED (a NIL)
+rSortRec    : SORTED (b x) -> LT(a,b) -> SORTED (a (b x))
+
+## Common terms
+tmT!   : rTmT
+tmF!   : rTmF
+tmNil! : rTmNil

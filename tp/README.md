@@ -46,6 +46,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [logic.btp](./examples/lib/logic.btp) - Classical propositional logic in Hilbert's system (axioms K, S, contraposition, ∧, ∨, modus ponens), deriving identity, hypothetical syllogism, double negation elimination and introduction, contraposition, ex falso, disjunctive syllogism and commutativity of ∧ and ∨
 - [fol.btp](./examples/lib/fol.btp) - First-order logic with equality: ∀ and ∃ with de Bruijn indices (capture-free instantiation, generalisation, ∃-elimination) and the equality axioms
 - [peano.btp](./examples/lib/peano.btp) - The defining equations of + and ·, congruence, and induction
+- [list.btp](./examples/lib/list.btp) - Lists of numbers, with list relations: append, car/cdr, membership, sum, max, substitution, reversal, sortedness
 
 ## Example
 

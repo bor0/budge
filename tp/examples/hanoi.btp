@@ -1,97 +1,77 @@
-# Rules
+# Towers of Hanoi: three sorted stacks; a disk moves only onto a larger one.
+# Pairs (stacks), numbers (disk sizes), LT and SORTED come from lib/list.btp.
 
-## Rules for creating a pair (stack) and numbers
-rMkPair : (x y)
-rTmNil : NIL
-rTm0 : 0
-rTmS : Sx
-
-## Inequality
-rLtZ : LT(0, Sx)
-rLtS : LT(x, y) -> LT(Sx, Sy)
-
-## Sorted lists
-rSortNil : SORTED NIL
-rSortSingle : SORTED (a NIL)
-rSortRec : SORTED (b x) -> LT(a, b) -> SORTED (a (b x))
-
+<?py load('lib/list.btp') ?>
 ## Hanoi specific
 
 ### Initial configuration
 rHanoiInit : SORTED x -> SORTED y -> SORTED z -> x y z
 
-# The following rules can be made more compact by either changing LT(a, b) to LT(a, b) | a = NIL or by adding LT(NIL, Sx). But the developer experience is much better this way as we don't have to construct terms for the disjunction approach, or construct additional theorems for the LT(NIL, Sx) case.
+# The following rules can be made more compact by either changing LT(a,b) to LT(a,b) | a = NIL or by adding LT(NIL,S(x)). But the developer experience is much better this way as we don't have to construct terms for the disjunction approach, or construct additional theorems for the LT(NIL,S(x)) case.
 
 #### First and second pillar
-rHanoiAB : (a x) (b y) z -> LT(a, b) -> x (a (b y)) z
+rHanoiAB : (a x) (b y) z -> LT(a,b) -> x (a (b y)) z
 rHanoiABNil : (a x) NIL z -> x (a NIL) z
-rHanoiBA : (a x) (b y) z -> LT(b, a) -> (b (a x)) y z
+rHanoiBA : (a x) (b y) z -> LT(b,a) -> (b (a x)) y z
 rHanoiBANil : NIL (a y) z -> (a NIL) y z
 
 #### Second and third pillar
-rHanoiBC : x (a y) (b z) -> LT(a, b) -> x y (a (b z))
+rHanoiBC : x (a y) (b z) -> LT(a,b) -> x y (a (b z))
 rHanoiBCNil : x (a y) NIL -> x y (a NIL)
-rHanoiCB : x (a y) (b z) -> LT(b, a) -> x (b (a y)) z
+rHanoiCB : x (a y) (b z) -> LT(b,a) -> x (b (a y)) z
 rHanoiCBNil : x NIL (a z) -> x (a NIL) z
 
 #### First and third pillar
-rHanoiAC : (a x) y (b z) -> LT(a, b) -> x y (a (b z))
+rHanoiAC : (a x) y (b z) -> LT(a,b) -> x y (a (b z))
 rHanoiACNil : (a x) y NIL -> x y (a NIL)
-rHanoiCA : (a x) y (b z) -> LT(b, a) -> (b (a x)) y z
+rHanoiCA : (a x) y (b z) -> LT(b,a) -> (b (a x)) y z
 rHanoiCANil : NIL y (a z) -> (a NIL) y z
 
 # Example of a game
 
 ## Terms (numbers) we need for the game
-t0! : rTm0
-t1! : rTmS x=t0!
-t2! : rTmS x=t1!
-t3! : rTmS x=t2!
-t4! : rTmS x=t3!
-tNil! : rTmNil
 
 ## Inequalities needed for the game
-tLT01! : rLtZ x=t0!
-tLT12! : rLtS x=t0!;y=t1! tLT01!
-tLT03! : rLtZ x=t2!
-tLT14! : rLtS x=t0!;y=t3! tLT03!
-tLT23! : rLtS x=t1!;y=t2! tLT12!
-tLT34! : rLtS x=t2!;y=t3! tLT23!
+tLT12! : rLtS a=tm0!;b=tm1! thLt01!
+tLT03! : rLtZ n=tm2!
+tLT14! : rLtS a=tm0!;b=tm3! tLT03!
+tLT23! : rLtS a=tm1!;b=tm2! tLT12!
+tLT34! : rLtS a=tm2!;b=tm3! tLT23!
 
 ## Some lists needed for the game
-tList4! : rMkPair x=t4!;y=tNil!
-tList34! : rMkPair x=t3!;y=tList4!
-tList234! : rMkPair x=t2!;y=tList34!
-tList1234! : rMkPair x=t1!;y=tList234!
-tList1! : rMkPair x=t1!;y=tNil!
-tList2! : rMkPair x=t2!;y=tNil!
-tList12! : rMkPair x=t1!;y=tList2!
-tList3! : rMkPair x=t3!;y=tNil!
-tList14! : rMkPair x=t1!;y=tList4!
-tList23! : rMkPair x=t2!;y=tList3!
-tList123! : rMkPair x=t1!;y=tList23!
+tList4! : rMkPair x=tm4!;y=tmNil!
+tList34! : rMkPair x=tm3!;y=tList4!
+tList234! : rMkPair x=tm2!;y=tList34!
+tList1234! : rMkPair x=tm1!;y=tList234!
+tList1! : rMkPair x=tm1!;y=tmNil!
+tList2! : rMkPair x=tm2!;y=tmNil!
+tList12! : rMkPair x=tm1!;y=tList2!
+tList3! : rMkPair x=tm3!;y=tmNil!
+tList14! : rMkPair x=tm1!;y=tList4!
+tList23! : rMkPair x=tm2!;y=tList3!
+tList123! : rMkPair x=tm1!;y=tList23!
 
 # Initial configuration is sorted
 tSortNil! : rSortNil
-tSort4! : rSortSingle a=t4!
-tSort34! : rSortRec b=t4!;x=tNil!;a=t3! tSort4! tLT34!
-tSort234! : rSortRec b=t3!;x=tList4!;a=t2! tSort34! tLT23!
-tSort1234! : rSortRec b=t2!;x=tList34!;a=t1! tSort234! tLT12!
+tSort4! : rSortSingle a=tm4!
+tSort34! : rSortRec b=tm4!;x=tmNil!;a=tm3! tSort4! tLT34!
+tSort234! : rSortRec b=tm3!;x=tList4!;a=tm2! tSort34! tLT23!
+tSort1234! : rSortRec b=tm2!;x=tList34!;a=tm1! tSort234! tLT12!
 
 ## Proof for the game of Hanoi with 4 disks
-t1 : rHanoiInit x=tList1234!;y=tNil!;z=tNil! tSort1234! tSortNil! tSortNil!
-t2 : rHanoiABNil a=t1!;x=tList234!;z=tNil! t1
-t3 : rHanoiACNil a=t2!;x=tList34!;y=tList1! t2
-t4 : rHanoiBC x=tList34!;a=t1!;y=tNil!;b=t2!;z=tNil! t3 tLT12!
-t5 : rHanoiABNil a=t3!;x=tList4!;z=tList12! t4
-t6 : rHanoiCA a=t4!;x=tNil!;y=tList3!;b=t1!;z=tList2! t5 tLT14!
-t7 : rHanoiCB x=tList14!;a=t3!;y=tNil!;b=t2!;z=tNil! t6 tLT23!
-t8 : rHanoiAB a=t1!;x=tList4!;b=t2!;y=tList3!;z=tNil! t7 tLT12!
-t9 : rHanoiACNil a=t4!;x=tNil!;y=tList123! t8
-t10 : rHanoiBC x=tNil!;a=t1!;y=tList23!;b=t4!;z=tNil! t9 tLT14!
-t11 : rHanoiBANil a=t2!;y=tList3!;z=tList14! t10
-t12 : rHanoiCA a=t2!;x=tNil!;y=tList3!;b=t1!;z=tList4! t11 tLT12!
-t13 : rHanoiBC x=tList12!;a=t3!;y=tNil!;b=t4!;z=tNil! t12 tLT34!
-t14 : rHanoiABNil a=t1!;x=tList2!;z=tList34! t13
-t15 : rHanoiAC a=t2!;x=tNil!;y=tList1!;b=t3!;z=tList4! t14 tLT23!
-t16 : rHanoiBC x=tNil!;a=t1!;y=tNil!;b=t2!;z=tList34! t15 tLT12!
+t1 : rHanoiInit x=tList1234!;y=tmNil!;z=tmNil! tSort1234! tSortNil! tSortNil!
+t2 : rHanoiABNil a=tm1!;x=tList234!;z=tmNil! t1
+t3 : rHanoiACNil a=tm2!;x=tList34!;y=tList1! t2
+t4 : rHanoiBC x=tList34!;a=tm1!;y=tmNil!;b=tm2!;z=tmNil! t3 tLT12!
+t5 : rHanoiABNil a=tm3!;x=tList4!;z=tList12! t4
+t6 : rHanoiCA a=tm4!;x=tmNil!;y=tList3!;b=tm1!;z=tList2! t5 tLT14!
+t7 : rHanoiCB x=tList14!;a=tm3!;y=tmNil!;b=tm2!;z=tmNil! t6 tLT23!
+t8 : rHanoiAB a=tm1!;x=tList4!;b=tm2!;y=tList3!;z=tmNil! t7 tLT12!
+t9 : rHanoiACNil a=tm4!;x=tmNil!;y=tList123! t8
+t10 : rHanoiBC x=tmNil!;a=tm1!;y=tList23!;b=tm4!;z=tmNil! t9 tLT14!
+t11 : rHanoiBANil a=tm2!;y=tList3!;z=tList14! t10
+t12 : rHanoiCA a=tm2!;x=tmNil!;y=tList3!;b=tm1!;z=tList4! t11 tLT12!
+t13 : rHanoiBC x=tList12!;a=tm3!;y=tmNil!;b=tm4!;z=tmNil! t12 tLT34!
+t14 : rHanoiABNil a=tm1!;x=tList2!;z=tList34! t13
+t15 : rHanoiAC a=tm2!;x=tmNil!;y=tList1!;b=tm3!;z=tList4! t14 tLT23!
+t16 : rHanoiBC x=tmNil!;a=tm1!;y=tmNil!;b=tm2!;z=tList34! t15 tLT12!

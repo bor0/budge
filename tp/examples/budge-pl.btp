@@ -1,13 +1,8 @@
-# Rules for creating a cons cell and encoding numbers
-rCons  : (x y)
-rTmNil : NIL
-rTm0   : 0
-rTmS   : Sx
-rTmP   : Px
+# Budge-PL interpreted in Budge-TP. Pairs, numbers and APPEND come from
+# lib/list.btp; P(x) is a negative (decrement) count.
 
-# Appending lists
-rAppendNil : APPEND NIL y y
-rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
+<?py load('lib/list.btp') ?>
+rTmP   : P(x)
 
 ## Budge-PL operational semantics ##
 #
@@ -15,64 +10,59 @@ rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 # where register-list = (r1 (r2 (r3 ... NIL)))
 #
 # Command encoding (signed unary):
-#   S0=+1, SS0=+2, SSS0=+3, ...   (n leading S's = increment register n)
-#   P0=-1, PP0=-2, PPP0=-3, ...   (n leading P's = decrement register n, or skip if zero)
+#   S(0)=+1, S(S(0))=+2, S(S(S(0)))=+3, ...   (n leading S's = increment register n)
+#   P(0)=-1, P(P(0))=-2, P(P(P(0)))=-3, ...   (n leading P's = decrement register n, or skip if zero)
 # This mirrors Budge-PL's signed integer commands directly.
 
 # Initial state: load program p with register list s
 rInitState : p s
 
 # Register 1 (head of register list, value = a, rest = s)
-rNextState+1 : (S0 x) (a s) -> x (Sa s)         # r1 += 1
-rNextState-1 : (P0 x) (Sa s) -> x (a s)          # r1 -= 1 (guard: r1 >= 1)
-rSkip-1      : (P0 x) (0 s) -> x (0 s)           # skip -1 when r1 = 0
+rNextState+1 : (S(0) x) (a s) -> x (S(a) s)         # r1 += 1
+rNextState-1 : (P(0) x) (S(a) s) -> x (a s)          # r1 -= 1 (guard: r1 >= 1)
+rSkip-1      : (P(0) x) (0 s) -> x (0 s)           # skip -1 when r1 = 0
 
 # Register 2 (second element; navigate past r1 using variables a and b)
-rNextState+2 : (SS0 x) (a (b s)) -> x (a (Sb s))    # r2 += 1
-rNextState-2 : (PP0 x) (a (Sb s)) -> x (a (b s))    # r2 -= 1 (guard: r2 >= 1)
-rSkip-2      : (PP0 x) (a (0 s)) -> x (a (0 s))     # skip -2 when r2 = 0
+rNextState+2 : (S(S(0)) x) (a (b s)) -> x (a (S(b) s))    # r2 += 1
+rNextState-2 : (P(P(0)) x) (a (S(b) s)) -> x (a (b s))    # r2 -= 1 (guard: r2 >= 1)
+rSkip-2      : (P(P(0)) x) (a (0 s)) -> x (a (0 s))     # skip -2 when r2 = 0
 
 # Loop on register 1: exit when r1=0, re-enter by splicing body via APPEND
-rLoop1Base : ((S0 x) y) (0 s) -> y (0 s)
-rLoop1Succ : ((S0 x) y) (Sa s) -> APPEND x ((S0 x) y) z -> z (Sa s)
+rLoop1Base : ((S(0) x) y) (0 s) -> y (0 s)
+rLoop1Succ : ((S(0) x) y) (S(a) s) -> APPEND(x, ((S(0) x) y), z) -> z (S(a) s)
 
 # Loop on register 2: exit when r2=0, re-enter by splicing body via APPEND
-rLoop2Base : ((SS0 x) y) (a (0 s)) -> y (a (0 s))
-rLoop2Succ : ((SS0 x) y) (a (Sb s)) -> APPEND x ((SS0 x) y) z -> z (a (Sb s))
+rLoop2Base : ((S(S(0)) x) y) (a (0 s)) -> y (a (0 s))
+rLoop2Succ : ((S(S(0)) x) y) (a (S(b) s)) -> APPEND(x, ((S(S(0)) x) y), z) -> z (a (S(b) s))
 
 # Halt: empty instruction list means the machine has stopped
 rHalt : NIL s -> HALTED s
 
 # Numerals
-tm0!   : rTm0
-tm1!   : rTmS x=tm0!
-tm2!   : rTmS x=tm1!
-tm3!   : rTmS x=tm2!
 tmP1!  : rTmP x=tm0!
 tmP2!  : rTmP x=tmP1!
-tmNil! : rTmNil
 
 # Program ((2,-2,1)): a loop on r2 with body [-2,+1]
-tmBody1! : rCons x=tm1!;y=tmNil!       # [+1]              -- lone +1 command
-tmBody!  : rCons x=tmP2!;y=tmBody1!    # [-2, +1]          -- loop body
-tmLoop!  : rCons x=tm2!;y=tmBody!      # (loop r2 [-2,+1]) -- loop element
-tmProg!  : rCons x=tmLoop!;y=tmNil!    # [loop]            -- the full program
+tmBody1! : rMkPair x=tm1!;y=tmNil!       # [+1]              -- lone +1 command
+tmBody!  : rMkPair x=tmP2!;y=tmBody1!    # [-2, +1]          -- loop body
+tmLoop!  : rMkPair x=tm2!;y=tmBody!      # (loop r2 [-2,+1]) -- loop element
+tmProg!  : rMkPair x=tmLoop!;y=tmNil!    # [loop]            -- the full program
 
 # Continuations used by rLoop2Succ to splice the body before re-entry:
 #   APPEND [-2,+1] [loop] = [-2,+1,loop]
-tmCont1! : rCons x=tm1!;y=tmProg!      # [+1, loop]
-tmCont!  : rCons x=tmP2!;y=tmCont1!    # [-2, +1, loop]
+tmCont1! : rMkPair x=tm1!;y=tmProg!      # [+1, loop]
+tmCont!  : rMkPair x=tmP2!;y=tmCont1!    # [-2, +1, loop]
 
 tmApNil! : rAppendNil y=tmProg!
 tmAp1!   : rAppendRec x=tmNil!;y=tmProg!;z=tmProg!;a=tm1! tmApNil!
 tmAp!    : rAppendRec x=tmBody1!;y=tmProg!;z=tmCont1!;a=tmP2! tmAp1!
 
 # Register list snapshots during execution
-tmR2_2! : rCons x=tm2!;y=tmNil!        # (SS0 NIL):  [r2=2]
-tmR2_1! : rCons x=tm1!;y=tmNil!        # (S0 NIL):   [r2=1]
-tmR2_0! : rCons x=tm0!;y=tmNil!        # (0 NIL):    [r2=0]
-tmSt_1_2! : rCons x=tm1!;y=tmR2_2!    # (S0 (SS0 NIL)):   r1=1, r2=2  (initial)
-tmSt_3_0! : rCons x=tm3!;y=tmR2_0!    # (SSS0 (0 NIL)):   r1=3, r2=0  (final)
+tmR2_2! : rMkPair x=tm2!;y=tmNil!        # (S(S(0)) NIL):  [r2=2]
+tmR2_1! : rMkPair x=tm1!;y=tmNil!        # (S(0) NIL):   [r2=1]
+tmR2_0! : rMkPair x=tm0!;y=tmNil!        # (0 NIL):    [r2=0]
+tmSt_1_2! : rMkPair x=tm1!;y=tmR2_2!    # (S(0) (S(S(0)) NIL)):   r1=1, r2=2  (initial)
+tmSt_3_0! : rMkPair x=tm3!;y=tmR2_0!    # (S(S(S(0))) (0 NIL)):   r1=3, r2=0  (final)
 
 # Proof: ((2,-2,1)) on input (r1=1, r2=2) produces (r1=3, r2=0), i.e. 1+2=3
 pDesc : Budge-PL addition: program ((2,-2,1)) computes r1 := r1 + r2 by transferring marbles from jar 2 to jar 1.

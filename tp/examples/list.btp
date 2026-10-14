@@ -1,126 +1,58 @@
-## Numbers
-# Zero is a natural number (term)
-rTmZ : 0
-tmZ! : rTmZ
+# Examples of the list relations in lib/list.btp: car/cdr, append, membership,
+# sum, max, substitution.
 
-# Successor
-rTmS : Sx # term
-
-# Inequality
-rLtZ : LT(0, Sx)
-rLtS : LT(x, y) -> LT(Sx, Sy)
-
-## Bools
-rTmT : TRUE
-tmT! : rTmT
-
-rTmF : FALSE
-tmF! : rTmF
-
-## Lists
-# Constructing pairs (lists)
-rMkPair : (x y)
-
-# NIL (term)
-rTmNil : NIL
-tmNil! : rTmNil
-
-# First and second element (list or nil) of a list
-rCar : (x y) -> x
-rCdr : (x y) -> y
-
-# Appending lists
-rAppendNil : APPEND(NIL, y, y)
-rAppendRec : APPEND(x, y, z) -> APPEND((a x), y, (a z))
-
-# Checking membership
-rMemberNil : MEMBER(a, NIL, FALSE) # a not member of []
-rMemberEq : MEMBER(a, b, c) -> MEMBER(a, (a b), TRUE) # a member of (a b)
-rMemberNeqL : LT(a, x) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
-rMemberNeqR : LT(x, a) -> MEMBER(a, b, c) -> MEMBER(a, (x b), c)
-
-# Summing lists
-rSumInit : SUM(0, z)
-rSumRec : SUM(x, (Sy z)) -> SUM(Sx, (y z))
-rSumRecSkip : SUM(x, (0 z)) -> SUM(x, z)
-rSumNil : SUM(x, NIL) -> x
-
-# Maximum of a list
-rMaxInit : MAX(x, 0)
-rMaxRecL : LT(x, z) -> MAX((x y), z) -> MAX(y, z)
-rMaxRecR : LT(z, x) -> MAX((x y), z) -> MAX(y, x)
-rMaxSame : MAX((x y), x) -> MAX(y, x)
-rMaxNil : MAX(NIL, y) -> y
-
-# Substitution (all)
-# a[x/y] => b <=> SUBST(x, y, a, b)
-rSubstNil : NIL[x/y] => NIL
-rSubstEq : a[x/y] => b -> (x a)[x/y] => (y b)
-rSubstNeqL : LT(x, z) -> a[x/y] => b -> (z a)[x/y] => (z b)
-rSubstNeqR : LT(z, x) -> a[x/y] => b -> (z a)[x/y] => (z b)
-
-# Substitution (some)
-# a{x/y} => b <=> SUBST'(x, y, a, b)
-rSubst'Nil : NIL{x/y} => NIL
-rSubst'Eq  : a{x/y} => b -> (x a){x/y} => (y b)
-rSubst'Neq : a{x/y} => b -> (z a){x/y} => (z b)
-
+<?py load('lib/list.btp') ?>
 ## Examples
 
-# Some terms needed for the examples
-tmOne! : rTmS x=tmZ!
-tmTwo! : rTmS x=tmOne!
-tmThree! : rTmS x=tmTwo!
-
 # Example 1: Car and cdr
-thLstep1! : rMkPair x=tmThree!;y=tmNil!
-thLstep2! : rMkPair x=tmTwo!;y=thLstep1!
-thL : rMkPair x=tmOne!;y=thLstep2!
+thLstep1! : rMkPair x=tm3!;y=tmNil!
+thLstep2! : rMkPair x=tm2!;y=thLstep1!
+thL : rMkPair x=tm1!;y=thLstep2!
 
-thCarEg : rCar x=tmOne!;y=thLstep2! thL # head [1, 2, 3] = 1
-thCdrEg : rCdr x=tmOne!;y=thLstep2! thL # tail [1, 2, 3] = [2, 3]
+thCarEg : rCar x=tm1!;y=thLstep2! thL # head [1, 2, 3] = 1
+thCdrEg : rCdr x=tm1!;y=thLstep2! thL # tail [1, 2, 3] = [2, 3]
 
 # Example 2: Appending lists
-thL1! : rMkPair x=tmOne!;y=tmNil!
-thL2! : rMkPair x=tmOne!;y=thL1!
-thL3! : rMkPair x=tmTwo!;y=tmNil!
-thL4! : rMkPair x=tmTwo!;y=thL1!
-thL5! : rMkPair x=tmTwo!;y=thL3!
+thL1! : rMkPair x=tm1!;y=tmNil!
+thL2! : rMkPair x=tm1!;y=thL1!
+thL3! : rMkPair x=tm2!;y=tmNil!
+thL4! : rMkPair x=tm2!;y=thL1!
+thL5! : rMkPair x=tm2!;y=thL3!
 
 tappS1 : rAppendNil y=thL1! # [] ++ [1] = [1]
-tappS2 : rAppendRec x=tmNil!;y=thL1!;z=thL1!;a=tmOne! tappS1 # [1] ++ [1] = [1, 1]
-tappS3 : rAppendRec x=thL1!;y=thL1!;z=thL2!;a=tmOne! tappS2 # [1, 1] ++ [1] = [1, 1, 1]
+tappS2 : rAppendRec x=tmNil!;y=thL1!;z=thL1!;a=tm1! tappS1 # [1] ++ [1] = [1, 1]
+tappS3 : rAppendRec x=thL1!;y=thL1!;z=thL2!;a=tm1! tappS2 # [1, 1] ++ [1] = [1, 1, 1]
 
 # Example 3: Inequality
-tLTEg1 : rLtZ x=tmZ! # 0 < 1
-tLTEg2 : rLtS x=tmZ!;y=tmOne! tLTEg1 # 1 < 2
-tLTEg3 : rLtZ x=tmOne! # 0 < 2
+tLTEg1 : rLtZ n=tm0! # 0 < 1
+tLTEg2 : rLtS a=tm0!;b=tm1! tLTEg1 # 1 < 2
+tLTEg3 : rLtZ n=tm1! # 0 < 2
 
 # Example 4: List membership
-tmemberEg1 : rMemberNil a=tmOne! # 1 `elem` [] => False
-tmemberEg2 : rMemberNeqL a=tmOne!;b=tmNil!;c=tmF!;x=tmTwo! tLTEg2 tmemberEg1 # 1 `elem` [2] => False
-tmemberEg3 : rMemberEq a=tmOne!;b=thL3!;c=tmF!;x=tmTwo! tmemberEg2 # 1 `elem` [1, 2] => True
+tmemberEg1 : rMemberNil a=tm1! # 1 `elem` [] => False
+tmemberEg2 : rMemberNeqL a=tm1!;b=tmNil!;c=tmF!;x=tm2! tLTEg2 tmemberEg1 # 1 `elem` [2] => False
+tmemberEg3 : rMemberEq a=tm1!;b=thL3!;c=tmF!;x=tm2! tmemberEg2 # 1 `elem` [1, 2] => True
 
 # Example 5: Sum list
 tsumEg1 : rSumInit z=thLstep1!
-tsumEg2 : rSumRec x=tmZ!;y=tmTwo!;z=tmNil! tsumEg1
-tsumEg3 : rSumRec x=tmOne!;y=tmOne!;z=tmNil! tsumEg2
-tsumEg4 : rSumRec x=tmTwo!;y=tmZ!;z=tmNil! tsumEg3
-tsumEg5 : rSumRecSkip x=tmThree!;z=tmNil! tsumEg4
-tsumEg6 : rSumNil x=tmThree! tsumEg5
+tsumEg2 : rSumRec x=tm0!;y=tm2!;z=tmNil! tsumEg1
+tsumEg3 : rSumRec x=tm1!;y=tm1!;z=tmNil! tsumEg2
+tsumEg4 : rSumRec x=tm2!;y=tm0!;z=tmNil! tsumEg3
+tsumEg5 : rSumRecSkip x=tm3!;z=tmNil! tsumEg4
+tsumEg6 : rSumNil x=tm3! tsumEg5
 
 # Example 6: Max list
 tmaxEg1 : rMaxInit x=thL4!
-tmaxEg2 : rMaxRecR z=tmZ!;x=tmTwo!;y=thL1! tLTEg3 tmaxEg1
-tmaxEg3 : rMaxRecL z=tmTwo!;x=tmOne!;y=tmNil! tLTEg2 tmaxEg2
-tmaxEg4 : rMaxNil y=tmTwo! tmaxEg3
+tmaxEg2 : rMaxRecR z=tm0!;x=tm2!;y=thL1! tLTEg3 tmaxEg1
+tmaxEg3 : rMaxRecL z=tm2!;x=tm1!;y=tmNil! tLTEg2 tmaxEg2
+tmaxEg4 : rMaxNil y=tm2! tmaxEg3
 
 # Example 7: Substitute element in a list
-tSubEg1 : rSubstNil x=tmOne!;y=tmTwo!
-tSubEg2 : rSubstEq x=tmOne!;y=tmTwo!;a=tmNil!;b=tmNil! tSubEg1
-tSubEg3 : rSubstNeqL x=tmOne!;y=tmTwo!;z=tmTwo!;a=thL1!;b=thL3! tLTEg2 tSubEg2
+tSubEg1 : rSubstNil x=tm1!;y=tm2!
+tSubEg2 : rSubstEq x=tm1!;y=tm2!;a=tmNil!;b=tmNil! tSubEg1
+tSubEg3 : rSubstNeqL x=tm1!;y=tm2!;z=tm2!;a=thL1!;b=thL3! tLTEg2 tSubEg2
 
 # Example 8: Substitute some elements in a list
-tSub'Eg1 : rSubst'Nil x=tmOne!;y=tmTwo!
-tSub'Eg2 : rSubst'Eq x=tmOne!;y=tmTwo!;a=tmNil!;b=tmNil! tSub'Eg1
-tSub'Eg3 : rSubst'Neq x=tmOne!;y=tmTwo!;z=tmOne!;a=thL1!;b=thL3! tSub'Eg2
+tSub'Eg1 : rSubst'Nil x=tm1!;y=tm2!
+tSub'Eg2 : rSubst'Eq x=tm1!;y=tm2!;a=tmNil!;b=tmNil! tSub'Eg1
+tSub'Eg3 : rSubst'Neq x=tm1!;y=tm2!;z=tm1!;a=thL1!;b=thL3! tSub'Eg2

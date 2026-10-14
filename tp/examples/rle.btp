@@ -2,47 +2,29 @@
 # Encoded format: a list of pairs (count, value).
 # E.g. [1,2,2] encodes as [(1,1),(2,2)] and decodes back.
 
-# Rules
+# Pairs, numbers, LT (to tell runs of different values apart) and list
+# reversal REV come from lib/list.btp.
 
-# Pair (cons cell) and base terms
-rMkPair : (x y)
-rTmNil  : NIL
-rTm0    : 0
-rTmS    : Sx
-
-# Less-than: needed to distinguish different-value runs during encoding
-rLtZ : LT(0, Sx)
-rLtS : LT(x, y) -> LT(Sx, Sy)
-
-# List reversal via accumulator: REV original current_tail accumulator
-# Starts as REV L L NIL; each step peels the head of current_tail onto
-# accumulator; terminates at REV L NIL reversed_L
-rReverseInit : REV x x NIL
-rReverseSucc : REV x (p y) z -> REV x y (p z)
-
+<?py load('lib/list.btp') ?>
 # Decompression rules
 rInitStateDecode : CODED=l REVDECODED=NIL
-rLoopDecode      : CODED=((Sx y) z) REVDECODED=s -> CODED=((x y) z) REVDECODED=(y s)
+rLoopDecode      : CODED=((S(x) y) z) REVDECODED=s -> CODED=((x y) z) REVDECODED=(y s)
 rBaseDecode      : CODED=((0 y) z) REVDECODED=s -> CODED=z REVDECODED=s
 rUnrevDecode     : CODED=NIL REVDECODED=x -> REV x NIL y -> CODED=NIL DECODED=y
 
 # Compression rules
-# rLoopCodeDiffL: new element > current run value  (LT(y, a): old value < new)
-# rLoopCodeDiffR: new element < current run value  (LT(a, y): new value < old)
+# rLoopCodeDiffL: new element > current run value  (LT(y,a): old value < new)
+# rLoopCodeDiffR: new element < current run value  (LT(a,y): new value < old)
 rInitStateCode   : REVCODED=NIL DECODED=l
-rLoopCodeSame    : REVCODED=((x y) z) DECODED=(y s) -> REVCODED=((Sx y) z) DECODED=s
-rLoopCodeDiffL   : REVCODED=((x y) z) DECODED=(a s) -> LT(y, a) -> REVCODED=((S0 a) ((x y) z)) DECODED=s
-rLoopCodeDiffR   : REVCODED=((x y) z) DECODED=(a s) -> LT(a, y) -> REVCODED=((S0 a) ((x y) z)) DECODED=s
-rBaseCode        : REVCODED=NIL DECODED=(a s) -> REVCODED=((S0 a) NIL) DECODED=s
+rLoopCodeSame    : REVCODED=((x y) z) DECODED=(y s) -> REVCODED=((S(x) y) z) DECODED=s
+rLoopCodeDiffL   : REVCODED=((x y) z) DECODED=(a s) -> LT(y,a) -> REVCODED=((S(0) a) ((x y) z)) DECODED=s
+rLoopCodeDiffR   : REVCODED=((x y) z) DECODED=(a s) -> LT(a,y) -> REVCODED=((S(0) a) ((x y) z)) DECODED=s
+rBaseCode        : REVCODED=NIL DECODED=(a s) -> REVCODED=((S(0) a) NIL) DECODED=s
 rUnrevCode       : REVCODED=x DECODED=NIL -> REV x NIL y -> CODED=y DECODED=NIL
 
 # Terms
 
 # Basic values
-tm0!   : rTm0
-tm1!   : rTmS x=tm0!
-tm2!   : rTmS x=tm1!
-tmNil! : rTmNil
 
 # Run-length pairs (count, value)
 tmRunOneOne! : rMkPair x=tm1!;y=tm1!   # (1,1): one occurrence of 1
@@ -73,8 +55,7 @@ tmRevCodedB! : rMkPair x=tmRunOneOne!;y=tmRevCodedA!  # [(1,1),(1,2)]
 tmCoded21!   : rMkPair x=tmRunOneTwo!;y=tmRevCoded1!  # [(1,2),(1,1)]
 
 # Less-than lemmas
-thLT01! : rLtZ x=tm0!                 # LT(0, S0):  0 < 1
-thLT12! : rLtS x=tm0!;y=tm1! thLT01!  # LT(S0, SS0): 1 < 2
+thLT12! : rLtS a=tm0!;b=tm1! thLt01!  # LT(S(0),S(S(0))): 1 < 2
 
 # Reversal lemmas for tmRevDecoded! = [2,2,1] → [1,2,2]
 thRevDec0! : rReverseInit x=tmRevDecoded!

@@ -115,6 +115,8 @@ exported in i, j, l; internal steps prefixed `thLg…`). Examples load it with
 symbol declares its term/CT/OPEN/ABS(/congruence) rules (`quantifiers.btp`: A, P, Q, R).
 `peano.btp` (loads fol): S never 0 and injective, + and × by recursion, congruence for S,
 ADD, MUL, their CT/OPEN/ABS, and induction `rInd`; numbers are fol's numerals.
+`list.btp` (loads fol, for numbers `S(x)` and LT): pairs, NIL, TRUE/FALSE, APPEND, CAR/CDR,
+MEMBER, SUM, MAX, substitution, REV, SORTED; exports `tmNil!`, `tmT!`, `tmF!`.
 
 **Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
 `rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;
