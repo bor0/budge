@@ -1,0 +1,61 @@
+# Every number is even or odd
+#
+# Proved by the Python block below; Budge checks every
+# step, including those of the imported library.
+#
+#   thParity : ∀n ∃k. n = k+k ∨ n = S(k+k)
+#
+# By induction on n. Base: 0 = 0+0. Step: assume ∃k. N = k+k ∨ N = S(k+k)
+# and take such a k (∃-elimination). If N = k+k then S(N) = S(k+k); if
+# N = S(k+k) then S(N) = S(S(k+k)) = S(k)+S(k) (thSuccAdd), so k' = S(k).
+#
+# The proof is written in natural deduction (assume, case split, ∃-elimination)
+# and compiled to Hilbert steps by lib/tactics.py's Ctx, using the schemas of
+# lib/nd.btp.
+
+<?py load('lib/semiring.btp') ?>
+<?py load('lib/nd.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+def parity(n, k='Y'):
+    """∃k. n = k+k ∨ n = S(k+k), with the bound k built from a spare parameter."""
+    return exists(k, OR(EQ(n, ADD(k, k)), EQ(n, S(ADD(k, k)))))
+
+
+section('∀n ∃k. n = k+k ∨ n = S(k+k)', 'Pa', [
+    'Induction on n, cases on the induction hypothesis.'])
+f = abstract(parity(N_), N_)                       # matrix of ∀n
+root = Ctx(reserved={N_})
+
+# base: 0 = 0+0
+hb = root.or_l(root.sym(aAZ(Z)), EQ(Z, S(ADD(Z, Z))))
+base = root.close(root.ex_i(hb, parity(Z)[1], Z))
+
+# step
+G = parity(N_)
+c = root.assume(G)
+target = parity(S(N_))[1]
+
+
+def from_witness(c2, w):
+    def even(c3):                                  # N = w+w
+        h = c3.chain(S(N_), [([0], c3.hyp_())])    # S(N) = S(w+w)
+        return c3.ex_i(c3.or_r(h, EQ(S(N_), ADD(w, w))), target, w)
+
+    def odd(c3):                                   # N = S(w+w)
+        h = c3.chain(S(N_), [
+            ([0], c3.hyp_()),                      # S(S(w+w))
+            ([0], lambda t: sym(inst('thSuccAdd', w, w))),   # S(S(w)+w)
+            ([], lambda t: sym(aAS(S(w), w))),     # S(w)+S(w)
+        ])
+        return c3.ex_i(c3.or_l(h, EQ(S(N_), S(ADD(S(w), S(w))))), target, S(w))
+    return c2.cases(c2.hyp_(), even, odd)
+
+
+step = root.close(c.discharge(c.ex_e(c.hyp_(), from_witness)))
+induction(f, base, step, name='thParity')
+prose('pParity', '∀n ∃k. n = k+k ∨ n = S(k+k): every number is even or odd')
+?>

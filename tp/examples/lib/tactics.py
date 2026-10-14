@@ -10,8 +10,8 @@ prints. A block over this library starts with
 and then prints Budge code through the functions here. They use the rule and
 theorem names of the library next to this file, so this is the Python half of
 that library (in LCF terms, its tactics). They build proofs at a higher
-level (terms by value, equation chains, induction, quantifiers with de
-Bruijn indices) and print the individual rule
+level (terms by value, equation chains, natural deduction with Ctx,
+quantifiers with de Bruijn indices) and print the individual rule
 applications, which budge-tp.py then checks like any other code. Every rule
 application is also simulated here as budge-tp.py does it, so a mistake is
 reported at the step that makes it.
@@ -104,6 +104,7 @@ def S(x): return ('S', x)
 def ADD(x, y): return ('ADD', x, y)
 def MUL(x, y): return ('MUL', x, y)
 def EQ(x, y): return ('EQ', x, y)
+def IMP(x, y): return ('IMP', x, y)
 def AND(x, y): return ('AND', x, y)
 def OR(x, y): return ('OR', x, y)
 def NOT(x): return ('NOT', x)
@@ -559,6 +560,15 @@ def aMS(x, y): return apply('rMS', [('x', x), ('y', y)], [])
 
 
 # ---------------------------------------------------------------- formulas with named parameters
+def abstract(t, w, k=0):
+    """Replace parameter w by the de Bruijn variable bound k binders out."""
+    if t == w:
+        return V(num(k))
+    if isinstance(t, str):
+        return t
+    if t[0] in BINDERS:
+        return (t[0], abstract(t[1], w, k + 1))
+    return (t[0], *(abstract(a, w, k) for a in t[1:]))
 
 
 def instantiate(f, t, k=0):
@@ -570,6 +580,212 @@ def instantiate(f, t, k=0):
     if f[0] in BINDERS:
         return (f[0], instantiate(f[1], t, k + 1))
     return (f[0], *(instantiate(a, t, k) for a in f[1:]))
+
+
+def exists(w, body): return ('EX', abstract(body, w))
+def mentions(t, w): return t == w or (isinstance(t, tuple) and any(mentions(a, w) for a in t[1:]))
+
+
+# ---------------------------------------------------------------- natural deduction
+def imp_mp(hxa, hxab):
+    """⊢(X=>A), ⊢(X=>(A=>B)) give ⊢(X=>B), by axiom S."""
+    x, a = val(hxa)[1][1:]
+    x2, ab = val(hxab)[1][1:]
+    assert x == x2 and ab[0] == 'IMP' and ab[1] == a, (THMS[hxa], THMS[hxab])
+    s = apply('rS', [('p', x), ('q', a), ('r', ab[2])], [])
+    return mp(hxa, mp(hxab, s))
+
+
+class Ctx:
+    """Reasoning under hypotheses. The context is a formula G, ⊤ at the root
+    and (G∧H) after assuming H; a fact X proved here is the theorem ⊢(G=>X)."""
+
+    def __init__(self, parent=None, hyp=None, reserved=()):
+        self.parent, self.hyp = parent, hyp
+        self.G = TOP if parent is None else AND(parent.G, hyp)
+        self.params = set(reserved) if parent is None else set(parent.params)
+
+    # -- facts and hypotheses
+    def get(self, h):
+        """A proof of X in this context, from one here, in an ancestor, or ⊢X."""
+        f = val(h)[1]
+        if f[0] == 'IMP' and f[1] == self.G:
+            return h
+        if self.parent is not None and f[0] == 'IMP' and self._ancestor(f[1]):
+            return hs(apply('rAndL', [('p', self.parent.G), ('q', self.hyp)], []),
+                      self.parent.get(h))
+        return weaken(h, self.G)
+
+    def _ancestor(self, g):
+        c = self.parent
+        while c is not None:
+            if c.G == g:
+                return True
+            c = c.parent
+        return False
+
+    def concl(self, h):
+        return val(self.get(h))[1][2]
+
+    def hyp_(self, H=None):
+        """The hypothesis H (default: the newest) as a fact."""
+        c = self
+        while H is not None and c.hyp != H:
+            c = c.parent
+        h = apply('rAndR', [('p', c.parent.G), ('q', c.hyp)], [])
+        return self.get(h)
+
+    def assume(self, H):
+        return Ctx(self, H)
+
+    def discharge(self, h):
+        """Proof of X under (G∧H) gives (H=>X) in the parent context."""
+        h = self.get(h)
+        X = val(h)[1][2]
+        cur = apply('thCurry', [('i', self.parent.G), ('j', self.hyp), ('l', X)], [])
+        return mp(h, cur)
+
+    def close(self, h):
+        """At the root: from ⊢(⊤=>X) get ⊢X."""
+        assert self.parent is None
+        return mp(apply('rTop', [], []), self.get(h))
+
+    # -- propositional steps
+    def mp(self, ha, hab):
+        return imp_mp(self.get(ha), self.get(hab))
+
+    def thru(self, ha, imp):
+        """X here and an unconditional ⊢(X=>Y) give Y."""
+        return hs(self.get(ha), imp)
+
+    def and_i(self, ha, hb):
+        a, b = self.concl(ha), self.concl(hb)
+        i = apply('rAndI', [('p', a), ('q', b)], [])
+        return imp_mp(self.get(hb), self.thru(ha, i))
+
+    def and_l(self, h):
+        a, b = self.concl(h)[1:]
+        return self.thru(h, apply('rAndL', [('p', a), ('q', b)], []))
+
+    def and_r(self, h):
+        a, b = self.concl(h)[1:]
+        return self.thru(h, apply('rAndR', [('p', a), ('q', b)], []))
+
+    def or_l(self, h, b):
+        return self.thru(h, apply('rOrL', [('p', self.concl(h)), ('q', b)], []))
+
+    def or_r(self, h, a):
+        return self.thru(h, apply('rOrR', [('p', a), ('q', self.concl(h))], []))
+
+    def cases(self, hor, case_a, case_b):
+        """From A∨B, case_a(ctx with A) and case_b(ctx with B) proving the same C."""
+        a, b = self.concl(hor)[1:]
+        ca, cb = self.assume(a), self.assume(b)
+        ha = ca.discharge(case_a(ca))
+        hb = cb.discharge(case_b(cb))
+        c = val(ha)[1][2][2]
+        e = apply('rOrE', [('p', a), ('q', b), ('r', c)], [])
+        return self.mp(hor, self.mp(self.get(hb), self.thru(ha, e)))
+
+    def efq(self, ha, hna, b):
+        a = self.concl(ha)
+        e = apply('thEFQ', [('i', a), ('j', b)], [])
+        return self.mp(ha, self.thru(hna, e))
+
+    def absurd(self, a, prove):
+        """¬A, from prove(ctx with A) returning proofs of some B and ¬B."""
+        c = self.assume(a)
+        hb, hnb = prove(c)
+        h = c.discharge(c.efq(hb, hnb, NOT(a)))           # A => ¬A
+        return self.thru(h, apply('thAbs', [('i', a)], []))
+
+    def by_contra(self, a, prove):
+        """A, from prove(ctx with ¬A) returning proofs of some B and ¬B."""
+        h = self.absurd(NOT(a), prove)
+        return self.thru(h, apply('thDNE', [('i', a)], []))
+
+    def lem(self, a):
+        return self.get(apply('thLEM', [('i', a)], []))
+
+    # -- quantifiers
+    def fresh(self, *avoid):
+        for w in PARAMS:
+            if w not in self.params and not any(mentions(t, w) for t in (self.G, *avoid)):
+                return w
+        raise Exception('out of parameters')
+
+    def all_e(self, h, *terms):
+        h = self.get(h)
+        for t in terms:
+            f = self.concl(h)[1]
+            o, g = open_(Z, f, t)
+            h = self.thru(h, apply('rAllE', [('f', f), ('t', t), ('g', g)], [o]))
+        return h
+
+    def ex_i(self, h, f, t):
+        """f[t] here gives EX(f)."""
+        o, g = open_(Z, f, t)
+        assert g == self.concl(h), (r(g), r(self.concl(h)))
+        return self.thru(h, apply('rExI', [('f', f), ('t', t), ('g', g)], [o]))
+
+    def all_i(self, f, prove):
+        """ALL(f), from prove(ctx, w) proving f[w] for a fresh parameter w."""
+        w = self.fresh(f)
+        c = copy.copy(self)
+        c.params = self.params | {w}
+        h = self.get(prove(c, w))                            # ⊢(G=>f[w])
+        g = val(h)[1]
+        a, f2 = abs_(Z, w, g)
+        assert f2 == ('IMP', self.G, f), (r(f2), r(f))
+        gen_ = apply('rGen', [('w', w), ('g', g), ('f', f2)], [a, h])
+        o, _ = open_(Z, self.G, K_)
+        ai = apply('rAllImp', [('q', self.G), ('f', f)], [o])
+        return mp(gen_, ai)
+
+    def ex_e(self, hex_, prove):
+        """From EX(f) here and prove(ctx with f[w], w) proving X (w fresh, not in X)."""
+        f = self.concl(hex_)[1]
+        w = self.fresh(f)
+        c = self.assume(instantiate(f, w))
+        c.params = self.params | {w}
+        hx = prove(c, w)
+        X = c.concl(hx)
+        assert not mentions(X, w), r(X)
+        h1 = c.discharge(hx)                                  # ⊢(G=>(f[w]=>X))
+        fw = instantiate(f, w)
+        perm = apply('thC', [('i', self.G), ('j', fw), ('l', X)], [])
+        h2 = mp(h1, perm)                                     # ⊢(f[w]=>(G=>X))
+        g = val(h2)[1]
+        a, f2 = abs_(Z, w, g)
+        q = ('IMP', self.G, X)
+        assert f2 == ('IMP', f, q), (r(f2),)
+        gen_ = apply('rGen', [('w', w), ('g', g), ('f', f2)], [a, h2])
+        o, _ = open_(Z, q, K_)
+        ee = apply('rExE', [('q', q), ('f', f)], [o])
+        h3 = mp(gen_, ee)                                     # ⊢(EX(f)=>(G=>X))
+        h4 = self.thru(hex_, h3)                              # ⊢(G=>(G=>X))
+        return mp(h4, apply('thW', [('i', self.G), ('j', X)], []))
+
+    # -- equations
+    def eq(self, h):
+        """An equation: keep it unconditional if it is, else bring it here."""
+        return self.get(h) if is_cond(h) else h
+
+    def sym(self, h):
+        return self.get(sym(self.eq(h)))
+
+    def trans(self, h1, h2):
+        return self.get(trans(self.eq(h1), self.eq(h2)))
+
+    def chain(self, start, steps):
+        acc, cur = None, start
+        for path, h in steps:
+            if callable(h):
+                h = h(at(cur, path))
+            step = rewrite(cur, path, self.eq(h))
+            _, cur = sides(step)
+            acc = step if acc is None else trans(self.eq(acc), self.eq(step))
+        return self.get(acc)
 
 
 # ---------------------------------------------------------------- shared proof helpers

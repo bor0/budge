@@ -22,7 +22,7 @@ Lowercase characters in a rule expression are considered a variable and will be 
 
 Prose statements (`p<name>`) print their text prefixed with `-- `, interleaved with theorem results in source order. The prefix distinguishes prose from derived theorems (which always use `name : value` form) so prose cannot spoof a theorem result. Prose supports `!` suppression like theorems.
 
-Python blocks are meta-programs: lines between `<?py` and `?>` (each on its own line), or the code in a one-line `<?py ... ?>`, are Python code, run with `__file__` (the Budge file), `env` (everything read and checked so far) and `load(path)` defined. Whatever the block prints is Budge code: it takes the block's place and is checked like any other code, so a wrong step is still rejected. `load` reads another Budge file, with the path relative to the current one: it is fully checked, its rules and theorems become available under the same names (a name clash is an error), it is loaded only once even if loaded several times, and its theorems and prose are not printed. Cycles are errors. This is how files use each other: `<?py load('lib/logic.btp') ?>`. Budge-TP itself provides nothing else; proof-building helpers are ordinary Python libraries, such as [`examples/lib/tactics.py`](./examples/lib/tactics.py) for the example library (equation chains, induction, quantifier instantiation). `--expand DIR` writes every loaded file with its blocks replaced by their output (keeping the `load` lines), so the proof can be checked without running any other Python.
+Python blocks are meta-programs: lines between `<?py` and `?>` (each on its own line), or the code in a one-line `<?py ... ?>`, are Python code, run with `__file__` (the Budge file), `env` (everything read and checked so far) and `load(path)` defined. Whatever the block prints is Budge code: it takes the block's place and is checked like any other code, so a wrong step is still rejected. `load` reads another Budge file, with the path relative to the current one: it is fully checked, its rules and theorems become available under the same names (a name clash is an error), it is loaded only once even if loaded several times, and its theorems and prose are not printed. Cycles are errors. This is how files use each other: `<?py load('lib/logic.btp') ?>`. Budge-TP itself provides nothing else; proof-building helpers are ordinary Python libraries, such as [`examples/lib/tactics.py`](./examples/lib/tactics.py) for the example library (natural deduction, equation chains, induction, quantifier instantiation). `--expand DIR` writes every loaded file with its blocks replaced by their output (keeping the `load` lines), so the proof can be checked without running any other Python.
 
 ```
 python3 budge-tp.py proof.btp
@@ -51,6 +51,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [strings.btp](./examples/lib/strings.btp) - String concatenation and sequences, and GEB's hyphen strings
 - [tally.btp](./examples/lib/tally.btp) - Tally numbers (||| is 3) with order, and multiplication and powers modulo n
 - [semiring.btp](./examples/lib/semiring.btp) - Commutativity, associativity and distributivity of + and ·, each proved by induction
+- [nd.btp](./examples/lib/nd.btp) - Natural deduction as derived Hilbert schemas: currying, permutation, contraction, contraposition, reductio, excluded middle
 - [sum.btp](./examples/lib/sum.btp) - SUM(n) = 0 + 1 + ... + n, defined by recursion
 - [parity.btp](./examples/lib/parity.btp) - n mod 2 and n div 2 defined by recursion, with lemmas about them
 - [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: sequence, skip, if, while and consequence rules over a small imperative language
@@ -73,6 +74,7 @@ In the `examples` folder you can find the following proofs:
 - [List](./examples/list.btp) - List implementation and some example functions on them
 - [LLM](./examples/llm.btp) - A toy bigram language model with greedy decoding
 - [MU puzzle](./examples/miu.btp) - A simple usage of a small formal system
+- [Parity](./examples/parity.btp) - Every number is even or odd: ∀n ∃k. n = k+k ∨ n = k+k+1
 - [Peano's axioms](./examples/peano.btp) - Computation, ∀-instantiation and generalisation by hand, using the library
 - [PQ](./examples/pq.btp) - Number addition
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm

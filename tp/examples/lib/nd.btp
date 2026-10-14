@@ -1,0 +1,87 @@
+# Natural deduction, derived
+#
+# Proved by the Python block below; Budge checks every step.
+# Hilbert-style schemas that let a proof assume a hypothesis, use it, and
+# discharge it (tactics.py's Ctx compiles such proofs to these):
+#
+#   thCurry : ⊢(((i∧j)=>l)=>(i=>(j=>l)))      discharge the newest hypothesis
+#   thC     : ⊢((i=>(j=>l))=>(j=>(i=>l)))      swap two hypotheses
+#   thW     : ⊢((i=>(i=>j))=>(i=>j))           use a hypothesis twice
+#   thCP2   : ⊢((i=>j)=>(¬j=>¬i))              contraposition
+#   thAbs   : ⊢((i=>¬i)=>¬i)                   consequentia mirabilis (reductio)
+#   thLEM   : ⊢(i∨¬i)                          excluded middle
+#
+# Proofs use a, b, c; values substituted for i, j, l must not contain them,
+# and the exports rename them to i, j, l.
+
+<?py load('logic.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.dirname(__file__))
+from tactics import *
+use(env, __file__)
+
+a, b, c = 'a', 'b', 'c'
+
+
+def export(h, name, n=2):
+    ren = [('a', 'i'), ('b', 'j'), ('c', 'l')][:n]
+    return apply(h, ren, [], name=name)
+
+
+section('Currying', 'NdA')
+X = IMP(AND(a, b), c)
+s1 = apply('thHS', [('i', b), ('j', AND(a, b)), ('l', c)], [])       # X => ((b=>(a∧b))=>(b=>c))
+Zf = IMP(IMP(b, AND(a, b)), IMP(b, c))
+s2 = apply('thHS', [('i', a), ('j', IMP(b, AND(a, b))), ('l', IMP(b, c))], [])
+s3 = hs(s1, s2)
+s4 = weaken(apply('rAndI', [('p', a), ('q', b)], []), X)
+export(imp_mp(s4, s3), 'thCurry', 3)
+
+section('Permutation', 'NdB')
+X = IMP(a, IMP(b, c))
+s1 = apply('rS', [('p', a), ('q', b), ('r', c)], [])                  # X => ((a=>b)=>(a=>c))
+s2 = apply('thHS', [('i', b), ('j', IMP(a, b)), ('l', IMP(a, c))], [])
+s3 = hs(s1, s2)
+s4 = weaken(apply('rK', [('p', b), ('q', a)], []), X)
+export(imp_mp(s4, s3), 'thC', 3)
+
+section('Contraction', 'NdC')
+X = IMP(a, IMP(a, b))
+s1 = apply('rS', [('p', a), ('q', a), ('r', b)], [])                  # X => ((a=>a)=>(a=>b))
+s2 = weaken(apply('thId', [('i', a)], []), X)
+export(imp_mp(s2, s1), 'thW')
+
+section('Contraposition', 'NdD')
+X = IMP(a, b)
+dne = apply('thDNE', [('i', a)], [])                                  # ¬¬a => a
+dni = apply('thDNI', [('i', b)], [])                                  # b => ¬¬b
+t1 = apply('thHS', [('i', NOT(NOT(a))), ('j', a), ('l', b)], [])      # X => ((¬¬a=>a)=>(¬¬a=>b))
+t2 = imp_mp(weaken(dne, X), t1)                                       # X => (¬¬a=>b)
+t3 = mp(dni, apply('thHS', [('i', NOT(NOT(a))), ('j', b), ('l', NOT(NOT(b)))], []))
+t4 = hs(t2, t3)                                                       # X => (¬¬a=>¬¬b)
+t5 = hs(t4, apply('rNeg', [('p', NOT(a)), ('q', NOT(b))], []))        # X => (¬b=>¬a)
+export(t5, 'thCP2')
+
+section('Consequentia mirabilis', 'NdE')
+X = IMP(a, NOT(a))
+T_ = IMP(a, a)
+u1 = imp_mp(weaken(apply('thDNE', [('i', a)], []), X),
+            apply('thHS', [('i', NOT(NOT(a))), ('j', a), ('l', NOT(a))], []))   # X => (¬¬a=>¬a)
+efq = apply('thEFQ', [('i', NOT(a)), ('j', NOT(T_))], [])            # ¬¬a => (¬a => ¬T)
+sS = apply('rS', [('p', NOT(NOT(a))), ('q', NOT(a)), ('r', NOT(T_))], [])
+u2 = hs(u1, mp(efq, sS))                                              # X => (¬¬a=>¬T)
+u3 = hs(u2, apply('rNeg', [('p', NOT(a)), ('q', T_)], []))           # X => (T=>¬a)
+u4 = imp_mp(weaken(apply('thId', [('i', a)], []), X), u3)            # X => ¬a
+export(u4, 'thAbs', 1)
+
+section('Excluded middle', 'NdF')
+D = OR(a, NOT(a))
+v1 = mp(apply('rOrL', [('p', a), ('q', NOT(a))], []),
+        apply('thCP2', [('i', a), ('j', D)], []))                     # ¬D => ¬a
+v2 = mp(apply('rOrR', [('p', a), ('q', NOT(a))], []),
+        apply('thCP2', [('i', NOT(a)), ('j', D)], []))                # ¬D => ¬¬a
+e1 = hs(v2, apply('thEFQ', [('i', NOT(a)), ('j', NOT(NOT(D)))], []))  # ¬D => (¬a => ¬¬D)
+e2 = imp_mp(v1, e1)                                                   # ¬D => ¬¬D
+e3 = mp(e2, apply('thAbs', [('i', NOT(D))], []))                      # ¬¬D
+export(mp(e3, apply('thDNE', [('i', D)], [])), 'thLEM', 1)
+?>

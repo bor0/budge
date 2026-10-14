@@ -126,6 +126,8 @@ not a duplicate: don't load a library for a coincidental symbol.
 `sum.btp` (loads peano): SUM(n) = 0+1+…+n by recursion; `gauss.btp` proves 2·SUM(n) = n·S(n).
 `parity.btp` (loads peano; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
 `thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads logic, strings): Hoare rules and program syntax.
+`nd.btp` (loads logic; Python block): `thCurry`, `thC`, `thW`, `thCP2`, `thAbs`, `thLEM`, the
+schemas natural deduction compiles to.
 
 Big proofs are `<?py ... ?>` blocks over `examples/lib/tactics.py`. A block starts
 `import os, sys; sys.path.insert(0, <dir of examples/lib>)`, `from tactics import *`,
@@ -140,6 +142,15 @@ library: it holds only what the committed proofs use.
 the ABS premise also checks N ∉ f. Several parameters: `ABS(k,w,g,f)` names the
 parameter `w` (`PAR(w)`), others pass via `DIFF(w,o)`. Use the IH as `thId` `⊢(G=>G)`;
 steps under G: `rK` weakens facts, `thHS` chains, `rS` + `rEqT` give transitivity.
+
+**Natural deduction in Python blocks** (`lib/tactics.py` `Ctx`, over `lib/nd.btp`). A proof
+under hypotheses is a context formula G (⊤, then (G∧H) per assumption); a fact X there is
+⊢(G=>X). `assume`, `hyp_`, `discharge` (thCurry), `mp`/`thru` (axiom S / HS), `and_i/l/r`,
+`or_l/r`, `cases` (rOrE), `efq`, `absurd` (thAbs), `by_contra`, `lem`, `all_e`, `ex_i`, `all_i`
+(rGen + `rAllImp`), `ex_e` (thC, rGen, `rExE`, thW), equations via `chain`/`trans`/`sym`. Fresh
+parameters come from K < M < … < Z; pass `reserved=` for the statement's own. Build formulas
+with named parameters and `exists`; `instantiate`/`abstract` handle de Bruijn shifts
+(`parity.btp`: ∀n ∃k. n = k+k ∨ n = S(k+k)).
 
 ## Pitfalls
 
