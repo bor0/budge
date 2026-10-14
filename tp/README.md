@@ -50,6 +50,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [list.btp](./examples/lib/list.btp) - Lists of numbers, with list relations: append, car/cdr, membership, sum, max, substitution, reversal, sortedness
 - [strings.btp](./examples/lib/strings.btp) - String concatenation and sequences, and GEB's hyphen strings
 - [tally.btp](./examples/lib/tally.btp) - Tally numbers (||| is 3) with order, and multiplication and powers modulo n
+- [semiring.btp](./examples/lib/semiring.btp) - Commutativity, associativity and distributivity of + and ·, each proved by induction
 - [parity.btp](./examples/lib/parity.btp) - n mod 2 and n div 2 defined by recursion, with lemmas about them
 - [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: sequence, skip, if, while and consequence rules over a small imperative language
 
@@ -70,7 +71,7 @@ In the `examples` folder you can find the following proofs:
 - [List](./examples/list.btp) - List implementation and some example functions on them
 - [LLM](./examples/llm.btp) - A toy bigram language model with greedy decoding
 - [MU puzzle](./examples/miu.btp) - A simple usage of a small formal system
-- [Peano's axioms](./examples/peano.btp) - A more detailed example on numbers
+- [Peano's axioms](./examples/peano.btp) - Computation, ∀-instantiation and generalisation by hand, using the library
 - [PQ](./examples/pq.btp) - Number addition
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
 - [Quantifiers](./examples/quantifiers.btp) - First-order reasoning with ∀ and ∃ by hand, using the library
@@ -79,4 +80,3 @@ In the `examples` folder you can find the following proofs:
 - [TQ](./examples/tq.btp) - Number multiplication
 - [Typed](./examples/typed.btp) - Shows the distinction between terms and theorems
 - [Whirlpool](./examples/whirlpool.btp) - The self-referential trap of searching for escape, and cognitive defusion
-- [Zero plus n](./examples/zero_plus_n_induction.btp) - Proof that 0 + n = n by induction

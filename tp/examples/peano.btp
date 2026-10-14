@@ -1,106 +1,89 @@
-# Peano's axioms
-# --------------
+# Peano arithmetic by hand, using the library
 #
-# As per https://en.wikipedia.org/wiki/Peano_axioms
+# lib/peano.btp axiomatises + and × (equality and the ∀ quantifier are in
+# lib/fol.btp); lib/semiring.btp proves the laws of + and × from it, with a
+# Python block that emits ~1300 checked lines. This file shows, by hand, the
+# three moves every proof there is made of:
+#
+#   1. computation:    1 + 1 = 2 from the defining equations of +
+#   2. instantiation:  2 + 3 = 3 + 2 from the lemma ∀m∀n. m + n = n + m
+#   3. generalisation: ∀m. m + 0 = m from the axiom instance M + 0 = M
+#
+# All reasoning is Hilbert-style: axioms are implications such as
+# ⊢(EQ(x,y)=>EQ(S(x),S(y))), discharged with modus ponens (rMp).
 
-# Equality refl, symm, tr
-rEqR : ⊢EQ(x,x)
-rEqS : ⊢EQ(x,y) -> ⊢EQ(y,x)
-rEqT : ⊢EQ(x,y) -> ⊢EQ(y,z) -> ⊢EQ(x,z)
+<?py load('lib/semiring.btp') ?>
+## 1. Computation: 1 + 1 = 2
+# 1+1 = S(1+0) (rAS), and 1+0 = 1 (rAZ) so S(1+0) = S(1) = 2 (rCongS);
+# chain the two equations with transitivity (rEqT).
+tmA10!   : rTmAdd x=tm1!;y=tm0!              # ADD(1,0)
+tmA11!   : rTmAdd x=tm1!;y=tm1!               # ADD(1,1)
+tmSA10!  : rTmS x=tmA10!                          # S(ADD(1,0))
+tmE10!   : rTmEq x=tmA10!;y=tm1!                # EQ(ADD(1,0),1)
+tmES!    : rTmEq x=tmSA10!;y=tm2!               # EQ(S(ADD(1,0)),2)
+tmE11S!  : rTmEq x=tmA11!;y=tmSA10!               # EQ(ADD(1,1),S(ADD(1,0)))
+tmE11!   : rTmEq x=tmA11!;y=tm2!                # EQ(ADD(1,1),2)
+tm(ES=>E11)! : rTmImp p=tmES!;q=tmE11!
 
-# Inequality
-rNeqS : ⊢!EQ(x,y) -> ⊢!EQ(y,x)
-rNeqT : ⊢!EQ(x,y) -> ⊢EQ(y,z) -> ⊢!EQ(x,z)
+thP1! : rAS x=tm1!;y=tm0!                    # ⊢EQ(ADD(1,1),S(ADD(1,0)))
+thP2! : rAZ x=tm1!                              # ⊢EQ(ADD(1,0),1)
+thP3! : rCongS x=tmA10!;y=tm1!                  # ⊢(EQ(ADD(1,0),1)=>EQ(S(ADD(1,0)),2))
+thP4! : rMp p=tmE10!;q=tmES! thP2! thP3!          # ⊢EQ(S(ADD(1,0)),2)
+thP5! : rEqT x=tmA11!;y=tmSA10!;z=tm2!          # ⊢(EQ(ADD(1,1),S(ADD(1,0)))=>(EQ(S(ADD(1,0)),2)=>EQ(ADD(1,1),2)))
+thP6! : rMp p=tmE11S!;q=tm(ES=>E11)! thP1! thP5!  # ⊢(EQ(S(ADD(1,0)),2)=>EQ(ADD(1,1),2))
+thOnePlusOne : rMp p=tmES!;q=tmE11! thP4! thP6!
+pOnePlusOne : 1 + 1 = 2
 
-# Axiom 6: zero is not the successor of any natural number
-rNeq : ⊢!EQ(S(x),0)
+## 2. Instantiation: 2 + 3 = 3 + 2
+# thAddComm is ⊢ALL(ALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0)))))): V(S(0)) is
+# m, bound by the outer ALL, and V(0) is n. ∀-elimination (rAllE) needs an
+# OPEN derivation: OPEN(k,f,t,g) says g is f with V(k) replaced by t, built
+# one constructor at a time. Under one ALL the outer variable is V(S(0)).
+tmA2V0!  : rTmAdd x=tm2!;y=tmV0!                # ADD(2,n)
+tmAV02!  : rTmAdd x=tmV0!;y=tm2!                # ADD(n,2)
+tmC2n!   : rTmEq x=tmA2V0!;y=tmAV02!              # EQ(ADD(2,n),ADD(n,2))
+tmAllC2n! : rTmAll x=tmC2n!                       # ALL(EQ(ADD(2,n),ADD(n,2)))
+tmA23!   : rTmAdd x=tm2!;y=tm3!
+tmA32!   : rTmAdd x=tm3!;y=tm2!
+tmC23!   : rTmEq x=tmA23!;y=tmA32!                # EQ(ADD(2,3),ADD(3,2))
 
-# Axiom 7: injectivity of successor (equality and inequality directions)
-rIL    : ⊢EQ(x,y) -> ⊢EQ(S(x),S(y))
-rIR    : ⊢EQ(S(x),S(y)) -> ⊢EQ(x,y)
-rNeqIL : ⊢!EQ(x,y) -> ⊢!EQ(S(x),S(y))
+# The numbers 2 and 3 are closed terms (CT): only those may be substituted
+thCt1! : rCtS x=tm0! thCt0!
+thCt2! : rCtS x=tm1! thCt1!
+thCt3! : rCtS x=tm2! thCt2!
 
-# Zero is a natural number (proof witness)
-rZ  : ⊢0
-thZ! : rZ
+# m := 2. Under the inner ALL, m is V(S(0)) and n = V(0) stays.
+thO1! : rOpenHit k=tm1!;t=tm2! thCt2!                                  # OPEN(1,m,2,2)
+thO2! : rOpenBound n=tm0!;k=tm1!;t=tm2! thLt01!                     # OPEN(1,n,2,n)
+thO3! : rOpenAdd k=tm1!;x=tmV1!;y=tmV0!;t=tm2!;u=tm2!;v=tmV0! thO1! thO2!
+thO4! : rOpenAdd k=tm1!;x=tmV0!;y=tmV1!;t=tm2!;u=tmV0!;v=tm2! thO2! thO1!
+thO5! : rOpenEq k=tm1!;x=tmADD(V(S(0)),V(0))!;y=tmADD(V(0),V(S(0)))!;t=tm2!;u=tmA2V0!;v=tmAV02! thO3! thO4!
+thO6! : rOpenAll k=tm0!;f=tmEQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0))))!;t=tm2!;g=tmC2n! thO5!
+thI1! : rAllE f=tmALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0)))))!;t=tm2!;g=tmAllC2n! thO6!
+thI2! : rMp p=tmALL(ALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0))))))!;q=tmAllC2n! thAddComm thI1!                       # ⊢∀n. 2+n = n+2
 
-# Zero is a natural number (term)
-rTmZ : 0
-tmZ! : rTmZ
+# n := 3. The numeral 2 is opened constructor by constructor (it has no V).
+thO7!  : rOpenHit k=tm0!;t=tm3! thCt3!                              # OPEN(0,n,3,3)
+thO8!  : rOpen0 k=tm0!;t=tm3!
+thO9!  : rOpenS k=tm0!;x=tm0!;t=tm3!;u=tm0! thO8!
+thO10! : rOpenS k=tm0!;x=tm1!;t=tm3!;u=tm1! thO9!               # OPEN(0,2,3,2)
+thO11! : rOpenAdd k=tm0!;x=tm2!;y=tmV0!;t=tm3!;u=tm2!;v=tm3! thO10! thO7!
+thO12! : rOpenAdd k=tm0!;x=tmV0!;y=tm2!;t=tm3!;u=tm3!;v=tm2! thO7! thO10!
+thO13! : rOpenEq k=tm0!;x=tmA2V0!;y=tmAV02!;t=tm3!;u=tmA23!;v=tmA32! thO11! thO12!
+thI3!  : rAllE f=tmC2n!;t=tm3!;g=tmC23! thO13!
+thTwoPlusThree : rMp p=tmAllC2n!;q=tmC23! thI2! thI3!
+pTwoPlusThree : 2 + 3 = 3 + 2, an instance of ∀m∀n. m + n = n + m
 
-# Successor
-rS   : ⊢x -> ⊢S(x)
-rTmS : S(x) # term
+## 3. Generalisation: ∀m. m + 0 = m
+# Prove it for the parameter M (a fixed but arbitrary number), then abstract
+# M into a bound variable. ABS(k,w,g,f) says f is g with every w replaced by
+# V(k); since no rule keeps w, none can be left behind.
+tmAV00!  : rTmAdd x=tmV0!;y=tm0!               # ADD(m,0)
+tmEV!    : rTmEq x=tmAV00!;y=tmV0!                # EQ(ADD(m,0),m)
 
-# Some variables at the object level
-rTmX : X
-tmX! : rTmX
-
-# Equality respects function application (addition), i.e. m=n -> a+m=a+n.
-# TODO: This can probably be derived as a theorem from `rIL` and `rIR`
-rCongAdd : ⊢EQ(x,y) -> ⊢EQ(ADD(z,x),ADD(z,y))
-
-# Induction
-rInd : ⊢p(0) -> ⊢p(n)=>p(S(n)) -> ⊢∀X,p(X)
-# --------------
-
-# Addition
-rAZ  : ⊢EQ(ADD(x,0),x)
-rAS  : ⊢EQ(ADD(x,S(y)),S(ADD(x,y)))
-rTmA : ADD(x,y)
-
-# Multiplication
-rMZ  : ⊢EQ(MUL(x,0),0)
-rMS  : ⊢EQ(MUL(x,S(y)),ADD(x,MUL(x,y)))
-rTmM : MUL(x,y)
-
-# Evenness
-rEvZ : ⊢EV(0)
-thEvZ! : rEvZ
-rEvS : ⊢EV(x) -> ⊢EV(S(S(x)))
-
-# Terms needed for some of the theorems
-tmOne!          : rTmS x=tmZ!
-tmTwo!          : rTmS x=tmOne!
-tmOneAddZero!   : rTmA x=tmOne!;y=tmZ!
-tmOneAddOne!    : rTmA x=tmOne!;y=tmOne!
-tmSOneAddZero!  : rTmS x=tmOneAddZero!
-tmXMulZero!     : rTmM x=tmX!;y=tmZ!
-tmXMulOne!      : rTmM x=tmX!;y=tmOne!
-tmXAddXMulZero! : rTmA x=tmX!;y=tmXMulZero!
-tmXAddZero!     : rTmA x=tmX!;y=tmZ!
-
-# Theorem 1: One plus one is two
-th1step1! : rAS x=tmOne!;y=tmZ!
-th1step2! : rAZ x=tmOne!
-th1step3! : rIL x=tmOneAddZero!;y=tmOne! th1step2!
-thOnePlusOneIsTwo : rEqT x=tmOneAddOne!;y=tmSOneAddZero!;z=tmTwo! th1step1! th1step3!
-
-# Theorem 2: X times one is X
-tmXmulZisX! : rMZ x=tmX!
-th2step1!   : rMS x=tmX!;y=tmZ!
-th2step2!   : rCongAdd x=tmXMulZero!;y=tmZ!;z=tmX! tmXmulZisX!
-th2step3!   : rEqT x=tmXMulOne!;y=tmXAddXMulZero!;z=tmXAddZero! th2step1! th2step2!
-th2step4!   : rAZ x=tmX!
-thXMulOneIsX : rEqT x=tmXMulOne!;y=tmXAddZero!;z=tmX! th2step3! th2step4!
-
-# Theorem 3: Two is even
-thTwoIsEven : rEvS x=tmZ! thEvZ!
-
-# Theorem 4: Example induction
-thFourIsEven : rEvS x=tmTwo! thTwoIsEven
-
-# Theorem 5: Example function: f(1) = 2
-rF   : ⊢EQ(F(x),ADD(x,S(0)))
-rTmF : F(x)
-
-tmF1Eq2! : rF x=tmOne!
-tmF1!    : rTmF x=tmOne!
-
-thF1IsTwo : rEqT x=tmF1!;y=tmOneAddOne!;z=tmTwo! tmF1Eq2! thOnePlusOneIsTwo
-
-# Theorem 6: 0!=1
-thOneNeqZero : rNeq x=tmZ!
-
-# Theorem 7: 0 ≠ 1  (by symmetry of inequality)
-thZeroNeqOne : rNeqS x=tmOne!;y=tmZ! thOneNeqZero
+thG1! : rAZ x=tmM!                                                      # ⊢EQ(ADD(M,0),M)
+thG4! : rAbs0 k=tm0!;w=tmM!                                          # ABS(0,M,0,0)
+thG5! : rAbsAdd k=tm0!;w=tmM!;x=tmM!;y=tm0!;u=tmV0!;v=tm0! thAbsM! thG4!
+thG6! : rAbsEq k=tm0!;w=tmM!;x=tmADD(M,0)!;y=tmM!;u=tmAV00!;v=tmV0! thG5! thAbsM!
+thAddZero : rGen w=tmM!;g=tmEQ(ADD(M,0),M)!;f=tmEV! thG6! thG1!
+pAddZero : ∀m. m + 0 = m

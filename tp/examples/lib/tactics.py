@@ -101,6 +101,8 @@ def parse(s):
 
 
 def S(x): return ('S', x)
+def ADD(x, y): return ('ADD', x, y)
+def MUL(x, y): return ('MUL', x, y)
 def EQ(x, y): return ('EQ', x, y)
 def AND(x, y): return ('AND', x, y)
 def OR(x, y): return ('OR', x, y)
@@ -525,6 +527,12 @@ def gen(h, w, name=None):
     return apply('rGen', [('w', w), ('g', g), ('f', f)], [a, h], name=name)
 
 
+def ind_hyp(f):
+    """Induction hypothesis f(N) and the proof ⊢(f(N)=>f(N)) to use it."""
+    G = instantiate(f, N_)
+    return G, apply('thId', [('i', G)], [])
+
+
 def induction(f, base, step, name=None):
     """From ⊢f(0) and ⊢(f(N)=>f(S(N))) conclude ⊢ALL(f)."""
     b, g, h = instantiate(f, Z), instantiate(f, N_), instantiate(f, S(N_))
@@ -539,6 +547,8 @@ def induction(f, base, step, name=None):
 # axiom instances
 def aAZ(x): return apply('rAZ', [('x', x)], [])
 def aAS(x, y): return apply('rAS', [('x', x), ('y', y)], [])
+def aMZ(x): return apply('rMZ', [('x', x)], [])
+def aMS(x, y): return apply('rMS', [('x', x), ('y', y)], [])
 
 
 # ---------------------------------------------------------------- formulas with named parameters
