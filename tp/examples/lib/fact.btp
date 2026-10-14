@@ -1,0 +1,79 @@
+# Factorial
+#
+# Proved by the Python block below; Budge checks every
+# step. FACT(n) = n! by recursion: FACT(0) = 1, FACT(S(n)) = FACT(n)·S(n).
+# Proves, for all numbers:
+#
+#   thFactPos  ∀n ∃k. n! = S(k)                  (n! ≥ 1)
+#   thDvdFact  ∀d∀n. 1 ≤ d ∧ d ≤ n => d | n!
+
+<?py load('divides.btp') ?>
+## Definition
+rFact0    : ⊢EQ(FACT(0),S(0))
+rFactS    : ⊢EQ(FACT(S(x)),MUL(FACT(x),S(x)))
+rCongFact : ⊢(EQ(x,y)=>EQ(FACT(x),FACT(y)))
+
+## Syntax (see fol.btp)
+rTmFact   : FACT(x)
+rCtFact   : CT(x) -> CT(FACT(x))
+rOpenFact : OPEN(k,x,t,u) -> OPEN(k,FACT(x),t,FACT(u))
+rAbsFact  : ABS(k,w,x,u) -> ABS(k,w,FACT(x),FACT(u))
+
+<?py
+import os, sys; sys.path.insert(0, os.path.dirname(__file__))
+from tactics import *
+use(env, __file__)
+
+
+# ---- n! = S(k)
+section('Lemma: ∃k. n! = S(k)', 'FcA', [
+    'Induction. FACT(S(n)) = FACT(n)·S(n) = S(k)·S(n) = S(k)·n + S(k) = S(S(k)·n + k).'])
+fp = lambda n: exists(spare(n), EQ(FACT(n), S(spare(n))))
+f = abstract(fp(N_), N_)
+root = Ctx(reserved={N_})
+base = root.close(root.ex_i(apply('rFact0', [], []), fp(Z)[1], Z))
+c = root.assume(fp(N_))
+
+
+def with_k(c2, k):
+    h = c2.chain(FACT(S(N_)), [([], apply('rFactS', [('x', N_)], [])), ([0], c2.hyp_()),
+                               ([], aMS(S(k), N_)), ([], aAS(MUL(S(k), N_), k))])
+    return c2.ex_i(h, fp(S(N_))[1], ADD(MUL(S(k), N_), k))
+
+
+step = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+FactPos = induction(f, base, step, name='thFactPos')
+
+# ---- 1 ≤ d ∧ d ≤ n => d | n!
+section('Lemma: 1 ≤ d ∧ d ≤ n => d | n!', 'FcB', [
+    'Induction on n, for the parameter d. Base: d ≤ 0 gives d = 0, contradicting',
+    '1 ≤ d. Step: d ≤ S(n) gives d ≤ n, so d | n! | n!·S(n), or d = S(n) | n!·S(n).'])
+df = lambda n: IMP(AND(le(ONE, M_), le(M_, n)), dvd(M_, FACT(n)))
+f = abstract(df(N_), N_)
+root = Ctx(reserved={N_, M_})
+cb = root.assume(AND(le(ONE, M_), le(M_, Z)))
+hz = cb.thru(cb.and_r(cb.hyp_()), inst('thLeZero', M_))                     # M = 0
+hnz = cb.thru(cb.and_l(cb.hyp_()), inst('thLeSuccNZ', Z, M_))               # ¬(M = 0)
+base = root.close(cb.discharge(cb.efq(hz, hnz, dvd(M_, FACT(Z)))))
+H = AND(le(ONE, M_), le(M_, S(N_)))
+c1 = root.assume(df(N_))
+c2 = c1.assume(H)
+fs = sym(apply('rFactS', [('x', N_)], []))                                  # FACT(N)·S(N) = FACT(S(N))
+
+
+def small(c3):
+    h = c3.mp(c3.and_i(c3.and_l(c3.hyp_(H)), c3.hyp_()), c3.hyp_(df(N_)))  # M | FACT(N)
+    h = c3.thru(h, inst('thDvdMulR', M_, FACT(N_), S(N_)))
+    return c3.thru(h, mp(fs, inst('thDvdEq', M_, MUL(FACT(N_), S(N_)), FACT(S(N_)))))
+
+
+def last(c3):
+    h = c3.get(inst('thDvdMulL', M_, FACT(N_)))                              # M | FACT(N)·M
+    e = c3.chain(MUL(FACT(N_), M_), [([1], c3.hyp_()), ([], fs)])
+    return c3.mp(h, c3.thru(e, inst('thDvdEq', M_, MUL(FACT(N_), M_), FACT(S(N_)))))
+
+
+hc = c2.thru(c2.and_r(c2.hyp_()), inst('thLeSuccCases', M_, N_))
+step = root.close(c1.discharge(c2.discharge(c2.cases(hc, small, last))))
+DvdFact = gen(induction(f, base, step), M_, name='thDvdFact')
+?>

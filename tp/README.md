@@ -25,8 +25,8 @@ Prose statements (`p<name>`) print their text prefixed with `-- `, interleaved w
 Python blocks are meta-programs: lines between `<?py` and `?>` (each on its own line), or the code in a one-line `<?py ... ?>`, are Python code, run with `__file__` (the Budge file), `env` (everything read and checked so far) and `load(path)` defined. Whatever the block prints is Budge code: it takes the block's place and is checked like any other code, so a wrong step is still rejected. `load` reads another Budge file, with the path relative to the current one: it is fully checked, its rules and theorems become available under the same names (a name clash is an error), it is loaded only once even if loaded several times, and its theorems and prose are not printed. Cycles are errors. This is how files use each other: `<?py load('lib/logic.btp') ?>`. Budge-TP itself provides nothing else; proof-building helpers are ordinary Python libraries, such as [`examples/lib/tactics.py`](./examples/lib/tactics.py) for the example library (natural deduction, equation chains, induction, quantifier instantiation). `--expand DIR` writes every loaded file with its blocks replaced by their output (keeping the `load` lines), so the proof can be checked without running any other Python.
 
 ```
-python3 budge-tp.py proof.btp
-python3 budge-tp.py --expand out proof.btp && python3 budge-tp.py out/proof.btp
+python3 budge-tp.py examples/primes.btp
+python3 budge-tp.py --expand out examples/primes.btp && python3 budge-tp.py out/primes.btp
 ```
 
 ## Semantics
@@ -53,6 +53,8 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [semiring.btp](./examples/lib/semiring.btp) - Commutativity, associativity and distributivity of + and ·, each proved by induction
 - [nd.btp](./examples/lib/nd.btp) - Natural deduction as derived Hilbert schemas: currying, permutation, contraction, contraposition, reductio, excluded middle
 - [order.btp](./examples/lib/order.btp) - ≤ and < as formulas: totality, cancellation, and their interaction with successor
+- [divides.btp](./examples/lib/divides.btp) - Divisibility: transitivity, products, and a common divisor of a and a+1 is 1
+- [fact.btp](./examples/lib/fact.btp) - Factorial: n! ≥ 1, and every 1 ≤ d ≤ n divides n!
 - [sum.btp](./examples/lib/sum.btp) - SUM(n) = 0 + 1 + ... + n, defined by recursion
 - [parity.btp](./examples/lib/parity.btp) - n mod 2 and n div 2 defined by recursion, with lemmas about them
 - [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: sequence, skip, if, while and consequence rules over a small imperative language
@@ -81,6 +83,7 @@ In the `examples` folder you can find the following proofs:
 - [PQ](./examples/pq.btp) - Number addition
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
 - [Quantifiers](./examples/quantifiers.btp) - First-order reasoning with ∀ and ∃ by hand, using the library
+- [Primes](./examples/primes.btp) - Euclid: there are infinitely many primes, from Peano's axioms
 - [RSA](./examples/rsa.btp) - Toy RSA encryption and decryption using tally numbers
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication

@@ -810,6 +810,12 @@ def lt(a, b):
     return le(S(a), b)
 
 
+def dvd(d, m):
+    """d | m := ∃c. m = d·c"""
+    c = spare(d, m)
+    return exists(c, EQ(m, MUL(d, c)))
+
+
 # ---------------------------------------------------------------- shared proof helpers
 ONE, TWO = S(Z), S(S(Z))
 
@@ -840,16 +846,23 @@ def lemma(name, statement, h):
 
 
 # ---------------------------------------------------------------- library symbols
-# Defined by recursion in parity.btp (FLIP, MOD2, DIV2), sum.btp (SUM); each
-# has a term rule and CT, OPEN, ABS and congruence rules.
+# Defined by recursion in parity.btp (FLIP, MOD2, DIV2), sum.btp (SUM),
+# fact.btp (FACT); each has a term rule and CT, OPEN, ABS and congruence rules.
 def FLIP(x): return ('FLIP', x)
 def MOD2(x): return ('MOD2', x)
 def DIV2(x): return ('DIV2', x)
+def FACT(x): return ('FACT', x)
 def SUM(x): return ('SUM', x)
 
 
-for _op, _n in (('FLIP', 'Flip'), ('MOD2', 'Mod2'), ('DIV2', 'Div2'), ('SUM', 'Sum')):
+for _op, _n in (('FLIP', 'Flip'), ('MOD2', 'Mod2'), ('DIV2', 'Div2'), ('FACT', 'Fact'), ('SUM', 'Sum')):
     add_symbol(_op, f'rTm{_n}', f'rCt{_n}', f'rOpen{_n}', f'rAbs{_n}', {0: f'rCong{_n}'})
+
+
+def prime(p):
+    """PRIME(p) := 2 ≤ p ∧ ¬∃d. d|p ∧ 2 ≤ d ∧ d < p"""
+    d = spare(p)
+    return AND(le(TWO, p), NOT(exists(d, AND(dvd(d, p), AND(le(TWO, d), lt(d, p))))))
 
 
 # ---------------------------------------------------------------- more axiom instances

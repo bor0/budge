@@ -1,0 +1,174 @@
+# Divisibility
+#
+# Proved by the Python block below; Budge checks every
+# step. d | m is ∃c. m = d·c, written out as a formula. Proves, for all numbers:
+#
+#   thDvdTrans  ∀a∀b∀c. a|b => (b|c => a|c)
+#   thDvdMulR   ∀d∀a∀b. d|a => d|a·b
+#   thDvdMulL   ∀d∀a. d|a·d
+#   thDvdEq     ∀d∀x∀y. x = y => (d|x => d|y)
+#   thMulOne    ∀x∀y. x·y = 1 => x = 1
+#   thDvdSucc   ∀p∀a. p|a => (p|S(a) => p = 1)
+#
+# thDvdSucc is the heart of Euclid's proof that there are infinitely many
+# primes: a common divisor of a and a+1 divides 1.
+
+<?py load('order.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.dirname(__file__))
+from tactics import *
+use(env, __file__)
+
+# ---- a|b => (b|c => a|c)
+section('Lemma: a|b => (b|c => a|c)', 'DiA', ['b = a·x, c = b·y = (a·x)·y = a·(x·y).'])
+a_, b_, c_ = K_, M_, N_
+root = Ctx(reserved={a_, b_, c_})
+c1 = root.assume(dvd(a_, b_))
+c2 = c1.assume(dvd(b_, c_))
+
+
+def with_x(c3, x):
+    def with_y(c4, y):
+        h = c4.chain(c_, [([], c4.hyp_()), ([0], c4.hyp_(instantiate(dvd(a_, b_)[1], x))),
+                          ([], inst('thMulAssoc', a_, x, y))])
+        return c4.ex_i(h, dvd(a_, c_)[1], MUL(x, y))
+    return c3.ex_e(c3.hyp_(dvd(b_, c_)), with_y)
+
+
+h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(dvd(a_, b_)), with_x))))
+DvdTrans = lemma('thDvdTrans', closed(IMP(dvd(a_, b_), IMP(dvd(b_, c_), dvd(a_, c_))), a_, b_, c_),
+                 gen_all(h, a_, b_, c_))
+
+# ---- d|a => d|a·b
+section('Lemma: d|a => d|a·b', 'DiB', ['a = d·x, so a·b = (d·x)·b = d·(x·b).'])
+d_, a_, b_ = K_, M_, N_
+root = Ctx(reserved={d_, a_, b_})
+c = root.assume(dvd(d_, a_))
+
+
+def with_x(c2, x):
+    h = c2.chain(MUL(a_, b_), [([0], c2.hyp_()), ([], inst('thMulAssoc', d_, x, b_))])
+    return c2.ex_i(h, dvd(d_, MUL(a_, b_))[1], MUL(x, b_))
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_x)))
+DvdMulR = lemma('thDvdMulR', closed(IMP(dvd(d_, a_), dvd(d_, MUL(a_, b_))), d_, a_, b_),
+                gen_all(h, d_, a_, b_))
+
+# ---- d|a·d
+section('Lemma: d|a·d', 'DiC', ['a·d = d·a.'])
+d_, a_ = K_, M_
+root = Ctx(reserved={d_, a_})
+h = root.close(root.ex_i(inst('thMulComm', a_, d_), dvd(d_, MUL(a_, d_))[1], a_))
+DvdMulL = lemma('thDvdMulL', closed(dvd(d_, MUL(a_, d_)), d_, a_), gen_all(h, d_, a_))
+
+# ---- x = y => (d|x => d|y)
+section('Lemma: x = y => (d|x => d|y)', 'DiD', ['y = x = d·c.'])
+d_, x_, y_ = K_, M_, N_
+root = Ctx(reserved={d_, x_, y_})
+c1 = root.assume(EQ(x_, y_))
+c2 = c1.assume(dvd(d_, x_))
+
+
+def with_c(c3, cc):
+    h = c3.trans(c3.sym(c3.hyp_(EQ(x_, y_))), c3.hyp_())
+    return c3.ex_i(h, dvd(d_, y_)[1], cc)
+
+
+h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(), with_c))))
+DvdEq = lemma('thDvdEq', closed(IMP(EQ(x_, y_), IMP(dvd(d_, x_), dvd(d_, y_))), d_, x_, y_),
+              gen_all(h, d_, x_, y_))
+
+# ---- x·y = 1 => x = 1
+section('Lemma: x·y = 1 => x = 1', 'DiE', [
+    'Cases on x: x = 0 gives 0·y = 0 ≠ 1. x = S(u), cases on y: y = 0 gives',
+    'x·0 = 0 ≠ 1; y = S(v) gives x·y = x·v + S(u) = S(x·v + u) = 1, so',
+    'x·v + u = 0, u = 0 (thAddZeroR) and x = S(0).'])
+x_, y_ = M_, K_
+root = Ctx(reserved={x_, y_})
+c = root.assume(EQ(MUL(x_, y_), ONE))
+GOAL = EQ(x_, ONE)
+HYP = EQ(MUL(x_, y_), ONE)
+
+
+def x_zero(c2):
+    h = c2.chain(Z, [([], sym(inst('thZeroMul', y_))), ([0], c2.sym(c2.hyp_())), ([], c2.hyp_(HYP))])
+    return c2.efq(c2.sym(h), snz(Z), GOAL)
+
+
+def x_succ(c2):
+    def with_u(c3, u):
+        def y_zero(c4):
+            h = c4.chain(Z, [([], sym(aMZ(x_))), ([1], c4.sym(c4.hyp_())), ([], c4.hyp_(HYP))])
+            return c4.efq(c4.sym(h), snz(Z), GOAL)
+
+        def y_succ(c4):
+            def with_v(c5, v):
+                h = c5.chain(S(ADD(MUL(x_, v), u)), [
+                    ([], sym(aAS(MUL(x_, v), u))),
+                    ([1], c5.sym(c5.hyp_(EQ(x_, S(u))))),
+                    ([], sym(aMS(x_, v))),
+                    ([1], c5.sym(c5.hyp_())),
+                    ([], c5.hyp_(HYP))])                          # S(x·v + u) = S(0)
+                h = c5.thru(h, sinj(ADD(MUL(x_, v), u), Z))
+                hu = c5.thru(h, inst('thAddZeroR', MUL(x_, v), u))  # u = 0
+                return c5.chain(x_, [([], c5.hyp_(EQ(x_, S(u)))), ([0], hu)])
+            return c4.ex_e(c4.hyp_(), with_v)
+        return c3.cases(c3.get(inst('thZeroOrSucc', y_)), y_zero, y_succ)
+    return c2.ex_e(c2.hyp_(), with_u)
+
+
+h = c.cases(c.get(inst('thZeroOrSucc', x_)), x_zero, x_succ)
+MulOne = lemma('thMulOne', closed(IMP(HYP, GOAL), x_, y_), gen_all(root.close(c.discharge(h)), x_, y_))
+
+# ---- p|a => (p|S(a) => p = 1)
+section('Lemma: p|a => (p|S(a) => p = 1)', 'DiF', [
+    'a = p·c and S(a) = p·e. If c ≤ e, e = c+k: a + 1 = S(a) = p·(c+k) = a + p·k,',
+    'so p·k = 1 (thAddCancel) and p = 1 (thMulOne). If e < c, c = S(e)+k:',
+    'a = p·(S(e)+k) = (p·e + p) + p·k = S(a) + (p + p·k) = a + S(p + p·k),',
+    'impossible (thAddSNeq).'])
+p_, a_ = M_, K_
+root = Ctx(reserved={p_, a_})
+c1 = root.assume(dvd(p_, a_))
+c2 = c1.assume(dvd(p_, S(a_)))
+GOAL = EQ(p_, ONE)
+
+
+def with_c(c3, cc):
+    ha = EQ(a_, MUL(p_, cc))
+
+    def with_e(c4, e):
+        hsa = EQ(S(a_), MUL(p_, e))
+
+        def c_le_e(c5):
+            def with_k(c6, k):
+                h = c6.chain(ADD(a_, ONE), [
+                    ([], aAS(a_, Z)), ([0], aAZ(a_)),             # a+1 = S(a)
+                    ([], c6.hyp_(hsa)), ([1], c6.hyp_()),        # = p·(c+k)
+                    ([], inst('thDistrib', p_, cc, k)),           # = p·c + p·k
+                    ([0], c6.sym(c6.hyp_(ha)))])                  # = a + p·k
+                h = c6.thru(h, inst('thAddCancel', ONE, MUL(p_, k), a_))     # 1 = p·k
+                return c6.thru(c6.sym(h), inst('thMulOne', p_, k))
+            return c5.ex_e(c5.hyp_(), with_k)
+
+        def e_lt_c(c5):
+            def with_k(c6, k):
+                t = ADD(p_, MUL(p_, k))
+                h = c6.chain(a_, [
+                    ([], c6.hyp_(ha)), ([1], c6.hyp_()),          # a = p·(S(e)+k)
+                    ([], inst('thDistrib', p_, S(e), k)),         # = p·S(e) + p·k
+                    ([0], aMS(p_, e)),                            # = (p·e + p) + p·k
+                    ([], inst('thAddAssoc', MUL(p_, e), p_, MUL(p_, k))),
+                    ([0], c6.sym(c6.hyp_(hsa))),                  # = S(a) + (p + p·k)
+                    ([], inst('thSuccAdd', a_, t)),               # = S(a + t)
+                    ([], sym(aAS(a_, t)))])                       # = a + S(t)
+                return c6.efq(c6.sym(h), inst('thAddSNeq', t, a_), GOAL)
+            return c5.ex_e(c5.hyp_(), with_k)
+        return c4.cases(c4.get(inst('thLeTotal', e, cc)), c_le_e, e_lt_c)
+    return c3.ex_e(c3.hyp_(dvd(p_, S(a_))), with_e)
+
+
+h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(dvd(p_, a_)), with_c))))
+DvdSucc = lemma('thDvdSucc', closed(IMP(dvd(p_, a_), IMP(dvd(p_, S(a_)), GOAL)), p_, a_),
+                gen_all(h, p_, a_))
+?>

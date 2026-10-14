@@ -129,6 +129,8 @@ not a duplicate: don't load a library for a coincidental symbol.
 `nd.btp` (loads logic; Python block): `thCurry`, `thC`, `thW`, `thCP2`, `thAbs`, `thLEM`, the
 schemas natural deduction compiles to. `order.btp` (loads semiring, nd; Python block): ≤ is
 ∃k. b = a+k, < is S(a) ≤ b, as formulas; totality, cancellation, `thLeSuccNZ`, `thLeTwoNotOne`, ….
+`divides.btp` (loads order): d|m is ∃c. m = d·c; `thDvdSucc`: p|a, p|S(a) ⇒ p = 1. `fact.btp` (loads divides): FACT, `thFactPos`,
+`thDvdFact`; `primes.btp` proves Euclid's theorem on them.
 
 Big proofs are `<?py ... ?>` blocks over `examples/lib/tactics.py`. A block starts
 `import os, sys; sys.path.insert(0, <dir of examples/lib>)`, `from tactics import *`,
@@ -150,9 +152,11 @@ under hypotheses is a context formula G (⊤, then (G∧H) per assumption); a fa
 `or_l/r`, `cases` (rOrE), `efq`, `absurd` (thAbs), `by_contra`, `lem`, `all_e`, `ex_i`, `all_i`
 (rGen + `rAllImp`), `ex_e` (thC, rGen, `rExE`, thW), equations via `chain`/`trans`/`sym`. Fresh
 parameters come from K < M < … < Z; pass `reserved=` for the statement's own. Build formulas
-with named parameters and `forall`/`exists`/`le`/`lt`; `instantiate`/`abstract` handle de Bruijn
-shifts (`parity.btp`: ∀n ∃k. n = k+k ∨ n = S(k+k)). Shared helpers (`snz`, `sinj`, `refl`,
-`closed`, `gen_all`, `lemma`) live in tactics.py, not per block.
+with named parameters and `forall`/`exists`/`le`/`lt`/`dvd`/`prime`; `instantiate`/`abstract`
+handle de Bruijn shifts (`parity.btp`: ∀n ∃k. n = k+k ∨ n = S(k+k)). Shared helpers (`snz`, `sinj`, `refl`,
+`closed`, `gen_all`, `lemma`), library symbols (FLIP, MOD2, DIV2, FACT, SUM) and evaluation
+(`add_eval`, `sum_eval`) live in tactics.py, not per block. Induction matrices may contain
+quantifiers (`thPrimeFactor` is strong induction on a bound).
 
 ## Pitfalls
 

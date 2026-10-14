@@ -1,0 +1,131 @@
+# There are infinitely many primes (Euclid)
+#
+# Proved by the Python block below; Budge checks every
+# step, including those of the imported library.
+#
+#   thEuclid : ∀n ∃p. n < p ∧ PRIME(p)
+#
+# where PRIME(p) is 2 ≤ p ∧ ¬∃d. d|p ∧ 2 ≤ d ∧ d < p, written out as a formula
+# with ≤, < and | of lib/order.btp and lib/divides.btp. Euclid's argument:
+#
+#   thFactPos      ∀n ∃k. n! = S(k)        (lib/fact.btp; so n!+1 ≥ 2)
+#   thDvdFact      ∀d∀n. 1 ≤ d ∧ d ≤ n => d | n!      (lib/fact.btp)
+#   thPrimeFactor  ∀n∀m. 2 ≤ m ∧ m ≤ n => ∃p. PRIME(p) ∧ p | m
+#   thEuclid       n!+1 has a prime factor p (thPrimeFactor). If p ≤ n then
+#                  p | n! (thDvdFact) and p | n!+1, so p = 1 (thDvdSucc),
+#                  contradicting 2 ≤ p. Hence n < p.
+#
+# thPrimeFactor is strong induction, done as ordinary induction on a bound n:
+# if m ≤ S(n) then m ≤ n (induction hypothesis) or m = S(n). In that case m is
+# prime or not (excluded middle, thLEM); if not, it has a divisor 2 ≤ d < m,
+# and by the hypothesis d has a prime factor, which divides m (thDvdTrans).
+# The factorial n! = FACT(n) is defined by recursion in lib/fact.btp.
+
+<?py load('lib/fact.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+
+# ---- every m ≥ 2 has a prime factor
+section('Lemma: 2 ≤ m ∧ m ≤ n => ∃p. PRIME(p) ∧ p | m', 'EuC', [
+    'Induction on the bound n, for all m. Base: m ≤ 0 gives m = 0, contradicting',
+    '2 ≤ m. Step: m ≤ n (hypothesis) or m = S(n); then m is prime (p = m) or has a',
+    'divisor 2 ≤ d < m, d ≤ n, whose prime factor (hypothesis) divides m.'])
+PF = lambda m: exists(spare(m), AND(prime(spare(m)), dvd(spare(m), m)))
+inner = lambda n, m: IMP(AND(le(TWO, m), le(m, n)), PF(m))
+stmt = lambda n: forall('X', inner(n, 'X'))
+f = abstract(stmt(N_), N_)
+root = Ctx(reserved={N_})
+
+
+def base_m(c, w):
+    c2 = c.assume(AND(le(TWO, w), le(w, Z)))
+    hz = c2.thru(c2.and_r(c2.hyp_()), inst('thLeZero', w))                  # w = 0
+    hnz = c2.thru(c2.and_l(c2.hyp_()), inst('thLeSuccNZ', ONE, w))          # 2 ≤ w: ¬(w = 0)
+    return c2.discharge(c2.efq(hz, hnz, PF(w)))
+
+
+base = root.close(root.all_i(stmt(Z)[1], base_m))
+c1 = root.assume(stmt(N_))
+
+
+def step_m(c, w):
+    H2 = AND(le(TWO, w), le(w, S(N_)))
+    c2 = c.assume(H2)
+
+    def small(c3):
+        ih = c3.all_e(c3.hyp_(stmt(N_)), w)
+        return c3.mp(c3.and_i(c3.and_l(c3.hyp_(H2)), c3.hyp_()), ih)
+
+    def last(c3):                                  # w = S(N)
+        def is_prime(c4):
+            h = c4.chain(MUL(w, ONE), [([], aMS(w, Z)), ([0], aMZ(w)), ([], inst('thZeroAdd', w))])
+            hww = c4.ex_i(c4.sym(h), dvd(w, w)[1], ONE)
+            return c4.ex_i(c4.and_i(c4.hyp_(), hww), PF(w)[1], w)
+
+        def not_prime(c4):
+            EXd = prime(w)[2][1]
+            hE = c4.by_contra(EXd, lambda c5: (c5.and_i(c5.and_l(c5.hyp_(H2)), c5.hyp_()),
+                                               c5.hyp_(NOT(prime(w)))))
+
+            def with_d(c5, d):
+                hdw = c5.and_l(c5.hyp_())
+                h2d = c5.and_l(c5.and_r(c5.hyp_()))
+
+                def with_k(c6, k):                 # w = S(d)+k, so S(N) = S(d)+k
+                    h = c6.trans(c6.sym(c6.hyp_(EQ(w, S(N_)))), c6.hyp_())
+                    return c6.ex_i(h, lt(d, S(N_))[1], k)
+                hlt = c5.ex_e(c5.and_r(c5.and_r(c5.hyp_())), with_k)
+                hle = c5.thru(hlt, inst('thLtSuccLe', d, N_))
+                pf_d = c5.mp(c5.and_i(h2d, hle), c5.all_e(c5.hyp_(stmt(N_)), d))
+
+                def with_p(c6, p):
+                    hpw = c6.mp(hdw, c6.thru(c6.and_r(c6.hyp_()), inst('thDvdTrans', p, d, w)))
+                    return c6.ex_i(c6.and_i(c6.and_l(c6.hyp_()), hpw), PF(w)[1], p)
+                return c5.ex_e(pf_d, with_p)
+            return c4.ex_e(hE, with_d)
+        return c3.cases(c3.lem(prime(w)), is_prime, not_prime)
+
+    hc = c2.thru(c2.and_r(c2.hyp_()), inst('thLeSuccCases', w, N_))
+    return c2.discharge(c2.cases(hc, small, last))
+
+
+step = root.close(c1.discharge(c1.all_i(stmt(S(N_))[1], step_m)))
+PrimeFactor = induction(f, base, step, name='thPrimeFactor')
+
+# ---- Euclid
+section('Theorem: ∀n ∃p. n < p ∧ PRIME(p)', 'EuD', [
+    'n!+1 ≥ 2 has a prime factor p. If p ≤ n, then p | n! and p | n!+1, so p = 1.'])
+EP = exists('Y', AND(lt(N_, 'Y'), prime('Y')))
+root = Ctx(reserved={N_})
+m = S(FACT(N_))
+
+
+def with_k(c, k):
+    h = c.chain(m, [([0], c.hyp_()), ([0, 0], sym(inst('thZeroAdd', k))),
+                    ([0], sym(inst('thSuccAdd', Z, k))), ([], sym(inst('thSuccAdd', ONE, k)))])
+    h2m = c.ex_i(h, le(TWO, m)[1], k)                                     # 2 ≤ n!+1
+    hmm = c.ex_i(sym(aAZ(m)), le(m, m)[1], Z)
+    pf = c.mp(c.and_i(h2m, hmm), c.get(inst('thPrimeFactor', m, m)))
+
+    def with_p(c2, p):
+        hprime, hpm = c2.and_l(c2.hyp_()), c2.and_r(c2.hyp_())
+
+        def p_small(c3):                           # p ≤ n: contradiction
+            h1p = c3.thru(c3.and_l(hprime), inst('thLeSuccL', ONE, p))
+            hdf = c3.mp(c3.and_i(h1p, c3.hyp_()), c3.get(inst('thDvdFact', p, N_)))
+            hp1 = c3.mp(hpm, c3.thru(hdf, inst('thDvdSucc', p, FACT(N_))))   # p = 1
+            hn1 = c3.thru(c3.and_l(hprime), inst('thLeTwoNotOne', p))         # ¬(p = 1)
+            return c3.efq(hp1, hn1, lt(N_, p))
+
+        hlt = c2.cases(c2.get(inst('thLeTotal', N_, p)), p_small, lambda c3: c3.hyp_())
+        return c2.ex_i(c2.and_i(hlt, hprime), EP[1], p)
+    return c.ex_e(pf, with_p)
+
+
+h = root.close(root.ex_e(root.get(inst('thFactPos', N_)), with_k))
+gen(h, N_, name='thEuclid')
+prose('pEuclid', '∀n ∃p. n < p ∧ PRIME(p): there are infinitely many primes')
+?>
