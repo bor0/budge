@@ -1,132 +1,119 @@
-# First-order quantifiers with de Bruijn indices
+# First-order reasoning with ∀ and ∃, by hand
 #
-# Budge substitutes strings, so named bound variables would get captured.
-# Instead, V(Z) points to the nearest enclosing quantifier, V(S(Z)) to the next
-# one out, and ALL(f)/EX(f) carry no name:  ∀x∃y R(x,y) is ALL(EX(R(V(S(Z)),V(Z))))
+# The quantifier machinery is in lib/fol.btp: de Bruijn indices (V(0) is bound
+# by the nearest quantifier), OPEN to instantiate, ABS to generalise, and the
+# rules rAllE, rExI, rGen, rExE. This file adds a small language (a constant
+# A and predicates P, Q, R) and proves three classic inferences:
 #
-# Binding is handled by two judgements, derived by structural rules:
-#   OPEN(k,f,t,g)  g is f with V(k) replaced by the closed term t  (instantiate)
-#   ABS(k,g,f)     f is g with every parameter X replaced by V(k)  (generalise)
-# Both only accept indices bound inside the formula (LT(n,k)), so they work on
-# sentences only: no index shifting is needed and nothing can be captured.
-#
-# Side condition (not checked by Budge): X must not appear in any rAx* axiom.
+#   1. ∀x∀y R(x,y)                ⊢ ∃x∀y R(x,y)     (∀-elimination, ∃-introduction)
+#   2. ∀x (P(x) ⇒ Q(x)), ∀x P(x)  ⊢ ∀x Q(x)         (generalisation)
+#   3. ∀x (P(x) ⇒ Q(x)), ∃x P(x)  ⊢ ∃x Q(x)         (∃-elimination)
 
-# Indices
-rTmZ : Z
-rTmS : S(n)
-rLtZ : LT(Z,S(n))
-rLtS : LT(a,b) -> LT(S(a),S(b))
-
-# Syntax: variables, constant A, parameter X, predicates, IMP, quantifiers
-rTmV   : V(n)
+<?py load('lib/fol.btp') ?>
+## Language: one rule per constructor for terms, OPEN and ABS (and CT for A)
 rTmA   : A
-rTmX   : X
 rTmP   : P(x)
 rTmQ   : Q(x)
 rTmR   : R(x,y)
-rTmImp : IMP(p,q)
-rTmAll : ALL(f)
-rTmEx  : EX(f)
+rCtA   : CT(A)
+rOpenP : OPEN(k,x,t,u) -> OPEN(k,P(x),t,P(u))
+rOpenQ : OPEN(k,x,t,u) -> OPEN(k,Q(x),t,Q(u))
+rOpenR : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,R(x,y),t,R(u,v))
+rAbsP  : ABS(k,w,x,u) -> ABS(k,w,P(x),P(u))
+rAbsQ  : ABS(k,w,x,u) -> ABS(k,w,Q(x),Q(u))
 
-# Closed terms, the only things that may be substituted
-rCtA : CT(A)
-rCtX : CT(X)
+## Premises
+rAx1 : ⊢ALL(ALL(R(V(S(0)),V(0))))     # ∀x∀y R(x,y)
+rAx2 : ⊢ALL((P(V(0))=>Q(V(0))))       # ∀x (P(x) => Q(x))
+rAx3 : ⊢ALL(P(V(0)))                  # ∀x P(x)
+rAx4 : ⊢EX(P(V(0)))                   # ∃x P(x)
 
-# OPEN(k,f,t,g)
-rOpenHit   : CT(t) -> OPEN(k,V(k),t,t)
-rOpenBound : LT(n,k) -> OPEN(k,V(n),t,V(n))
-rOpenA     : OPEN(k,A,t,A)
-rOpenX     : OPEN(k,X,t,X)
-rOpenP     : OPEN(k,x,t,u) -> OPEN(k,P(x),t,P(u))
-rOpenQ     : OPEN(k,x,t,u) -> OPEN(k,Q(x),t,Q(u))
-rOpenR     : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,R(x,y),t,R(u,v))
-rOpenImp   : OPEN(k,p,t,u) -> OPEN(k,q,t,v) -> OPEN(k,IMP(p,q),t,IMP(u,v))
-rOpenAll   : OPEN(S(k),f,t,g) -> OPEN(k,ALL(f),t,ALL(g))
-rOpenEx    : OPEN(S(k),f,t,g) -> OPEN(k,EX(f),t,EX(g))
+## Common terms
+tmA!    : rTmA
 
-# ABS(k,g,f). There is no ABS(k,X,X), so no X can be left behind.
-rAbsX   : ABS(k,X,V(k))
-rAbsV   : LT(n,k) -> ABS(k,V(n),V(n))
-rAbsA   : ABS(k,A,A)
-rAbsP   : ABS(k,x,u) -> ABS(k,P(x),P(u))
-rAbsQ   : ABS(k,x,u) -> ABS(k,Q(x),Q(u))
-rAbsR   : ABS(k,x,u) -> ABS(k,y,v) -> ABS(k,R(x,y),R(u,v))
-rAbsImp : ABS(k,p,u) -> ABS(k,q,v) -> ABS(k,IMP(p,q),IMP(u,v))
-rAbsAll : ABS(S(k),f,g) -> ABS(k,ALL(f),ALL(g))
-rAbsEx  : ABS(S(k),f,g) -> ABS(k,EX(f),EX(g))
+## 1. ∀x∀y R(x,y) gives ∀y R(A,y), which gives ∃x∀y R(x,y)
+tmR10!     : rTmR x=tmV1!;y=tmV0!      # R(V(S(0)),V(0))
+tmRA0!     : rTmR x=tmA!;y=tmV0!       # R(A,V(0))
+tmAllR10!  : rTmAll x=tmR10!
+tmAllAllR! : rTmAll x=tmAllR10!
+tmAllRA0!  : rTmAll x=tmRA0!
+tmExAllR!  : rTmEx x=tmAllR10!
 
-# Logic: modus ponens and the quantifier rules (add K and S as in hilbert.btp
-# for full propositional reasoning)
-rMp   : ⊢p -> ⊢IMP(p,q) -> ⊢q
-rAllE : OPEN(Z,f,t,g) -> ⊢IMP(ALL(f),g)                    # ∀f => f[t]
-rExI  : OPEN(Z,f,t,g) -> ⊢IMP(g,EX(f))                     # f[t] => ∃f
-rGen  : ABS(Z,g,f) -> ⊢g -> ⊢ALL(f)                        # g(X) gives ∀f
-rExE  : ABS(Z,q,q) -> ⊢IMP(ALL(IMP(f,q)),IMP(EX(f),q))     # ABS(Z,q,q): q closed
-
-# Premises
-rAx1 : ⊢ALL(ALL(R(V(S(Z)),V(Z))))     # ∀x∀y R(x,y)
-rAx2 : ⊢ALL(IMP(P(V(Z)),Q(V(Z))))     # ∀x (P(x) => Q(x))
-rAx3 : ⊢ALL(P(V(Z)))                  # ∀x P(x)
-
-# Common terms
-tm0!  : rTmZ                          # Z
-tm1!  : rTmS n=tm0!                   # S(Z)
-tmV0! : rTmV n=tm0!                   # V(Z)
-tmV1! : rTmV n=tm1!                   # V(S(Z))
-tmA!  : rTmA
-tmX!  : rTmX
-thLt01! : rLtZ n=tm0!                 # LT(Z,S(Z))
-
-# 1. ∀x∀y R(x,y) gives ∀y R(A,y), which gives ∃x∀y R(x,y)
-tmR10!     : rTmR x=tmV1!;y=tmV0!     # R(V(S(Z)),V(Z))
-tmRA0!     : rTmR x=tmA!;y=tmV0!      # R(A,V(Z))
-tmAllR10!  : rTmAll f=tmR10!
-tmAllAllR! : rTmAll f=tmAllR10!
-tmAllRA0!  : rTmAll f=tmRA0!
-tmExAllR!  : rTmEx f=tmAllR10!
-
-# OPEN(Z,ALL(R(V(S(Z)),V(Z))),A,ALL(R(A,V(Z)))): under the inner ∀ the outer
-# variable is V(S(Z)) and becomes A; V(Z) is bound by the inner ∀ and stays
+# OPEN(0,ALL(R(V(S(0)),V(0))),A,ALL(R(A,V(0)))): under the inner ∀ the outer
+# variable is V(S(0)) and becomes A; V(0) is bound by the inner ∀ and stays
 thCtA! : rCtA
 thO1!  : rOpenHit k=tm1!;t=tmA! thCtA!
 thO2!  : rOpenBound n=tm0!;k=tm1!;t=tmA! thLt01!
 thO3!  : rOpenR k=tm1!;x=tmV1!;y=tmV0!;t=tmA!;u=tmA!;v=tmV0! thO1! thO2!
 thO4!  : rOpenAll k=tm0!;f=tmR10!;t=tmA!;g=tmRA0! thO3!
 
-thAx1!   : rAx1
-thAE1!   : rAllE f=tmAllR10!;t=tmA!;g=tmAllRA0! thO4!
-thForallRA : rMp p=tmAllAllR!;q=tmAllRA0! thAx1! thAE1!                # ⊢∀y R(A,y)
-pForallRA : ⊢∀y R(A,y)
-thEI1!   : rExI f=tmAllR10!;t=tmA!;g=tmAllRA0! thO4!                   # same OPEN, read backwards
-thExistsForall : rMp p=tmAllRA0!;q=tmExAllR! thForallRA thEI1!         # ⊢∃x∀y R(x,y)
-pExistsForall : ⊢∃x∀y R(x,y)
+thAx1!     : rAx1
+thAE1!     : rAllE f=tmAllR10!;t=tmA!;g=tmAllRA0! thO4!
+thForallRA : rMp p=tmAllAllR!;q=tmAllRA0! thAx1! thAE1!               # ⊢∀y R(A,y)
+pForallRA  : ⊢∀y R(A,y)
+thEI1!     : rExI f=tmAllR10!;t=tmA!;g=tmAllRA0! thO4!                # same OPEN, read backwards
+thExistsForall : rMp p=tmAllRA0!;q=tmExAllR! thForallRA thEI1!        # ⊢∃x∀y R(x,y)
+pExistsForall  : ⊢∃x∀y R(x,y)
 
-# 2. ∀x (P(x) => Q(x)) and ∀x P(x) give ∀x Q(x): instantiate at X, MP, generalise
-tmPX!     : rTmP x=tmX!
-tmQX!     : rTmQ x=tmX!
+## 2. ∀x (P(x) => Q(x)) and ∀x P(x) give ∀x Q(x): instantiate at a parameter
+## M (an arbitrary object), modus ponens, generalise M
+tmPM!     : rTmP x=tmM!
+tmQM!     : rTmQ x=tmM!
 tmPV0!    : rTmP x=tmV0!
 tmQV0!    : rTmQ x=tmV0!
-tmPXQX!   : rTmImp p=tmPX!;q=tmQX!
-tmPV0QV0! : rTmImp p=tmPV0!;q=tmQV0!
-tmAllPQ!  : rTmAll f=tmPV0QV0!
-tmAllP!   : rTmAll f=tmPV0!
+tm(PM=>QM)!   : rTmImp p=tmPM!;q=tmQM!
+tm(PV0=>QV0)! : rTmImp p=tmPV0!;q=tmQV0!
+tmAllPQ!  : rTmAll x=tm(PV0=>QV0)!
+tmAllP!   : rTmAll x=tmPV0!
 
-thCtX! : rCtX
-thO5!  : rOpenHit k=tm0!;t=tmX! thCtX!                                 # OPEN(Z,V(Z),X,X)
-thO6!  : rOpenP k=tm0!;x=tmV0!;t=tmX!;u=tmX! thO5!
-thO7!  : rOpenQ k=tm0!;x=tmV0!;t=tmX!;u=tmX! thO5!
-thO8!  : rOpenImp k=tm0!;p=tmPV0!;q=tmQV0!;t=tmX!;u=tmPX!;v=tmQX! thO6! thO7!
+thO5!   : rOpenHit k=tm0!;t=tmM! thCtM!                            # OPEN(0,V(0),M,M)
+thO6!   : rOpenP k=tm0!;x=tmV0!;t=tmM!;u=tmM! thO5!
+thO7!   : rOpenQ k=tm0!;x=tmV0!;t=tmM!;u=tmM! thO5!
+thO8!   : rOpenImp k=tm0!;x=tmPV0!;y=tmQV0!;t=tmM!;u=tmPM!;v=tmQM! thO6! thO7!
 
-thAx2! : rAx2
-thAx3! : rAx3
-thAE2! : rAllE f=tmPV0QV0!;t=tmX!;g=tmPXQX! thO8!
-thAE3! : rAllE f=tmPV0!;t=tmX!;g=tmPX! thO6!
-thPXQX! : rMp p=tmAllPQ!;q=tmPXQX! thAx2! thAE2!                       # ⊢P(X) => Q(X)
-thPX!   : rMp p=tmAllP!;q=tmPX! thAx3! thAE3!                          # ⊢P(X)
-thQX!   : rMp p=tmPX!;q=tmQX! thPX! thPXQX!                            # ⊢Q(X)
+thAx2!  : rAx2
+thAx3!  : rAx3
+thAE2!  : rAllE f=tm(PV0=>QV0)!;t=tmM!;g=tm(PM=>QM)! thO8!
+thAE3!  : rAllE f=tmPV0!;t=tmM!;g=tmPM! thO6!
+thPMQM! : rMp p=tmAllPQ!;q=tm(PM=>QM)! thAx2! thAE2!                  # ⊢(P(M)=>Q(M))
+thPM!   : rMp p=tmAllP!;q=tmPM! thAx3! thAE3!                         # ⊢P(M)
+thQM!   : rMp p=tmPM!;q=tmQM! thPM! thPMQM!                           # ⊢Q(M)
 
-thB1! : rAbsX k=tm0!                                                   # ABS(Z,X,V(Z))
-thB2! : rAbsQ k=tm0!;x=tmX!;u=tmV0! thB1!                              # ABS(Z,Q(X),Q(V(Z)))
-thForallQ : rGen g=tmQX!;f=tmQV0! thB2! thQX!                          # ⊢∀x Q(x)
-pForallQ : ⊢∀x Q(x)
+thB2!     : rAbsQ k=tm0!;w=tmM!;x=tmM!;u=tmV0! thAbsM!               # ABS(0,M,Q(M),Q(V(0)))
+thForallQ : rGen w=tmM!;g=tmQM!;f=tmQV0! thB2! thQM!
+pForallQ  : ⊢∀x Q(x)
+
+## 3. ∀x (P(x) => Q(x)) and ∃x P(x) give ∃x Q(x). For the parameter M,
+## P(M) => Q(M) => ∃x Q(x); generalise to ∀x (P(x) => ∃y Q(y)), whose
+## conclusion ∃y Q(y) does not mention x, so ∃-elimination applies.
+tmExQ!        : rTmEx x=tmQV0!                                        # EX(Q(V(0)))
+tmExP!        : rTmEx x=tmPV0!                                        # EX(P(V(0)))
+tm(QM=>ExQ)!  : rTmImp p=tmQM!;q=tmExQ!
+tm(PM=>ExQ)!  : rTmImp p=tmPM!;q=tmExQ!
+tm(PV0=>ExQ)! : rTmImp p=tmPV0!;q=tmExQ!
+tm(ExP=>ExQ)! : rTmImp p=tmExP!;q=tmExQ!
+tm((PM=>QM)=>(PM=>ExQ))! : rTmImp p=tm(PM=>QM)!;q=tm(PM=>ExQ)!
+tmAllPExQ!    : rTmAll x=tm(PV0=>ExQ)!
+
+thEI2!  : rExI f=tmQV0!;t=tmM!;g=tmQM! thO7!                          # ⊢(Q(M)=>∃x Q(x))
+thHS1!  : thHS i=tmPM!;j=tmQM!;l=tmExQ!
+thHS2!  : rMp p=tm(QM=>ExQ)!;q=tm((PM=>QM)=>(PM=>ExQ))! thEI2! thHS1!
+thPExQ! : rMp p=tm(PM=>QM)!;q=tm(PM=>ExQ)! thPMQM! thHS2!            # ⊢(P(M)=>∃x Q(x))
+
+# Generalise M. Inside EX, Q(V(0)) is bound and stays.
+thB3!   : rAbsP k=tm0!;w=tmM!;x=tmM!;u=tmV0! thAbsM!                 # ABS(0,M,P(M),P(V(0)))
+thB4!   : rAbsBound n=tm0!;k=tm1!;w=tmM! thLt01!
+thB5!   : rAbsQ k=tm1!;w=tmM!;x=tmV0!;u=tmV0! thB4!
+thB6!   : rAbsEx k=tm0!;w=tmM!;f=tmQV0!;g=tmQV0! thB5!             # ABS(0,M,∃Q,∃Q)
+thB7!   : rAbsImp k=tm0!;w=tmM!;x=tmPM!;y=tmExQ!;u=tmPV0!;v=tmExQ! thB3! thB6!
+thAllPExQ! : rGen w=tmM!;g=tm(PM=>ExQ)!;f=tm(PV0=>ExQ)! thB7! thPExQ! # ⊢∀x (P(x)=>∃y Q(y))
+
+# ∃-elimination: OPEN(0,∃y Q(y),K,∃y Q(y)) shows ∃y Q(y) does not mention x
+thO9!   : rOpenBound n=tm0!;k=tm1!;t=tmK! thLt01!
+thO10!  : rOpenQ k=tm1!;x=tmV0!;t=tmK!;u=tmV0! thO9!
+thO11!  : rOpenEx k=tm0!;f=tmQV0!;t=tmK!;g=tmQV0! thO10!
+thEE1!  : rExE q=tmExQ!;f=tmPV0! thO11!                               # ⊢(∀x(P(x)=>∃Q) => (∃P => ∃Q))
+thEE2!  : rMp p=tmAllPExQ!;q=tm(ExP=>ExQ)! thAllPExQ! thEE1!
+thAx4!  : rAx4
+thExistsQ : rMp p=tmExP!;q=tmExQ! thAx4! thEE2!
+pExistsQ  : ⊢∃x Q(x)

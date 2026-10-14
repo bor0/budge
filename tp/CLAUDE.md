@@ -93,21 +93,26 @@ back over `$I = $I + 1` gives `$S == INTDIV($I + 1, 2)` — no helper predicates
 text is uppercase (`WHILE`, `INTDIV`, `$I`): PHP keywords/functions are
 case-insensitive, so it stays valid PHP yet safe from substitution.
 
-**Quantifiers** (`quantifiers.btp`). `rInst` can't handle nesting or capture; use de
-Bruijn indices: `ALL(EX(R(V(S(Z)),V(Z))))` is ∀x∃y R(x,y). Two judgements, one
-structural rule per constructor (a new constructor needs both):
+**Quantifiers** (`lib/fol.btp`). `rInst` can't handle nesting or capture; use de
+Bruijn indices: `ALL(EX(R(V(S(0)),V(0))))` is ∀x∃y R(x,y). Two judgements, one
+structural rule per constructor (a new symbol needs both, plus CT for function symbols):
 - `OPEN(k,f,t,g)`: g is f with `V(k)` replaced by closed t →
-  `rAllE : OPEN(Z,f,t,g) -> ⊢IMP(ALL(f),g)`, `rExI` (∃ intro).
-- `ABS(k,g,f)`: f is g with every parameter `X` replaced by `V(k)` (no `ABS(k,X,X)`, so
-  none left) → `rGen : ABS(Z,g,f) -> ⊢g -> ⊢ALL(f)`; `ABS(Z,q,q)` = "q closed" for ∃E.
-
+  `rAllE : OPEN(0,f,t,g) -> ⊢(ALL(f)=>g)`, `rExI` (∃ intro, same OPEN).
+- `ABS(k,w,g,f)`: f is g with every parameter `w` replaced by `V(k)` (no `ABS(k,w,w,w)`,
+  so none left; other parameters pass via `DIFF(w,o)`) → `rGen : ABS(0,w,g,f) -> ⊢g -> ⊢ALL(f)`.
+- `rExE` and `rAllImp` need q closed: `OPEN(0,q,K,q)` (opening changes nothing).
 Both accept only `V(n)` with `LT(n,k)` (sentences): no shifting, no capture. Unchecked:
-eigenvariable `X` must not occur in non-logical axioms.
+parameters (K < M < N < U < W < X < Y < Z, distinct via the `PLT` order) must not occur in
+non-logical axioms.
 
 **Library** (`examples/lib/`). `logic.btp`: K, S, `rNeg`, ∧, ∨, ⊤, MP; exports `thId`, `thHS`,
 `thMpI`, `thDNE`, `thDNI`, `thCP`, `thAndComm`, `thOrComm`, `thEFQ`, `thDS` (proofs in a, b, c,
 exported in i, j, l; internal steps prefixed `thLg…`). Examples load it with
 `<?py load('lib/logic.btp') ?>` and reuse it, never redefine it in any notation.
+`fol.btp` (loads logic): V, ALL, EX, EQ with `rEqR`/`rEqS`/`rEqT`, the judgements above,
+`rAllE`/`rExI`/`rGen`/`rExE`/`rAllImp`, numerals 0 and S; exports `tm0!`…`tm4!`, `tmV0!`,
+`tmV1!`, `tmK!`…`tmZ!`, `thLt01!`, `thParK!`…, `thCt0!`, `thCtM!`, `thAbsM!`. A file adding a
+symbol declares its term/CT/OPEN/ABS(/congruence) rules (`quantifiers.btp`: A, P, Q, R).
 
 ## Pitfalls
 

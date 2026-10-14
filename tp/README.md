@@ -44,6 +44,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 [`examples/lib`](./examples/lib) holds reusable theories:
 
 - [logic.btp](./examples/lib/logic.btp) - Classical propositional logic in Hilbert's system (axioms K, S, contraposition, ∧, ∨, modus ponens), deriving identity, hypothetical syllogism, double negation elimination and introduction, contraposition, ex falso, disjunctive syllogism and commutativity of ∧ and ∨
+- [fol.btp](./examples/lib/fol.btp) - First-order logic with equality: ∀ and ∃ with de Bruijn indices (capture-free instantiation, generalisation, ∃-elimination) and the equality axioms
 
 ## Example
 
@@ -66,7 +67,7 @@ In the `examples` folder you can find the following proofs:
 - [Peano's axioms](./examples/peano.btp) - A more detailed example on numbers
 - [PQ](./examples/pq.btp) - Number addition
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
-- [Quantifiers](./examples/quantifiers.btp) - First-order ∀/∃ with de Bruijn indices, capture-free instantiation and generalisation
+- [Quantifiers](./examples/quantifiers.btp) - First-order reasoning with ∀ and ∃ by hand, using the library
 - [RSA](./examples/rsa.btp) - Toy RSA encryption and decryption using tally numbers
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication

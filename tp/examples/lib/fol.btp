@@ -1,0 +1,139 @@
+# First-order logic with equality: ∀ and ∃ with de Bruijn indices, and EQ
+#
+# Budge substitutes strings, so named bound variables would get captured.
+# Instead V(0) points to the nearest enclosing quantifier, V(S(0)) to the next
+# one out, and ALL(f)/EX(f) carry no name:
+#   ∀x∃y R(x,y)  is  ALL(EX(R(V(S(0)),V(0))))
+# Indices are numerals built from 0 and S.
+#
+# Binding is handled by two judgements, derived one constructor at a time:
+#   OPEN(k,f,t,g)  g is f with V(k) replaced by the closed term t  (instantiate)
+#   ABS(k,w,g,f)   f is g with every parameter w replaced by V(k) (generalise)
+# Both only accept indices bound inside the formula (LT(n,k)), so they work on
+# sentences only: no index shifting is needed and nothing can be captured.
+#
+# Parameters K, M, N, U, W, X, Y, Z are constants for fixed but arbitrary
+# objects: prove
+# ⊢P(M), then generalise M. Side condition (not checked by Budge): parameters
+# must not occur in non-logical axioms.
+#
+# A theory adds its function and predicate symbols with a term rule and one
+# rule each for CT (function symbols), OPEN and ABS; see peano.btp and
+# quantifiers.btp.
+
+<?py load('logic.btp') ?>
+## Index numerals and their order
+rTm0 : 0
+rTmS : S(x)
+rLtZ : LT(0,S(n))
+rLtS : LT(a,b) -> LT(S(a),S(b))
+
+## Parameters K, M, N, U, W, X, Y, Z. They are listed in a strict order PLT,
+## so any two different ones are DIFF and no parameter is DIFF from itself.
+rParK : PAR(K)
+rParM : PAR(M)
+rParN : PAR(N)
+rParU : PAR(U)
+rParW : PAR(W)
+rParX : PAR(X)
+rParY : PAR(Y)
+rParZ : PAR(Z)
+rPltKM : PLT(K,M)
+rPltMN : PLT(M,N)
+rPltNU : PLT(N,U)
+rPltUW : PLT(U,W)
+rPltWX : PLT(W,X)
+rPltXY : PLT(X,Y)
+rPltYZ : PLT(Y,Z)
+rPltT  : PLT(a,b) -> PLT(b,c) -> PLT(a,c)
+rDiffL : PLT(w,o) -> DIFF(w,o)
+rDiffG : PLT(o,w) -> DIFF(w,o)
+
+## CT(t): t is a closed term (no V), the only terms that may be substituted
+rCtPar : PAR(w) -> CT(w)
+rCt0   : CT(0)
+
+## OPEN(k,f,t,g): g is f with V(k) replaced by the closed term t
+rOpenHit   : CT(t) -> OPEN(k,V(k),t,t)
+rOpenBound : LT(n,k) -> OPEN(k,V(n),t,V(n))
+rOpenPar   : PAR(w) -> OPEN(k,w,t,w)
+rOpen0     : OPEN(k,0,t,0)
+rOpenTop   : OPEN(k,⊤,t,⊤)
+rOpenImp   : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,(x=>y),t,(u=>v))
+rOpenAnd   : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,(x∧y),t,(u∧v))
+rOpenOr    : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,(x∨y),t,(u∨v))
+rOpenNot   : OPEN(k,x,t,u) -> OPEN(k,¬x,t,¬u)
+rOpenAll   : OPEN(S(k),f,t,g) -> OPEN(k,ALL(f),t,ALL(g))
+rOpenEx    : OPEN(S(k),f,t,g) -> OPEN(k,EX(f),t,EX(g))
+
+## ABS(k,w,g,f): f is g with every occurrence of parameter w replaced by V(k).
+## There is no ABS(k,w,w,w), so no w can be left behind.
+rAbsHit   : PAR(w) -> ABS(k,w,w,V(k))
+rAbsBound : LT(n,k) -> ABS(k,w,V(n),V(n))
+rAbsPar   : DIFF(w,o) -> ABS(k,w,o,o)
+rAbs0     : ABS(k,w,0,0)
+rAbsTop   : ABS(k,w,⊤,⊤)
+rAbsImp   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,(x=>y),(u=>v))
+rAbsAnd   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,(x∧y),(u∧v))
+rAbsOr    : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,(x∨y),(u∨v))
+rAbsNot   : ABS(k,w,x,u) -> ABS(k,w,¬x,¬u)
+rAbsAll   : ABS(S(k),w,f,g) -> ABS(k,w,ALL(f),ALL(g))
+rAbsEx    : ABS(S(k),w,f,g) -> ABS(k,w,EX(f),EX(g))
+
+## Equality: reflexivity, symmetry, transitivity. Congruence depends on the
+## function symbols, so each theory states it for its own (see peano.btp).
+rEqR : ⊢EQ(x,x)
+rEqS : ⊢(EQ(x,y)=>EQ(y,x))
+rEqT : ⊢(EQ(x,y)=>(EQ(y,z)=>EQ(x,z)))
+rOpenEq : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,EQ(x,y),t,EQ(u,v))
+rAbsEq  : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,EQ(x,y),EQ(u,v))
+
+## Quantifier rules
+# ∀-elimination, ∃-introduction (the same OPEN, read in both directions),
+# generalisation over a parameter, ∃-elimination, and distribution of ∀ over
+# an implication whose premise does not mention the bound variable. In rExE
+# and rAllImp the premise OPEN(0,q,K,q) says opening q changes nothing: q does
+# not mention the variable bound by the quantifier.
+rAllE : OPEN(0,f,t,g) -> ⊢(ALL(f)=>g)                      # ∀f => f[t]
+rExI  : OPEN(0,f,t,g) -> ⊢(g=>EX(f))                       # f[t] => ∃f
+rGen  : ABS(0,w,g,f) -> ⊢g -> ⊢ALL(f)                      # g(w) gives ∀f
+rExE  : OPEN(0,q,K,q) -> ⊢(ALL((f=>q))=>(EX(f)=>q))        # ∀(f => q) => (∃f => q)
+rAllImp : OPEN(0,q,K,q) -> ⊢(ALL((q=>f))=>(q=>ALL(f)))     # ∀(q => f) => (q => ∀f)
+
+## Term constructors
+rTmK   : K
+rTmM   : M
+rTmN   : N
+rTmU   : U
+rTmW   : W
+rTmX   : X
+rTmY   : Y
+rTmZ   : Z
+rTmV   : V(x)
+rTmAll : ALL(x)
+rTmEx  : EX(x)
+rTmEq  : EQ(x,y)
+
+## Common terms
+tm0!    : rTm0
+tm1!    : rTmS x=tm0!                  # S(0)
+tm2!    : rTmS x=tm1!                  # S(S(0))
+tm3!    : rTmS x=tm2!
+tm4!    : rTmS x=tm3!
+tmV0!   : rTmV x=tm0!                  # V(0)
+tmV1!   : rTmV x=tm1!                  # V(S(0))
+thLt01! : rLtZ n=tm0!                  # LT(0,S(0))
+tmK!    : rTmK
+tmM!    : rTmM
+tmN!    : rTmN
+tmU!    : rTmU
+tmW!    : rTmW
+tmX!    : rTmX
+tmY!    : rTmY
+tmZ!    : rTmZ
+thParK! : rParK
+thParM! : rParM
+thParN! : rParN
+thCt0!  : rCt0
+thCtM!  : rCtPar w=tmM! thParM!
+thAbsM! : rAbsHit k=tm0!;w=tmM! thParM!   # ABS(0,M,M,V(0)): generalising M starts here
