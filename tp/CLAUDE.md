@@ -9,6 +9,7 @@ sections rather than appending, and don't drop information when trimming.
 python3 budge-tp.py examples/<file>.btp
 # all examples must pass after any change:
 for f in examples/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" && echo "FAIL: $f"; done
+# --expand DIR writes every loaded file with <?py ... ?> blocks replaced by their output
 ```
 
 ## Syntax
@@ -17,12 +18,19 @@ for f in examples/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" 
 r<name> : <expr> [-> <expr> ...]               # rule; last expr is the conclusion
 t<name> : <rule> [x=T1;y=T2;...] [hyp1] ...    # theorem
 p<name> : <text>                               # prose, printed as `-- <text>` in source order
+<?py ... ?>                                    # Python meta-program; emits Budge code
 ```
 
 - Single lowercase letters in rules are variables; `x=T` replaces `x` with theorem `T`'s *value*.
 - Hypotheses are theorems whose values must equal the rule's substituted hypotheses.
 - Trailing `!` suppresses output (theorems, prose); the `-- ` prefix stops prose spoofing a theorem.
 - `#` starts a comment anywhere.
+- Python blocks: `<?py` and `?>` on their own lines, or one line `<?py code ?>`; run with
+  `__file__`, `env` (all read and checked so far) and `load(path)`; what they print is spliced
+  in and checked. That's all budge-tp.py does. There is no import statement.
+- `<?py load('lib/x.btp') ?>`: path relative to this file; fully checked, shares one namespace
+  (clashes are errors), loads once (diamonds fine, cycles are errors), prints nothing.
+  `--expand` keeps these lines and replaces every other block.
 - Field 2 is always parsed as replacements, so hypotheses without substitutions need a
   bare `;`: `tFoo : rBar ; hyp1`, not `tFoo : rBar hyp1`.
 

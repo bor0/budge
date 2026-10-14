@@ -1,21 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import contextlib
+import io
+import os
 import sys
-from os.path import exists, isfile
+from os.path import dirname, exists, isfile, join, realpath
 
 
-def parse_rules(rules):
-    """Given a list of rules, parse their hypotheses and conclusion"""
-    parsed_rules = {}
-
-    # Split rules into hypotheses and conclusion
-    for name in rules:
-        rule = list(map(str.strip, rules[name].split('->')))
-        parsed_rules[name] = {'hypotheses': rule[:-1],
-                              'conclusion': rule[-1]}
-
-    return parsed_rules
+def parse_rule(expr):
+    """Split a rule into its hypotheses and conclusion"""
+    rule = list(map(str.strip, expr.split('->')))
+    return {'hypotheses': rule[:-1], 'conclusion': rule[-1]}
 
 
 def parse_replacements(theorem_name, replacements):
@@ -42,65 +38,185 @@ def parse_replacements(theorem_name, replacements):
     return parsed_replacements
 
 
-def parse_theorems(theorems):
-    """Parse all theorems"""
-    parsed_theorems = {}
+def parse_theorem(name, expr):
+    """Parse a theorem: the rule applied, its replacements and hypotheses"""
+    arguments = list(filter(lambda x: x, expr.split(' ')))
 
-    # Process theorems, checking for valid syntax and process replacements on
-    # the way
-    for name in theorems:
-        arguments = list(filter(lambda x: x, theorems[name].split(' ')))
+    if len(arguments) < 1:
+        raise Exception(f"Invalid syntax for theorem '{name}'")
 
-        if len(arguments) < 1:
-            raise Exception(f"Invalid syntax for theorem '{name}'")
+    rule = arguments[0]
+    replacements = arguments[1] if len(arguments) > 1 else None
+    hypotheses = arguments[2:] if len(arguments) > 2 else []
 
-        rule = arguments[0]
-        replacements = arguments[1] if len(arguments) > 1 else None
-        hypotheses = arguments[2:] if len(arguments) > 2 else []
-
-        parsed_theorems[name] = {'rule': rule, 'replacements': parse_replacements(
-            name, replacements), 'hypotheses': hypotheses}
-
-    return parsed_theorems
+    return {'rule': rule, 'replacements': parse_replacements(name, replacements),
+            'hypotheses': hypotheses}
 
 
-def calculate_environment(code):
-    """Calculate rules, theorems, prose"""
-    env = {'rules': {}, 'theorems': {}, 'prose': {}, 'order': []}
+def new_environment():
+    """An empty environment. Rules and theorems are parsed as they are read,
+    and theorems are derived (checked) in source order: before a Python block
+    runs, and at the end."""
+    return {'rules': {}, 'theorems': {}, 'specs': {}, 'pending': [],
+            'prose': {}, 'order': [], 'where': {}, 'loaded': set(),
+            'expanded': {}, 'namespaces': {}}
+
+
+def add_line(env, raw_line, where, visible):
+    """Process one line of Budge code"""
+    line = raw_line.split('#')[0].strip()  # strip comments and whitespace
+    if not line:
+        return
+
     types = {'r': 'rules', 't': 'theorems', 'p': 'prose'}
+    parsed_line = list(filter(lambda x: x, map(str.strip, line.split(':', 1))))
 
-    # Process every line in the code, checking for valid syntax and storing
-    # the data for further parsing
-    for lineno, raw_line in enumerate(code.split('\n'), 1):
-        line = raw_line.split('#')[0].strip()  # strip comments and whitespace
-        if not line:
+    if len(parsed_line) != 2:
+        raise Exception(f"{where}: Invalid syntax: '{line}'")
+
+    [name, expr] = parsed_line
+
+    if name[0] not in types:
+        raise Exception(f"{where}: Invalid variable name: '{name}'")
+
+    tip = types[name[0]]
+
+    table = env['specs'] if tip == 'theorems' else env[tip]
+    if name in table:
+        raise Exception(f"{where}: Name redeclaration: '{name}' "
+                        f"(first declared at {env['where'][name]})")
+    env['where'][name] = where
+
+    if tip == 'rules':
+        env['rules'][name] = parse_rule(expr)
+    elif tip == 'theorems':
+        env['specs'][name] = parse_theorem(name, expr)
+        env['pending'].append(name)
+    else:
+        env['prose'][name] = expr
+
+    if tip in ('theorems', 'prose'):
+        env['order'].append((tip, name, visible))
+
+
+def check_pending(env):
+    """Derive every theorem read so far, in source order"""
+    for theorem_name in env['pending']:
+        try:
+            env['theorems'][theorem_name] = apply_rule_or_theorem(
+                env, env['specs'][theorem_name], theorem_name)
+        except Exception as error:
+            raise Exception(
+                f"{env['where'][theorem_name]}: {error}") from None
+    env['pending'] = []
+
+
+def run_python(env, code, path, where, stack, loads):
+    """Run a <?py ... ?> block; what it prints is Budge code.
+
+    The block runs with __file__ (this .btp file), env (what has been read
+    and checked so far) and load(path) defined. load reads and checks another
+    file (path relative to this one) once: its rules and theorems become
+    available here, its theorems and prose are not printed. Blocks of one
+    file share their namespace."""
+    def load(target):
+        full = join(dirname(path), target)
+        if not isfile(full):
+            raise Exception(f"File not found: '{target}'")
+        load_file(env, full, False, stack)
+        check_pending(env)
+        loads.append(target)
+
+    namespace = env['namespaces'].setdefault(realpath(path), {'__file__': path})
+    namespace['env'], namespace['load'] = env, load
+    output = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(output):
+            exec(compile(code, f"{path} (Python block at {where})", 'exec'), namespace)
+    except Exception as error:
+        raise Exception(f"{where}: Python block failed: "
+                        f"{type(error).__name__}: {error}") from error
+    return output.getvalue().rstrip('\n')
+
+
+def load_file(env, path, visible=True, stack=None):
+    """Read rules, theorems, prose and Python blocks from a file.
+
+    Loaded files (load() in a block) share one namespace, are loaded once even
+    if loaded more than once, and their theorems and prose are not printed.
+    """
+    stack = stack or []
+    real = realpath(path)
+
+    if real in stack:
+        raise Exception(f"Load cycle: '{path}'")
+    if real in env['loaded']:
+        return
+
+    env['loaded'].add(real)
+    stack.append(real)
+
+    with open(path, encoding='utf-8') as file:
+        lines = file.read().split('\n')
+
+    expanded = []
+
+    def splice(code, where):
+        """Run a block, check its output, and record what --expand writes."""
+        check_pending(env)
+        loads = []
+        output = run_python(env, code, path, where, stack, loads)
+        for k, out_line in enumerate(output.split('\n'), 1):
+            add_line(env, out_line, f"{where} (generated line {k})", visible)
+        for target in loads:        # loads stay in the expansion
+            expanded.append(f"<?py load('{target}') ?>")
+        if output:
+            expanded.append(output)
+
+    i = 0
+    while i < len(lines):
+        where = f"{path}:{i + 1}"
+        stripped = lines[i].strip()
+        if stripped.startswith('<?py') and stripped.endswith('?>') and len(stripped) > 6:
+            splice(stripped[4:-2].strip(), where)        # one-line block
+            i += 1
             continue
+        if stripped == '<?py':
+            end = i + 1
+            while end < len(lines) and lines[end].strip() != '?>':
+                end += 1
+            if end == len(lines):
+                raise Exception(f"{where}: Unterminated Python block")
+            splice('\n'.join(lines[i + 1:end]), where)
+            i = end + 1
+            continue
+        add_line(env, lines[i], where, visible)
+        expanded.append(lines[i])
+        i += 1
 
-        parsed_line = list(
-            filter(lambda x: x, map(str.strip, line.split(':', 1))))
+    env['expanded'][real] = (path, '\n'.join(expanded))
+    stack.pop()
 
-        if len(parsed_line) != 2:
-            raise Exception(f"Line {lineno}: Invalid syntax: '{line}'")
 
-        [name, expr] = parsed_line
-
-        if name[0] not in types:
-            raise Exception(f"Line {lineno}: Invalid variable name: '{name}'")
-
-        tip = types[name[0]]
-
-        if name in env[tip]:
-            raise Exception(f"Line {lineno}: Name redeclaration: '{name}'")
-
-        env[tip][name] = expr
-
-        if tip in ('theorems', 'prose'):
-            env['order'].append((tip, name))
-
-    env['rules'] = parse_rules(env['rules'])
-    env['theorems'] = parse_theorems(env['theorems'])
-
+def check_environment(env):
+    """Derive every remaining theorem"""
+    check_pending(env)
     return env
+
+
+def write_expanded(env, main_path, out_dir):
+    """Write every loaded file, Python blocks replaced by their output, into
+    out_dir (same layout relative to the main file), so the copies check
+    without running any Python."""
+    base = dirname(realpath(main_path))
+    for real, (path, text) in env['expanded'].items():
+        rel = os.path.relpath(real, base)
+        if rel.startswith('..'):
+            raise Exception(f"Cannot expand '{path}': outside '{base}'")
+        target = join(out_dir, rel)
+        os.makedirs(dirname(target), exist_ok=True)
+        with open(target, 'w', encoding='utf-8') as file:
+            file.write(text)
 
 
 def apply_rule_or_theorem(env, theorem, theorem_name):
@@ -155,27 +271,33 @@ def apply_rule_or_theorem(env, theorem, theorem_name):
 
 def main():
     """Entrypoint"""
-    if len(sys.argv) != 2:
-        sys.exit(f"Usage: python {sys.argv[0]} <filename.btp>")
+    args = sys.argv[1:]
+    out_dir = None
+    if '--expand' in args:
+        i = args.index('--expand')
+        if i + 1 >= len(args):
+            sys.exit("--expand needs a directory")
+        out_dir = args[i + 1]
+        del args[i:i + 2]
 
-    if not exists(sys.argv[1]):
-        sys.exit(f"Filename '{sys.argv[1]}' not found.")
+    if len(args) != 1:
+        sys.exit(f"Usage: python {sys.argv[0]} [--expand DIR] <filename.btp>")
 
-    if not isfile(sys.argv[1]):
-        sys.exit(f"Not a filename: '{sys.argv[1]}'.")
+    if not exists(args[0]):
+        sys.exit(f"Filename '{args[0]}' not found.")
 
-    with open(sys.argv[1], encoding='utf-8') as file:
-        code = file.read()
+    if not isfile(args[0]):
+        sys.exit(f"Not a filename: '{args[0]}'.")
 
-    env = calculate_environment(code)
+    env = new_environment()
+    load_file(env, args[0])
+    check_environment(env)
 
-    for theorem_name in env['theorems']:
-        theorem = env['theorems'][theorem_name]
-        env['theorems'][theorem_name] = apply_rule_or_theorem(
-            env, theorem, theorem_name)
+    if out_dir is not None:
+        write_expanded(env, args[0], out_dir)
 
-    for kind, name in env['order']:
-        if name[-1] == '!':
+    for kind, name, visible in env['order']:
+        if not visible or name[-1] == '!':
             continue
         if kind == 'prose':
             print(f"-- {env['prose'][name]}")

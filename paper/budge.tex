@@ -136,11 +136,19 @@ Even though we used set theory\cite{b6} to represent the semantics, we can liber
 \begin{verbatim}
 r<name> : <expr> [-> <expr> [-> ... -> <expr>]]
 t<name> : <ruleN> [x=X;y=Y;...] [arg1] [arg2] [...] [argn]
+p<name> : <text>
+<?py
+<python code>
+?>
 \end{verbatim}
 
 The syntax \texttt{r<name>} specifies a rule, and \texttt{t<name>} specifies a theorem. For \texttt{<name>} and \texttt{<expr>}, any string of characters is accepted except \texttt{':'} and \texttt{' '} (whitespace) for \texttt{<name>} and \texttt{'->'} for \texttt{<expr>}. Square brackets represent optional values. Lowercase characters in a rule expression are considered a variable and will be used for substitution within the expressions.
 
 Within a rule, all expressions but the last are considered the hypothesis (arguments to be passed when used in a theorem), and the last is the conclusion. For theorems, the rule \texttt{<ruleN>} will be applied to the corresponding arguments. Substitution with theorems (\texttt{x} with theorem \texttt{X}; \texttt{y} with theorem \texttt{Y}...) will be performed in both the rule's hypotheses and the theorem's provided argument, and they will be matched/unified. If unification is successful, the final argument in the rule \texttt{argn} will be the result.
+
+A prose statement \texttt{p<name>} prints its text, prefixed with \texttt{-{}-} so it cannot be mistaken for a theorem, in source order with the derived theorems.
+
+Larger proofs are written as meta-programs, in the spirit of LCF\cite{b8}: a \texttt{<?py ... ?>} block contains Python code that emits Budge-TP statements, which take its place and are checked like any other statement. The block sees all rules and theorems defined above it, and can load another file, \texttt{<?py load('lib/logic.btp') ?>}, which checks it and makes its rules and theorems available; this is how libraries of theories are built. A block can thus work at a higher level (e.g. natural deduction) and leave every individual step to the checker, which stays small and is the only part that has to be trusted. A file can also be expanded: every block except a load is replaced by the statements it printed, so the result can be checked without the code that produced the proof.
 
 \subsection{Example theorems}
 
@@ -274,6 +282,11 @@ Velleman, Daniel J.
 Sitnikovski, B.
 \newblock Budge programming language and theorem prover (Python implementation).
 \newblock [Online]. Available: \url{https://github.com/bor0/budge/} (Accessed Aug. 2022)
+
+\bibitem{b8}
+Gordon, Michael J., Robin Milner, and Christopher P. Wadsworth.
+\newblock {\em Edinburgh LCF: A Mechanised Logic of Computation}.
+\newblock Lecture Notes in Computer Science, vol. 78. Springer, Berlin, Heidelberg, 1979.
 
 \end{thebibliography}
 \end{document}

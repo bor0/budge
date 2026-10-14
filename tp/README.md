@@ -10,6 +10,10 @@ Every statement in a Budge-TP code is of the form:
 r<name> : <expr> [-> <expr> -> ... -> <expr>]
 t<name> : <ruleN> [x=X;y=Y;...] [arg1] [arg2] [...] [argn]
 p<name> : <text>
+<?py
+<python code>
+?>
+<?py <python code> ?>
 ```
 
 The syntax for `<name>` and `<expr>` is any string of characters except `':'` and `' '` (whitespace). Square brackets represent optional values.
@@ -17,6 +21,13 @@ The syntax for `<name>` and `<expr>` is any string of characters except `':'` an
 Lowercase characters in a rule expression are considered a variable and will be used for substitution within the expressions.
 
 Prose statements (`p<name>`) print their text prefixed with `-- `, interleaved with theorem results in source order. The prefix distinguishes prose from derived theorems (which always use `name : value` form) so prose cannot spoof a theorem result. Prose supports `!` suppression like theorems.
+
+Python blocks are meta-programs: lines between `<?py` and `?>` (each on its own line), or the code in a one-line `<?py ... ?>`, are Python code, run with `__file__` (the Budge file), `env` (everything read and checked so far) and `load(path)` defined. Whatever the block prints is Budge code: it takes the block's place and is checked like any other code, so a wrong step is still rejected. `load` reads another Budge file, with the path relative to the current one: it is fully checked, its rules and theorems become available under the same names (a name clash is an error), it is loaded only once even if loaded several times, and its theorems and prose are not printed. Cycles are errors. This is how files use each other: `<?py load('lib/logic.btp') ?>`. Budge-TP itself provides nothing else; proof-building helpers are ordinary Python libraries. `--expand DIR` writes every loaded file with its blocks replaced by their output (keeping the `load` lines), so the proof can be checked without running any other Python.
+
+```
+python3 budge-tp.py proof.btp
+python3 budge-tp.py --expand out proof.btp && python3 budge-tp.py out/proof.btp
+```
 
 ## Semantics
 
