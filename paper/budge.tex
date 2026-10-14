@@ -137,18 +137,14 @@ Even though we used set theory\cite{b6} to represent the semantics, we can liber
 r<name> : <expr> [-> <expr> [-> ... -> <expr>]]
 t<name> : <ruleN> [x=X;y=Y;...] [arg1] [arg2] [...] [argn]
 p<name> : <text>
-<?py
-<python code>
-?>
+<?py <python code> ?>
 \end{verbatim}
 
 The syntax \texttt{r<name>} specifies a rule, and \texttt{t<name>} specifies a theorem. For \texttt{<name>} and \texttt{<expr>}, any string of characters is accepted except \texttt{':'} and \texttt{' '} (whitespace) for \texttt{<name>} and \texttt{'->'} for \texttt{<expr>}. Square brackets represent optional values. Lowercase characters in a rule expression are considered a variable and will be used for substitution within the expressions.
 
 Within a rule, all expressions but the last are considered the hypothesis (arguments to be passed when used in a theorem), and the last is the conclusion. For theorems, the rule \texttt{<ruleN>} will be applied to the corresponding arguments. Substitution with theorems (\texttt{x} with theorem \texttt{X}; \texttt{y} with theorem \texttt{Y}...) will be performed in both the rule's hypotheses and the theorem's provided argument, and they will be matched/unified. If unification is successful, the final argument in the rule \texttt{argn} will be the result.
 
-A prose statement \texttt{p<name>} prints its text, prefixed with \texttt{-{}-} so it cannot be mistaken for a theorem, in source order with the derived theorems.
-
-Larger proofs are written as meta-programs, in the spirit of LCF\cite{b8}: a \texttt{<?py ... ?>} block contains Python code that emits Budge-TP statements, which take its place and are checked like any other statement. The block sees all rules and theorems defined above it, and can load another file, \texttt{<?py load('lib/logic.btp') ?>}, which checks it and makes its rules and theorems available; this is how libraries of theories are built. A block can thus work at a higher level (e.g. natural deduction) and leave every individual step to the checker, which stays small and is the only part that has to be trusted. A file can also be expanded: every block except a load is replaced by the statements it printed, so the result can be checked without the code that produced the proof.
+A prose statement \texttt{p<name>} prints its text, prefixed with \texttt{-{}-}. Larger proofs are meta-programs, as in LCF\cite{b8}: a \texttt{<?py ... ?>} block's Python output (Budge-TP statements) takes its place and is checked as usual; \texttt{load(file)} checks another file and shares its rules and theorems. Only the small checker has to be trusted.
 
 \subsection{Example theorems}
 
@@ -160,7 +156,7 @@ Let $R = \{ \{ \vdash\texttt{MI}, \texttt{I} \}, \{ (\vdash\texttt{Mx}, \vdash\t
 
 With the following code, we define the terms, the initial axiom and the rules of inference, and a few example theorems:
 
-\begin{minipage}{0.30\textwidth}
+\begin{minipage}{0.22\textwidth}
 \begin{verbatim}
 # Terms
 rTmM : M
@@ -172,7 +168,7 @@ tmU! : rTmU
 rTmxy : xy
 \end{verbatim}
 \end{minipage}
-\begin{minipage}{0.33\textwidth}
+\begin{minipage}{0.34\textwidth}
 \begin{verbatim}
 # Axiom and rules
 rMI : |- MI
@@ -183,7 +179,7 @@ r2 : |- Mx -> |- Mxx
 r3 : |- xIIIy -> |- xUy
 \end{verbatim}
 \end{minipage}
-\begin{minipage}{0.33\textwidth}
+\begin{minipage}{0.42\textwidth}
 \begin{verbatim}
 # Example theorems
 thMII : r2 x=tmI! thMI
@@ -195,14 +191,7 @@ thMUI : r3 x=tmM!;y=tmI! thMIIII
 \end{verbatim}
 \end{minipage}
 
-The theorems, once deduced, produce the following results:
-
-\begin{verbatim}
-thMI : |- MI
-thMII : |- MII
-thMIIII : |- MIIII
-thMUI : |- MUI
-\end{verbatim}
+The deduced theorems are \texttt{|- MI}, \texttt{|- MII}, \texttt{|- MIIII}, and \texttt{|- MUI}.
 
 \subsubsection{Budge-PL language (Budge-TP syntax)}
 
@@ -233,20 +222,18 @@ rNextState-2 : (PP0 x) (a Sb) -> x (a b)
 rLoop2Base : ((SS0 x) y) (a 0) -> y (a 0)
 rLoop2Succ : ((SS0 x) y) (a Sb)
              -> APPEND x ((SS0 x) y) z -> z (a Sb)
-\end{verbatim}
-\end{minipage}
 
-Together with the following helper rules for appending lists:
-
-\begin{verbatim}
 # Appending lists
 rAppendNil : APPEND NIL y y
 rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 \end{verbatim}
+\end{minipage}
 
-To calculate the program $((2, -2, 1))$ with the first register 1 and the second 2, we use the rules in order: \texttt{rInitState}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Base}. These rules take the initial register state \texttt{(1 2)} and evaluate it to \texttt{(3 0)} which represents the sum.
+To calculate the program $((2, -2, 1))$ on registers \texttt{(1 2)}, we apply \texttt{rInitState}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Base}, arriving at \texttt{(3 0)}, the sum.
 
+\begin{footnotesize}
 \begin{thebibliography}{1}
+\setlength{\itemsep}{0pt}
 
 \bibitem{b1}
 Hofstadter, Douglas R.
@@ -281,12 +268,13 @@ Velleman, Daniel J.
 \bibitem{b7}
 Sitnikovski, B.
 \newblock Budge programming language and theorem prover (Python implementation).
-\newblock [Online]. Available: \url{https://github.com/bor0/budge/} (Accessed Aug. 2022)
+\newblock \url{https://github.com/bor0/budge/} (Accessed Aug. 2022)
 
 \bibitem{b8}
 Gordon, Michael J., Robin Milner, and Christopher P. Wadsworth.
 \newblock {\em Edinburgh LCF: A Mechanised Logic of Computation}.
-\newblock Lecture Notes in Computer Science, vol. 78. Springer, Berlin, Heidelberg, 1979.
+\newblock Lecture Notes in Computer Science, vol. 78. Springer, 1979.
 
 \end{thebibliography}
+\end{footnotesize}
 \end{document}
