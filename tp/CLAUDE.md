@@ -191,9 +191,9 @@ Every variable in a rule's conclusion should also appear in a hypothesis (or
 be deliberately free, as in a term rule or axiom schema). A variable bound
 only by the conclusion can be given any value through `x=T`, and a hypothesis
 missing a field never matches a real state. Budge doesn't flag either, and a
-rule no theorem uses is never exercised. Live example: `coordgame.btp`'s
-`rCoordW : P(x,S(y)) E(a,b) -> P(x,y) E(a,b) HP=h` drops `HP=h` from its
-hypothesis, unlike `rCoordA`/`D`/`S`.
+rule no theorem uses is never exercised. Example: `coordgame.btp`'s
+`rCoordW` once read `P(x,S(y)) E(a,b) -> P(x,y) E(a,b) HP=h`, dropping
+`HP=h` from its hypothesis, and went unnoticed because no theorem used it.
 
 ### Where the answer lives: theorem vs proof
 

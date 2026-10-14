@@ -12,7 +12,7 @@ rGameFinalAttack : P(x,y) E(x,y) HP=0 -> WIN
 # Game commands (movement)
 rCoordA : P(S(x),y) E(a,b) HP=h -> P(x,y) E(a,b) HP=h
 rCoordD : P(x,y) E(a,b) HP=h -> P(S(x),y) E(a,b) HP=h
-rCoordW : P(x,S(y)) E(a,b) -> P(x,y) E(a,b) HP=h
+rCoordW : P(x,S(y)) E(a,b) HP=h -> P(x,y) E(a,b) HP=h
 rCoordS : P(x,y) E(a,b) HP=h -> P(x,S(y)) E(a,b) HP=h
 
 thZ! : rZ
