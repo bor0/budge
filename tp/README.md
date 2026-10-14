@@ -51,6 +51,7 @@ In the `examples` folder you can find the following proofs:
 - [Peano's axioms](./examples/peano.btp) - A more detailed example on numbers
 - [PQ](./examples/pq.btp) - Number addition
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
+- [Quantifiers](./examples/quantifiers.btp) - First-order ∀/∃ with de Bruijn indices, capture-free instantiation and generalisation
 - [RSA](./examples/rsa.btp) - Toy RSA encryption and decryption using tally numbers
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication

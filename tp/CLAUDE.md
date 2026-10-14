@@ -166,12 +166,31 @@ not that the result is fully reduced below `n`. See `rsa.btp`.
 Add one general rule, `rInst : ⊢∀X,p(X) -> ⊢p(x)`, and apply it with
 `p=tmPRED!;x=...` (works because `p` is a bare predicate name).
 
+### Quantifiers with binding (de Bruijn)
+
+`rInst` above substitutes a bare predicate name and can't deal with nested
+quantifiers or capture. For real first-order binding, see `quantifiers.btp`:
+bound variables are de Bruijn indices (`ALL(EX(R(V(S(Z)),V(Z))))` is
+∀x∃y R(x,y)), and binding is handled by two derived judgements, built with one
+structural rule per constructor:
+
+- `OPEN(k,f,t,g)` — g is f with `V(k)` (at depth k) replaced by closed term t.
+  Feeds `rAllE : OPEN(Z,f,t,g) -> ⊢IMP(ALL(f),g)` and `rExI` (∃ intro).
+- `ABS(k,g,f)` — f is g with every parameter `X` replaced by `V(k)`. There is
+  no `ABS(k,X,X)`, so no X is left behind. Feeds `rGen : ABS(Z,g,f) -> ⊢g -> ⊢ALL(f)`.
+  `ABS(Z,q,q)` doubles as a "q is closed" check for ∃E.
+
+Both rules only accept `V(n)` with `LT(n,k)`, i.e. sentences, so no index
+shifting is needed and closed terms can't be captured. Side condition (not
+checked): the eigenvariable `X` must not occur in non-logical axioms.
+Adding a constructor means adding its `OPEN` and `ABS` rules.
+
 ## Known limitations
 
 - **No general unification** — matching is exact string equality after substitution
 - **No backtracking or proof search** — theorems are evaluated strictly in source order
 - **No lambda / beta-reduction** — predicates cannot be passed as higher-order arguments; use a defined predicate instead
-- **No universal instantiation built in** — add a general `rInst` rule
+- **No universal instantiation built in** — add a general `rInst` rule, or encode binding with de Bruijn indices (see above)
 - **No hypothetical reasoning** — object-level implications can't come from meta-level rules; derive them Hilbert-style (see above)
 - **No free-variable tracking** — the schematic-`n` side condition of `rInd` is a convention, not checked
 - **Single lowercase letters only** as substitution variables
