@@ -1,141 +1,130 @@
-# Hoare logic for a tiny imperative language
+# A program verified from Peano's axioms with Hoare logic
 #
-# Keywords are uppercase (WHILE/IF/ELSE) to keep lowercase letters out of
-# object-level strings. Program variables are $I, $S (assigned) and $N
-# (read-only input).
+# Proved by the Python block below; Budge checks every
+# step, including those of the imported library.
 #
-# Partial correctness: {p} c {q} -- if c terminates from p, q holds.
-#
-# Program: count the odd numbers below $N. It uses every Hoare rule.
+# Program: count the odd numbers below $N.
 #
 #   $I = 0; $S = 0;
-#   WHILE ($I != $N) {
-#       IF ($I % 2 == 1) { $S = $S + 1; } ELSE { ; }
-#       $I = $I + 1;
+#   WHILE (¬EQ($I,$N)) {
+#       IF (EQ(MOD2($I),S(0))) { $S = S($S); } ELSE { ; }
+#       $I = S($I);
 #   }
 #
-# Goal: {TRUE} prog {$S == INTDIV($N, 2)}
+# Goal: {⊤} program {EQ($S,DIV2($N))}, i.e. the count is ⌊N/2⌋.
 #
-# INTDIV(a, b) is integer division (a / b rounded down).
+# Program variables $I, $S (assigned) and $N (read-only input) are constants
+# of the term language; expressions and conditions are written in the
+# library's notation (S, MOD2, EQ, ¬), so conditions can enter assertions
+# directly. The Hoare rules are in lib/hoare.btp. MOD2 and DIV2 are defined by
+# recursion in lib/parity.btp, which also proves the arithmetic facts the
+# verification needs (thDiv2Odd, thDiv2Even); nothing about them is assumed.
+#
+# Invariant: $S = DIV2($I). The verification conditions are proved
+# Hilbert-style under their assumption (e.g. ⊢((Inv∧G)∧C => ...)), taking the
+# conjuncts apart with rAndL/rAndR.
+#
+# Side conditions (not checked by Budge): in rAssignS g must not mention $S,
+# in rAssignI a must not mention $I.
 
-## Hoare rules ##
+<?py load('lib/parity.btp') ?>
+<?py load('lib/hoare.btp') ?>
+## Program variables: constants, closed terms
+rTmVarI : $I
+rTmVarS : $S
+rTmVarN : $N
+rCtVarI : CT($I)
 
-# Assignment. Q[e/x] can't be computed by string replacement on a value, so
-# assertions are kept in the shape a == f($I, k), where f is a function name
-# and a, f, k do not mention $I; rAssignS needs g not to mention $S. Under that
-# shape, Q[e/x] is just filling e into the template.
-rAssignI : {a == f(e, k)} $I = e; {a == f($I, k)}
-rAssignS : {e == g} $S = e; {$S == g}
+## Assignment, for the assertion shapes this program uses. Q[e/x] is filling
+## in e: {EQ(e,g)} for $S (g must not mention $S), {EQ(a,DIV2(e))} for $I
+## (a must not mention $I).
+rAssignS : {EQ(e,g)} $S = e; {EQ($S,g)}
+rAssignI : {EQ(a,DIV2(e))} $I = e; {EQ(a,DIV2($I))}
 
-rSkip     : {p} ; {p}                                   # empty statement
-rSeq      : {p} a {q} -> {q} b {r} -> {p} a b {r}
-rIf       : {p && b} c {q} -> {p && !(b)} d {q} -> {p} IF (b) { c } ELSE { d } {q}
-rWhile    : {p && b} c {p} -> {p} WHILE (b) { c } {p && !(b)}
-rConsPre  : ⊢p ⇒ q -> {q} c {r} -> {p} c {r}
-rConsPost : {p} c {q} -> ⊢q ⇒ r -> {p} c {r}
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
 
-## Arithmetic facts about INTDIV (axiomatised; object-level implications) ##
+ATOM_RULES.update({'$I': 'rTmVarI', '$S': 'rTmVarS', '$N': 'rTmVarN'})
+CT_ATOMS['$I'] = 'rCtVarI'
 
-rDivInit : ⊢TRUE ⇒ 0 == INTDIV(0, 2)
-rDivOdd  : ⊢b == INTDIV(a, 2) && q && a % 2 == 1 ⇒ b + 1 == INTDIV(a + 1, 2)     # a odd: a+1 even
-rDivEven : ⊢b == INTDIV(a, 2) && q && !(a % 2 == 1) ⇒ b == INTDIV(a + 1, 2)     # a even: a+1 odd
-rDivExit : ⊢b == INTDIV(a, 2) && !(a != c) ⇒ b == INTDIV(c, 2)                  # a = c
 
-## Terms ##
-
-rTmI    : $I
-rTmS    : $S
-rTmN    : $N
-rTm0    : 0
-rTm1    : 1
-rTm2    : 2
-rTmTRUE : TRUE
-rTmINTDIV : INTDIV
-rTmAdd  : a + b
-rTmNeq  : a != b
-rTmOdd  : a % 2 == 1
-rTmEq   : a == b
-rTmApp  : f(a, b)
-rTmAnd  : p && q
-rTmNot  : !(p)
-rTmSeq  : a b
-rTmAsg  : a = b;
-rTmSkip : ;
-rTmWhile : WHILE (b) { c }
-rTmIf   : IF (b) { c } ELSE { d }
-
-tmI!    : rTmI
-tmS!    : rTmS
-tmN!    : rTmN
-tm0!    : rTm0
-tm1!    : rTm1
-tm2!    : rTm2
-tmTRUE! : rTmTRUE
-tmINTDIV! : rTmINTDIV
-
-# Expressions
-tmIp1!   : rTmAdd a=tmI!;b=tm1!               # $I + 1
-tmSp1!   : rTmAdd a=tmS!;b=tm1!               # $S + 1
-tmGuard! : rTmNeq a=tmI!;b=tmN!               # $I != $N
-tmNotG!  : rTmNot p=tmGuard!                  # !($I != $N)
-tmCond!  : rTmOdd a=tmI!                      # $I % 2 == 1
-tmNotC!  : rTmNot p=tmCond!                   # !($I % 2 == 1)
-tmDI!    : rTmApp f=tmINTDIV!;a=tmI!;b=tm2!            # INTDIV($I, 2)
-tmDI1!   : rTmApp f=tmINTDIV!;a=tmIp1!;b=tm2!          # INTDIV($I + 1, 2)
-tmDN!    : rTmApp f=tmINTDIV!;a=tmN!;b=tm2!            # INTDIV($N, 2)
-
-# Code fragments
-tmCI0!   : rTmAsg a=tmI!;b=tm0!               # $I = 0;
-tmCS0!   : rTmAsg a=tmS!;b=tm0!               # $S = 0;
-tmInit!  : rTmSeq a=tmCI0!;b=tmCS0!
-tmCS!    : rTmAsg a=tmS!;b=tmSp1!             # $S = $S + 1;
-tmCI1!   : rTmAsg a=tmI!;b=tmIp1!             # $I = $I + 1;
-tmSkip!  : rTmSkip
-tmIf!    : rTmIf b=tmCond!;c=tmCS!;d=tmSkip!  # IF ($I % 2 == 1) { $S = $S + 1; } ELSE { ; }
-tmBody!  : rTmSeq a=tmIf!;b=tmCI1!
-tmLoop!  : rTmWhile b=tmGuard!;c=tmBody!
+I, Sv, Nv = '$I', '$S', '$N'
+ONE = S(Z)
 
 # Assertions
-tmInv!   : rTmEq a=tmS!;b=tmDI!               # $S == INTDIV($I, 2)
-tmInvB!  : rTmAnd p=tmInv!;q=tmGuard!         # $S == INTDIV($I, 2) && $I != $N
-tmInvBC! : rTmAnd p=tmInvB!;q=tmCond!         # ... && $I % 2 == 1
-tmInvBN! : rTmAnd p=tmInvB!;q=tmNotC!         # ... && !($I % 2 == 1)
-tmMid!   : rTmEq a=tmS!;b=tmDI1!              # $S == INTDIV($I + 1, 2)
-tmThenP! : rTmEq a=tmSp1!;b=tmDI1!            # $S + 1 == INTDIV($I + 1, 2)
-tmExit!  : rTmAnd p=tmInv!;q=tmNotG!          # $S == INTDIV($I, 2) && !($I != $N)
-tmGoal!  : rTmEq a=tmS!;b=tmDN!               # $S == INTDIV($N, 2)
-tmInit0! : rTmEq a=tm0!;b=tmDI!               # 0 == INTDIV($I, 2)
-tmInit1! : rTmApp f=tmINTDIV!;a=tm0!;b=tm2!            # INTDIV(0, 2)
-tmInitP! : rTmEq a=tm0!;b=tmInit1!            # 0 == INTDIV(0, 2)
+Inv = EQ(Sv, DIV2(I))                  # $S = ⌊$I/2⌋
+G = NOT(EQ(I, Nv))                     # loop guard
+C = EQ(MOD2(I), ONE)                   # $I is odd
+InvG = AND(Inv, G)
+PreThen = EQ(S(Sv), DIV2(S(I)))
+Mid = EQ(Sv, DIV2(S(I)))
+Post = EQ(Sv, DIV2(Nv))
+Init0 = EQ(Z, DIV2(Z))
+InitI = EQ(Z, DIV2(I))
 
-## Proof ##
+# Program
+cI0, cS0 = ASG(I, Z), ASG(Sv, Z)
+init = SEQ(cI0, cS0)
+cSS, cIS = ASG(Sv, S(Sv)), ASG(I, S(I))
+ifc = IF(C, cSS, SKIP)
+body = SEQ(ifc, cIS)
+loop = WHILE(G, body)
+prog = SEQ(init, loop)
 
-pGoal : Prove {TRUE} $I = 0; $S = 0; WHILE ($I != $N) { IF ($I % 2 == 1) { $S = $S + 1; } ELSE { ; } $I = $I + 1; } {$S == INTDIV($N, 2)}
 
-pBody : Loop body, backwards from the invariant $S == INTDIV($I, 2).
+section('Initialisation', 'HoA', [
+    'Backwards from Inv: $S = 0 needs EQ(0,DIV2($I)), $I = 0 needs EQ(0,DIV2(0)),',
+    'which is the definition rDiv2Z; K weakens it to ⊤ => EQ(0,DIV2(0)).'])
+t1 = apply('rAssignI', [('a', Z), ('e', Z)], [])
+t2 = apply('rAssignS', [('e', Z), ('g', DIV2(I))], [])
+t3 = apply('rSeq', [('p', Init0), ('a', cI0), ('q', InitI), ('b', cS0), ('r', Inv)], [t1, t2])
+vcInit = weaken(sym(apply('rDiv2Z', [], [])), TOP)
+tInit = apply('rConsPre', [('p', TOP), ('q', Init0), ('c', init), ('r', Inv)], [vcInit, t3],
+              name='thInit')
 
-thInc!    : rAssignI a=tmS!;f=tmINTDIV!;k=tm2!;e=tmIp1!  # {$S == INTDIV($I + 1, 2)} $I = $I + 1; {$S == INTDIV($I, 2)}
-thThen0!  : rAssignS e=tmSp1!;g=tmDI1!          # {$S + 1 == INTDIV($I + 1, 2)} $S = $S + 1; {$S == INTDIV($I + 1, 2)}
-thOdd!    : rDivOdd a=tmI!;b=tmS!;q=tmGuard!
-thThen!   : rConsPre p=tmInvBC!;q=tmThenP!;c=tmCS!;r=tmMid! thOdd! thThen0!
-thElse0!  : rSkip p=tmMid!                      # {$S == INTDIV($I + 1, 2)} ; {$S == INTDIV($I + 1, 2)}
-thEven!   : rDivEven a=tmI!;b=tmS!;q=tmGuard!
-thElse!   : rConsPre p=tmInvBN!;q=tmMid!;c=tmSkip!;r=tmMid! thEven! thElse0!
-thIf!     : rIf p=tmInvB!;b=tmCond!;c=tmCS!;d=tmSkip!;q=tmMid! thThen! thElse!
-thBodyInv : rSeq p=tmInvB!;a=tmIf!;q=tmMid!;b=tmCI1!;r=tmInv! thIf! thInc!
+section('Loop body: odd $I', 'HoB', [
+    'VC: (Inv ∧ G) ∧ C => EQ(S($S),DIV2(S($I))):',
+    '  S($S) = S(DIV2($I))      (Inv, under the assumption)',
+    '        = DIV2(S($I))      (thDiv2Odd at $I, using C)'])
+A = AND(InvG, C)
+hInv = hs(andl(InvG, C), andl(Inv, G))                # ⊢(A => Inv)
+hOdd = hs(andr(InvG, C), inst('thDiv2Odd', I))        # ⊢(A => DIV2(S($I)) = S(DIV2($I)))
+vcThen = chain(S(Sv), [([0], hInv), ([], sym(hOdd))])
+tA = apply('rAssignS', [('e', S(Sv)), ('g', DIV2(S(I)))], [])
+tThen = apply('rConsPre', [('p', A), ('q', PreThen), ('c', cSS), ('r', Mid)], [vcThen, tA])
 
-pLoop : While rule with invariant $S == INTDIV($I, 2), then weaken the exit condition.
+section('Loop body: even $I', 'HoC', [
+    'VC: (Inv ∧ G) ∧ ¬C => EQ($S,DIV2(S($I))):',
+    '  $S = DIV2($I) = DIV2(S($I))   (Inv; thDiv2Even at $I, using ¬C)'])
+A2 = AND(InvG, NOT(C))
+hInv2 = hs(andl(InvG, NOT(C)), andl(Inv, G))
+hEven = hs(andr(InvG, NOT(C)), inst('thDiv2Even', I))
+vcElse = trans(hInv2, sym(hEven))
+tSkip = apply('rSkip', [('p', Mid)], [])
+tElse = apply('rConsPre', [('p', A2), ('q', Mid), ('c', SKIP), ('r', Mid)], [vcElse, tSkip])
 
-thLoop!    : rWhile p=tmInv!;b=tmGuard!;c=tmBody! thBodyInv
-thExit!    : rDivExit a=tmI!;b=tmS!;c=tmN!
-thLoopGoal : rConsPost p=tmInv!;c=tmLoop!;q=tmExit!;r=tmGoal! thLoop! thExit!
+section('Loop body and loop', 'HoD', [
+    'IF combines both branches; $I = S($I) restores Inv from Mid; WHILE gives',
+    '{Inv} loop {Inv ∧ ¬G}.'])
+tIf = apply('rIf', [('p', InvG), ('b', C), ('c', cSS), ('d', SKIP), ('q', Mid)], [tThen, tElse])
+tI = apply('rAssignI', [('a', Sv), ('e', S(I))], [])
+tBody = apply('rSeq', [('p', InvG), ('a', ifc), ('q', Mid), ('b', cIS), ('r', Inv)], [tIf, tI],
+              name='thBody')
+tLoop = apply('rWhile', [('p', Inv), ('b', G), ('c', body)], [tBody])
 
-pInit : Initialisation establishes the invariant.
-
-thInitS!  : rAssignS e=tm0!;g=tmDI!             # {0 == INTDIV($I, 2)} $S = 0; {$S == INTDIV($I, 2)}
-thInitI!  : rAssignI a=tm0!;f=tmINTDIV!;k=tm2!;e=tm0!    # {0 == INTDIV(0, 2)} $I = 0; {0 == INTDIV($I, 2)}
-thInit0!  : rSeq p=tmInitP!;a=tmCI0!;q=tmInit0!;b=tmCS0!;r=tmInv! thInitI! thInitS!
-thTrue!   : rDivInit
-thInit    : rConsPre p=tmTRUE!;q=tmInitP!;c=tmInit!;r=tmInv! thTrue! thInit0!
-
-thProgram : rSeq p=tmTRUE!;a=tmInit!;q=tmInv!;b=tmLoop!;r=tmGoal! thInit thLoopGoal
+section('Loop exit and the whole program', 'HoE', [
+    'VC: Inv ∧ ¬¬EQ($I,$N) => EQ($S,DIV2($N)): double negation elimination',
+    '(thDNE) gives $I = $N, congruence of DIV2 gives DIV2($I) = DIV2($N).'])
+E = EQ(I, Nv)
+A3 = AND(Inv, NOT(G))
+hE = hs(andr(Inv, NOT(G)), apply('thDNE', [('i', E)], []))
+hH = hs(hE, apply('rCongDiv2', [('x', I), ('y', Nv)], []))
+vcExit = trans(andl(Inv, NOT(G)), hH)
+tLoopPost = apply('rConsPost', [('p', Inv), ('c', loop), ('q', A3), ('r', Post)],
+                  [tLoop, vcExit], name='thLoop')
+apply('rSeq', [('p', TOP), ('a', init), ('q', Inv), ('b', loop), ('r', Post)],
+      [tInit, tLoopPost], name='thProgram')
+prose('pProgram', 'The program sets $S to DIV2($N) = ⌊$N/2⌋, the number of odd numbers below $N.')
+?>

@@ -1,0 +1,26 @@
+# Hoare logic for a small imperative language
+#
+# {p} c {q}: if c runs from a state satisfying p and terminates, q holds after
+# (partial correctness). Assertions are formulas of the library (EQ, ∧, ¬, ...)
+# and conditions of IF and WHILE are formulas too, so the rules can put them
+# into assertions directly.
+#
+# Assignment is not here: Q[e/x] can't be computed by string substitution on
+# a value, so each program states its own assignment axioms for the assertion
+# shapes it uses (see ../hoare.btp).
+
+<?py load('logic.btp') ?>
+<?py load('strings.btp') ?>
+## Program syntax: assignment, skip, sequence (x y, from strings.btp), IF, WHILE
+rTmAsg   : x = y;
+rTmSkip  : ;
+rTmIf    : IF (b) { c } ELSE { d }
+rTmWhile : WHILE (b) { c }
+
+## Rules
+rSkip     : {p} ; {p}
+rSeq      : {p} a {q} -> {q} b {r} -> {p} a b {r}
+rIf       : {(p∧b)} c {q} -> {(p∧¬b)} d {q} -> {p} IF (b) { c } ELSE { d } {q}
+rWhile    : {(p∧b)} c {p} -> {p} WHILE (b) { c } {(p∧¬b)}
+rConsPre  : ⊢(p=>q) -> {q} c {r} -> {p} c {r}
+rConsPost : {p} c {q} -> ⊢(q=>r) -> {p} c {r}

@@ -80,18 +80,18 @@ rMulRed  : x*y=zn MOD n -> x*y=z MOD n    # subtract n in one step
 No zero (values can't be empty): pick inputs with no 0 intermediates. `rMulRed` proves
 congruence, not full reduction.
 
-**Hoare assignment** (`hoare.btp`). `{Q[e/x]} x:=e {Q}` can't be generic (no
-substitution inside values); `{q} x:=e {p}` is unsound (accepts any precondition). Fix
-the assertion shape, one axiom per program variable (side conditions unchecked), so
-Q[e/x] is just filling in `e`:
+**Hoare assignment** (`hoare.btp`, rules in `lib/hoare.btp`). `{Q[e/x]} x:=e {Q}` can't be
+generic (no substitution inside values); `{q} x:=e {p}` is unsound (accepts any
+precondition). Fix the assertion shape, one axiom per program variable (side conditions
+unchecked), so Q[e/x] is just filling in `e`; they stay in the program's file:
 ```
-rAssignI : {a == f(e, k)} $I = e; {a == f($I, k)}   # a, f, k must not mention $I
-rAssignS : {e == g} $S = e; {$S == g}               # g must not mention $S
+rAssignI : {EQ(a,DIV2(e))} $I = e; {EQ(a,DIV2($I))}   # a must not mention $I
+rAssignS : {EQ(e,g)} $S = e; {EQ($S,g)}               # g must not mention $S
 ```
 Keep assertions in shape by ordering: the increment comes *after* the `IF`, so stepping
-back over `$I = $I + 1` gives `$S == INTDIV($I + 1, 2)` — no helper predicates. Program
-text is uppercase (`WHILE`, `INTDIV`, `$I`): PHP keywords/functions are
-case-insensitive, so it stays valid PHP yet safe from substitution.
+back over `$I = S($I)` gives `EQ($S,DIV2(S($I)))`. Program text and conditions use library
+notation (`EQ`, `¬`, `MOD2`), so `rIf`/`rWhile` put conditions into assertions as is, and
+the verification conditions are library lemmas (`lib/parity.btp`), not axioms.
 
 **Quantifiers** (`lib/fol.btp`). `rInst` can't handle nesting or capture; use de
 Bruijn indices: `ALL(EX(R(V(S(0)),V(0))))` is ∀x∃y R(x,y). Two judgements, one
@@ -125,6 +125,16 @@ in an example would duplicate `rEqS`.
 not a duplicate: don't load a library for a coincidental symbol.
 `tally.btp` (loads strings): bar tallies `|||`, ≤, multiplication and powers MOD n; exports
 `tmBar1!`…`tmBar10!`. Cheap arithmetic for computations; proofs about all numbers use peano.
+`parity.btp` (loads peano; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
+`thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads logic, strings): Hoare rules and program syntax.
+
+Big proofs are `<?py ... ?>` blocks over `examples/lib/tactics.py`. A block starts
+`import os, sys; sys.path.insert(0, <dir of examples/lib>)`, `from tactics import *`,
+`use(env, __file__)`; `use` loads everything checked above it, and terms and judgements are
+reused by value, so printed names never clash. Numbered terms are `tm<Tag><n>!`, the tag
+from the file name (+`L` in `lib/`). Loaded files share one namespace, so a library's
+internal names must be distinctive (`thPtA1!`, not `thA1!`). tactics.py grows with the
+library: it holds only what the committed proofs use.
 
 **Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
 `rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;
