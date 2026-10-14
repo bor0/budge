@@ -117,6 +117,9 @@ symbol declares its term/CT/OPEN/ABS(/congruence) rules (`quantifiers.btp`: A, P
 ADD, MUL, their CT/OPEN/ABS, and induction `rInd`; numbers are fol's numerals.
 `list.btp` (loads fol, for numbers `S(x)` and LT): pairs, NIL, TRUE/FALSE, APPEND, CAR/CDR,
 MEMBER, SUM, MAX, substitution, REV, SORTED; exports `tmNil!`, `tmT!`, `tmF!`.
+`boolean.btp` (loads fol): Huntington's axioms over fol's terms (∧, ∨, ¬, 0, 1), with ∧/∨
+congruence and the syntax rules for 1. Equality is fol's: a meta-level `⊢EQ(x,y) -> ⊢EQ(y,x)`
+in an example would duplicate `rEqS`.
 
 **Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
 `rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;

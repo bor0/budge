@@ -1,0 +1,40 @@
+# Boolean algebra
+#
+# Rules only. Huntington's axioms, per
+# https://en.wikipedia.org/wiki/Boolean_algebra_(structure)#Definition, over
+# the terms of fol.btp: ∧, ∨ and ¬ (written like logic.btp's connectives, here
+# as operations inside EQ), and the constants 0 (fol.btp's) and 1. Equality is
+# fol.btp's; this file adds congruence for ∧ and ∨, and the syntax rules for 1
+# (see fol.btp).
+
+<?py load('fol.btp') ?>
+## Constant 1
+rTm1    : 1
+rCt1    : CT(1)
+rOpen1  : OPEN(k,1,t,1)
+rAbs1   : ABS(k,w,1,1)
+
+## Congruence: equal arguments give equal results
+rCongAndL : ⊢(EQ(x,y)=>EQ((x∧z),(y∧z)))
+rCongAndR : ⊢(EQ(x,y)=>EQ((z∧x),(z∧y)))
+rCongOrL  : ⊢(EQ(x,y)=>EQ((x∨z),(y∨z)))
+rCongOrR  : ⊢(EQ(x,y)=>EQ((z∨x),(z∨y)))
+
+## Commutativity
+rCommOr  : ⊢EQ((x∨y),(y∨x))
+rCommAnd : ⊢EQ((x∧y),(y∧x))
+
+## Identity
+rIdentOr  : ⊢EQ((x∨0),x)
+rIdentAnd : ⊢EQ((x∧1),x)
+
+## Distributivity
+rDistrOr  : ⊢EQ((x∨(y∧z)),((x∨y)∧(x∨z)))
+rDistrAnd : ⊢EQ((x∧(y∨z)),((x∧y)∨(x∧z)))
+
+## Complements
+rComplOr  : ⊢EQ((x∨¬x),1)
+rComplAnd : ⊢EQ((x∧¬x),0)
+
+## Common terms
+tmB1! : rTm1

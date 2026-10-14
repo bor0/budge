@@ -46,6 +46,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [logic.btp](./examples/lib/logic.btp) - Classical propositional logic in Hilbert's system (axioms K, S, contraposition, ∧, ∨, modus ponens), deriving identity, hypothetical syllogism, double negation elimination and introduction, contraposition, ex falso, disjunctive syllogism and commutativity of ∧ and ∨
 - [fol.btp](./examples/lib/fol.btp) - First-order logic with equality: ∀ and ∃ with de Bruijn indices (capture-free instantiation, generalisation, ∃-elimination) and the equality axioms
 - [peano.btp](./examples/lib/peano.btp) - The defining equations of + and ·, congruence, and induction
+- [boolean.btp](./examples/lib/boolean.btp) - Boolean algebra (Huntington's axioms) over the terms of fol.btp
 - [list.btp](./examples/lib/list.btp) - Lists of numbers, with list relations: append, car/cdr, membership, sum, max, substitution, reversal, sortedness
 
 ## Example
@@ -55,7 +56,7 @@ In the `examples` folder you can find the following proofs:
 - [Gestalt](./examples/gestalt.btp) - Differentiation and contact in Gestalt therapy
 - [God](./examples/God.btp) - Anselm's ontological argument as a contraposition, using the library
 - [Automaton](./examples/automaton.btp) - A finite-state machine
-- [Boolean](./examples/boolean.btp) - Boolean logic
+- [Boolean](./examples/boolean.btp) - An identity of Boolean algebra, proved for an arbitrary element, generalised and instantiated
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
 - [CL](./examples/cl.btp) - Propositional logic with ∧ and ∨ by hand, using the library
 - [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation

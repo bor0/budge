@@ -1,53 +1,69 @@
-# Equality refl, symm, tr
-rEqR : ⊢EQ(x,x)
-rEqS : ⊢EQ(x,y) -> ⊢EQ(y,x)
-rEqT : ⊢EQ(x,y) -> ⊢EQ(y,z) -> ⊢EQ(x,z)
+# Boolean algebra: ∀x. 1∧(x∨x) = x∨(1∧x)
+#
+# The axioms are in lib/boolean.btp. Proof for a parameter M (an arbitrary
+# element), Hilbert-style: each equality axiom is an implication, discharged
+# with modus ponens:
+#   1∧(M∨M) = (1∧M)∨(1∧M) = M∨(1∧M),   using 1∧M = M∧1 = M
+# then generalise M, and instantiate the result at 0 as an example.
 
-rCongOr : ⊢EQ(x,y) -> ⊢EQ((x∨z),(y∨z))
-rCongAnd : ⊢EQ(x,y) -> ⊢EQ((x∧z),(y∧z))
+<?py load('lib/boolean.btp') ?>
+tm1andM!        : rTmAnd p=tmB1!;q=tmM!
+tmMand1!        : rTmAnd p=tmM!;q=tmB1!
+tmMor1andM!     : rTmOr p=tmM!;q=tm1andM!
+tm1andMor1andM! : rTmOr p=tm1andM!;q=tm1andM!
+tmMorM!         : rTmOr p=tmM!;q=tmM!
+tm1andMorM!     : rTmAnd p=tmB1!;q=tmMorM!
 
-# Per https://en.wikipedia.org/wiki/Boolean_algebra_(structure)#Definition
+tmE1! : rTmEq x=tm1andM!;y=tmMand1!               # EQ((1∧M),(M∧1))
+tmE2! : rTmEq x=tmMand1!;y=tmM!                   # EQ((M∧1),M)
+tmE3! : rTmEq x=tm1andM!;y=tmM!                   # EQ((1∧M),M)
+tmE4! : rTmEq x=tm1andMor1andM!;y=tmMor1andM!     # EQ(((1∧M)∨(1∧M)),(M∨(1∧M)))
+tmE5! : rTmEq x=tm1andMorM!;y=tm1andMor1andM!     # EQ((1∧(M∨M)),((1∧M)∨(1∧M)))
+tmE6! : rTmEq x=tm1andMorM!;y=tmMor1andM!         # EQ((1∧(M∨M)),(M∨(1∧M)))
+tm(E2=>E3)! : rTmImp p=tmE2!;q=tmE3!
+tm(E4=>E6)! : rTmImp p=tmE4!;q=tmE6!
 
-# Vars (object-level)
-rTmX : X
-rTmY : Y
-tmX! : rTmX
-tmY! : rTmY
+thmstep1!  : rCommAnd x=tmB1!;y=tmM!                                   # ⊢E1
+thmstep2!  : rIdentAnd x=tmM!                                          # ⊢E2
+thmstep3a! : rEqT x=tm1andM!;y=tmMand1!;z=tmM!                         # ⊢(E1=>(E2=>E3))
+thmstep3b! : rMp p=tmE1!;q=tm(E2=>E3)! thmstep1! thmstep3a!
+thmstep3!  : rMp p=tmE2!;q=tmE3! thmstep2! thmstep3b!                  # ⊢E3: 1∧M = M
+thmstep4a! : rCongOrL x=tm1andM!;y=tmM!;z=tm1andM!                     # ⊢(E3=>E4)
+thmstep4!  : rMp p=tmE3!;q=tmE4! thmstep3! thmstep4a!                  # ⊢E4
+thmstep5!  : rDistrAnd x=tmB1!;y=tmM!;z=tmM!                           # ⊢E5
+thmstep6a! : rEqT x=tm1andMorM!;y=tm1andMor1andM!;z=tmMor1andM!        # ⊢(E5=>(E4=>E6))
+thmstep6b! : rMp p=tmE5!;q=tm(E4=>E6)! thmstep5! thmstep6a!
+thmM : rMp p=tmE4!;q=tmE6! thmstep4! thmstep6b!
 
-# 1 and 0 are terms
-rTm1 : 1
-rTm0 : 0
-tm1! : rTm1
-tm0! : rTm0
+# Generalise M: ABS replaces every M by V(0), constructor by constructor
+tm1andV!     : rTmAnd p=tmB1!;q=tmV0!                 # (1∧x)
+tmVorV!      : rTmOr p=tmV0!;q=tmV0!                  # (x∨x)
+tm1andVorV!  : rTmAnd p=tmB1!;q=tmVorV!               # (1∧(x∨x))
+tmVor1andV!  : rTmOr p=tmV0!;q=tm1andV!               # (x∨(1∧x))
+tmEV!        : rTmEq x=tm1andVorV!;y=tmVor1andV!
 
-# Terms for 'and', 'or', 'not'
-rTmAnd : (x∧y)
-rTmOr : (x∨y)
+thB2!   : rAbs1 k=tm0!;w=tmM!                                                  # 1 stays
+thB3!   : rAbsOr k=tm0!;w=tmM!;x=tmM!;y=tmM!;u=tmV0!;v=tmV0! thAbsM! thAbsM!
+thB4!   : rAbsAnd k=tm0!;w=tmM!;x=tmB1!;y=tmMorM!;u=tmB1!;v=tmVorV! thB2! thB3!
+thB5!   : rAbsAnd k=tm0!;w=tmM!;x=tmB1!;y=tmM!;u=tmB1!;v=tmV0! thB2! thAbsM!
+thB6!   : rAbsOr k=tm0!;w=tmM!;x=tmM!;y=tm1andM!;u=tmV0!;v=tm1andV! thAbsM! thB5!
+thB7!   : rAbsEq k=tm0!;w=tmM!;x=tm1andMorM!;y=tmMor1andM!;u=tm1andVorV!;v=tmVor1andV! thB4! thB6!
+thm : rGen w=tmM!;g=tmE6!;f=tmEV! thB7! thmM
 
-# Rules
-# Commutativity
-rCommOr : ⊢EQ((x∨y),(y∨x))
-rCommAnd : ⊢EQ((x∧y),(y∧x))
+# Instantiate at 0: OPEN replaces x by 0, constructor by constructor
+tm1and0!    : rTmAnd p=tmB1!;q=tm0!
+tm0or0!     : rTmOr p=tm0!;q=tm0!
+tm1and0or0! : rTmAnd p=tmB1!;q=tm0or0!
+tm0or1and0! : rTmOr p=tm0!;q=tm1and0!
+tmE0!       : rTmEq x=tm1and0or0!;y=tm0or1and0!
+tmAllEV!    : rTmAll x=tmEV!
 
-# Identity
-rIdentOr : ⊢EQ((x∨0),x)
-rIdentAnd : ⊢EQ((x∧1),x)
-
-# Distributivity
-rDistrOr : ⊢EQ((x∨(y∧z)),((x∨y)∧(x∨z)))
-rDistrAnd : ⊢EQ((x∧(y∨z)),((x∧y)∨(x∧z)))
-
-# Example theorem derivation
-tm1andX! : rTmAnd x=tm1!;y=tmX!
-tmXand1! : rTmAnd x=tmX!;y=tm1!
-tmXor1andX! : rTmOr x=tmX!;y=tm1andX!
-tm1andXor1andX! : rTmOr x=tm1andX!;y=tm1andX!
-tmXorX! : rTmOr x=tmX!;y=tmX!
-tm1andXorX! : rTmAnd x=tm1!;y=tmXorX!
-
-thmstep1! : rCommAnd x=tm1!;y=tmX!
-thmstep2! : rIdentAnd x=tmX!
-thmstep3! : rEqT x=tm1andX!;y=tmXand1!;z=tmX! thmstep1! thmstep2!
-thmstep4! : rCongOr x=tm1andX!;y=tmX!;z=tm1andX! thmstep3!
-thmstep5! : rDistrAnd x=tm1!;y=tmX!;z=tmX!
-thm : rEqT x=tm1andXorX!;y=tm1andXor1andX!;z=tmXor1andX! thmstep5! thmstep4!
+thO1!   : rOpenHit k=tm0!;t=tm0! thCt0!                                         # x becomes 0
+thO2!   : rOpen1 k=tm0!;t=tm0!                                                  # 1 stays
+thO3!   : rOpenOr k=tm0!;x=tmV0!;y=tmV0!;t=tm0!;u=tm0!;v=tm0! thO1! thO1!
+thO4!   : rOpenAnd k=tm0!;x=tmB1!;y=tmVorV!;t=tm0!;u=tmB1!;v=tm0or0! thO2! thO3!
+thO5!   : rOpenAnd k=tm0!;x=tmB1!;y=tmV0!;t=tm0!;u=tmB1!;v=tm0! thO2! thO1!
+thO6!   : rOpenOr k=tm0!;x=tmV0!;y=tm1andV!;t=tm0!;u=tm0!;v=tm1and0! thO1! thO5!
+thO7!   : rOpenEq k=tm0!;x=tm1andVorV!;y=tmVor1andV!;t=tm0!;u=tm1and0or0!;v=tm0or1and0! thO4! thO6!
+thO8!   : rAllE f=tmEV!;t=tm0!;g=tmE0! thO7!
+thm0 : rMp p=tmAllEV!;q=tmE0! thm thO8!
