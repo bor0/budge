@@ -1,0 +1,103 @@
+# Gauss's sum formula from Peano's axioms
+#
+# Proved by the Python block below; Budge checks every
+# step, including those of the imported library.
+#
+# Proves ∀n. SUM(n) + SUM(n) = n · S(n), where SUM(n) = 0 + 1 + ... + n and
+# S(n) = n + 1; that is, 1 + 2 + ... + n = n(n+1)/2. Then instantiates it at
+# n = 4 and computes SUM(4) = 10 from the definitions: 10 + 10 = 4 · 5.
+#
+# The proof is an induction whose step rearranges sums with the semiring laws
+# (commutativity, associativity, S(m)·n = m·n + n), proved in lib/semiring.btp
+# from the axioms in lib/peano.btp, lib/fol.btp and lib/logic.btp; SUM is
+# defined in lib/sum.btp. Run
+#   python3 budge-tp.py examples/lib/semiring.btp
+# to see those lemmas.
+#
+# What this example shows, and what it doesn't
+# --------------------------------------------
+# It shows that a checker of ~200 lines that only does string replacement can
+# verify real mathematics: the semiring laws of + and · and Gauss's formula,
+# from Peano's axioms, with no derived inference rules and with capture-free
+# nested quantifiers. This is the Metamath / LCF idea: a tiny trusted checker,
+# with proofs produced by untrusted tools. Here the tools are the Python blocks
+# of this file and lib/semiring.btp; if they emit a wrong step, Budge rejects
+# it. (Try it: in lib/peano.btp change rMS to end in ,y)) instead of ,x)).)
+#
+# It does not show that Budge is convenient:
+# - About 90% of the expanded proof (budge-tp.py --expand DIR) is
+#   construction of intermediate terms; the mathematics is in the Python block.
+# - At this scale proofs are not written step by step: they are meta-programs
+#   (the Python blocks) that emit the steps.
+# - Much of the expressiveness comes from encodings that work around what Budge
+#   lacks: de Bruijn indices and OPEN/ABS for binding, the induction hypothesis
+#   carried as an implication for the missing assumptions, explicit terms for
+#   the missing unification.
+# - Soundness depends on the rules in lib/; one bad rule makes everything
+#   unsound, and some side conditions there are documented, not checked.
+#
+# Read it as the second half of a story: the short hand-written examples
+# (lib/logic.btp, peano.btp) show how the language works; this
+# one shows that the same few mechanisms scale to real number theory.
+
+<?py load('lib/semiring.btp') ?>
+<?py load('lib/sum.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+
+L3, L4, L5, L6 = 'thAddComm', 'thAddAssoc', 'thZeroMul', 'thSuccMul'
+
+section("Theorem: SUM(n) + SUM(n) = n · S(n)", 'Gs', [
+    'Induction on n, writing A = SUM(N), B = S(N). Base: SUM(0)+SUM(0) = 0 = 0·1.',
+    'Step, left side:',
+    '  SUM(B) + SUM(B) = (A + B) + (A + B) = A + (B + (A + B)) = A + ((B + A) + B)',
+    '                  = A + ((A + B) + B) = A + (A + (B + B)) = (A + A) + (B + B)',
+    '                  = N·B + (B + B)                       (induction hypothesis)',
+    '                  = (N·N + N) + (B + B) = ((N·N + N) + B) + B',
+    'Step, right side:',
+    '  B·S(B) = B·B + B = (B·N + B) + B = ((N·N + N) + B) + B   (thSuccMul)'])
+f = EQ(ADD(SUM(V0), SUM(V0)), MUL(V0, S(V0)))
+base = chain(ADD(SUM(Z), SUM(Z)), [
+    ([1], lambda t: aSumZ()),
+    ([], lambda t: aAZ(SUM(Z))),
+    ([], lambda t: aSumZ()),
+    ([], lambda t: sym(inst(L5, S(Z)))),
+])
+G, ih = ind_hyp(f)
+A_, B_ = SUM(N_), S(N_)
+X_ = ADD(MUL(N_, N_), N_)
+left = chain(ADD(SUM(B_), SUM(B_)), [
+    ([0], lambda t: aSumS(N_)),
+    ([1], lambda t: aSumS(N_)),
+    ([], lambda t: inst(L4, A_, B_, ADD(A_, B_))),
+    ([1], lambda t: sym(inst(L4, B_, A_, B_))),
+    ([1, 0], lambda t: inst(L3, B_, A_)),
+    ([1], lambda t: inst(L4, A_, B_, B_)),
+    ([], lambda t: sym(inst(L4, A_, A_, ADD(B_, B_)))),
+    ([0], ih),
+    ([0], lambda t: aMS(N_, N_)),
+    ([], lambda t: sym(inst(L4, X_, B_, B_))),
+])
+right = chain(MUL(B_, S(B_)), [
+    ([], aMS(B_, B_)),
+    ([0], lambda t: aMS(B_, N_)),
+    ([0, 0], lambda t: inst(L6, N_, N_)),
+])
+L10 = induction(f, base, trans(left, sym(right)), name='thGauss')
+prose('pGauss', '∀n. SUM(n) + SUM(n) = n · (n + 1), i.e. 0 + 1 + ... + n = n(n+1)/2')
+
+section('Example: n = 4', 'GsEx', [
+    'Instantiate Gauss at 4, and compute SUM(4) = 0+1+2+3+4 = 10 from the',
+    'definitions, to conclude 10 + 10 = 4 · 5.'])
+
+
+four = num(4)
+g4 = visible(inst(L10, four), 'thGauss4')
+sum4 = visible(sum_eval(four), 'thSum4')
+lhs = chain(ADD(SUM(four), SUM(four)), [([0], sum4), ([1], sum4)])
+visible(trans(sym(lhs), g4), 'thTenPlusTen')
+prose('pTenPlusTen', '0+1+2+3+4 = 10, so by Gauss 10 + 10 = 4 · 5')
+?>

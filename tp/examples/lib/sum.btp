@@ -1,0 +1,17 @@
+# Sums: SUM(n) = 0 + 1 + ... + n
+#
+# Rules only: the definition by recursion, congruence, and the syntax rules
+# every function symbol needs (see fol.btp). gauss.btp proves
+# SUM(n) + SUM(n) = n·S(n).
+
+<?py load('peano.btp') ?>
+## Definition
+rSumZ    : ⊢EQ(SUM(0),0)
+rSumS    : ⊢EQ(SUM(S(x)),ADD(SUM(x),S(x)))
+rCongSum : ⊢(EQ(x,y)=>EQ(SUM(x),SUM(y)))
+
+## Syntax
+rTmSum   : SUM(x)
+rCtSum   : CT(x) -> CT(SUM(x))
+rOpenSum : OPEN(k,x,t,u) -> OPEN(k,SUM(x),t,SUM(u))
+rAbsSum  : ABS(k,w,x,u) -> ABS(k,w,SUM(x),SUM(u))

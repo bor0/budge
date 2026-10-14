@@ -51,6 +51,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [strings.btp](./examples/lib/strings.btp) - String concatenation and sequences, and GEB's hyphen strings
 - [tally.btp](./examples/lib/tally.btp) - Tally numbers (||| is 3) with order, and multiplication and powers modulo n
 - [semiring.btp](./examples/lib/semiring.btp) - Commutativity, associativity and distributivity of + and ·, each proved by induction
+- [sum.btp](./examples/lib/sum.btp) - SUM(n) = 0 + 1 + ... + n, defined by recursion
 - [parity.btp](./examples/lib/parity.btp) - n mod 2 and n div 2 defined by recursion, with lemmas about them
 - [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: sequence, skip, if, while and consequence rules over a small imperative language
 
@@ -59,6 +60,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 In the `examples` folder you can find the following proofs:
 
 - [Gestalt](./examples/gestalt.btp) - Differentiation and contact in Gestalt therapy
+- [Gauss](./examples/gauss.btp) - Gauss's sum formula 0 + 1 + ... + n = n(n+1)/2 from Peano's axioms, using the library
 - [God](./examples/God.btp) - Anselm's ontological argument as a contraposition, using the library
 - [Automaton](./examples/automaton.btp) - A finite-state machine
 - [Boolean](./examples/boolean.btp) - An identity of Boolean algebra, proved for an arbitrary element, generalised and instantiated

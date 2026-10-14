@@ -123,6 +123,7 @@ not a duplicate: don't load a library for a coincidental symbol.
 `tmBar1!`…`tmBar10!`. Cheap arithmetic for computations; proofs about all numbers use peano.
 `semiring.btp` (loads peano; Python block): `thZeroAdd` … `thMulAssoc`, all closed ∀ sentences
 (0+n = n, S(m)+n = S(m+n), + and · commutative and associative, distributivity, …).
+`sum.btp` (loads peano): SUM(n) = 0+1+…+n by recursion; `gauss.btp` proves 2·SUM(n) = n·S(n).
 `parity.btp` (loads peano; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
 `thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads logic, strings): Hoare rules and program syntax.
 

@@ -316,6 +316,13 @@ def prose(name, text):
     print(f'{name} : {text}')
 
 
+def visible(h, name):
+    """Give theorem h a visible name, by restating it (a theorem used as a rule)."""
+    print(f'{name} : {h}')
+    THMS[name] = THMS[h]
+    return name
+
+
 # ---------------------------------------------------------------- logic
 def mp(hp, himp):
     p = val(hp)[1]
@@ -570,14 +577,15 @@ ONE, TWO = S(Z), S(S(Z))
 
 
 # ---------------------------------------------------------------- library symbols
-# Defined by recursion in parity.btp (FLIP, MOD2, DIV2); each has a term rule
-# and CT, OPEN, ABS and congruence rules.
+# Defined by recursion in parity.btp (FLIP, MOD2, DIV2), sum.btp (SUM); each
+# has a term rule and CT, OPEN, ABS and congruence rules.
 def FLIP(x): return ('FLIP', x)
 def MOD2(x): return ('MOD2', x)
 def DIV2(x): return ('DIV2', x)
+def SUM(x): return ('SUM', x)
 
 
-for _op, _n in (('FLIP', 'Flip'), ('MOD2', 'Mod2'), ('DIV2', 'Div2')):
+for _op, _n in (('FLIP', 'Flip'), ('MOD2', 'Mod2'), ('DIV2', 'Div2'), ('SUM', 'Sum')):
     add_symbol(_op, f'rTm{_n}', f'rCt{_n}', f'rOpen{_n}', f'rAbs{_n}', {0: f'rCong{_n}'})
 
 
@@ -589,6 +597,8 @@ def ax(rule, x=None):
 
 def andl(p, q): return apply('rAndL', [('p', p), ('q', q)], [])   # ⊢((p∧q)=>p)
 def andr(p, q): return apply('rAndR', [('p', p), ('q', q)], [])   # ⊢((p∧q)=>q)
+def aSumZ(): return apply('rSumZ', [], [])
+def aSumS(x): return apply('rSumS', [('x', x)], [])
 
 
 def or_elim(h_p, h_q, r_):
@@ -596,3 +606,26 @@ def or_elim(h_p, h_q, r_):
     p, q = val(h_p)[1][1], val(h_q)[1][1]
     e = apply('rOrE', [('p', p), ('q', q), ('r', r_)], [])
     return mp(h_q, mp(h_p, e))
+
+
+# ---------------------------------------------------------------- computation
+def add_eval(a, b):
+    """⊢EQ(ADD(a,b), numeral) for numerals a, b."""
+    if b == Z:
+        return aAZ(a)
+    return chain(ADD(a, b), [
+        ([], aAS(a, b[1])),
+        ([0], lambda t: add_eval(a, b[1])),
+    ])
+
+
+def sum_eval(n):
+    """⊢EQ(SUM(n), numeral) for a numeral n."""
+    if n == Z:
+        return aSumZ()
+    h = chain(SUM(n), [
+        ([], aSumS(n[1])),
+        ([0], lambda t: sum_eval(n[1])),
+    ])
+    _, b = sides(h)
+    return trans(h, add_eval(b[1], b[2]))
