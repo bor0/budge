@@ -185,6 +185,27 @@ shifting is needed and closed terms can't be captured. Side condition (not
 checked): the eigenvariable `X` must not occur in non-logical axioms.
 Adding a constructor means adding its `OPEN` and `ABS` rules.
 
+### Unbound conclusion variables
+
+Every variable in a rule's conclusion should also appear in a hypothesis (or
+be deliberately free, as in a term rule or axiom schema). A variable bound
+only by the conclusion can be given any value through `x=T`, and a hypothesis
+missing a field never matches a real state. Budge doesn't flag either, and a
+rule no theorem uses is never exercised. Live example: `coordgame.btp`'s
+`rCoordW : P(x,S(y)) E(a,b) -> P(x,y) E(a,b) HP=h` drops `HP=h` from its
+hypothesis, unlike `rCoordA`/`D`/`S`.
+
+### Where the answer lives: theorem vs proof
+
+Relation-style files (`list.btp`: `APPEND(a, b, c)`) keep inputs and outputs
+in the theorem. State-machine files (`rle.btp`, `hanoi.btp`) don't: the final
+`CODED=… DECODED=NIL` says nothing about which input it encodes, and Hanoi's
+move sequence exists only in the proof. To make "f(input) = output" a
+theorem, carry the input through every state (`INPUT=i ...`) to a final
+`ENCODE(i)=y`. A `.btp` file holds only logic: which argument is the output,
+and whether to search forward or backward, isn't recorded anywhere
+(Kowalski's "Algorithm = Logic + Control").
+
 ## Known limitations
 
 - **No general unification** — matching is exact string equality after substitution
