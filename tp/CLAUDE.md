@@ -8,7 +8,7 @@ sections rather than appending, and don't drop information when trimming.
 ```
 python3 budge-tp.py examples/<file>.btp
 # all examples must pass after any change:
-for f in examples/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" && echo "FAIL: $f"; done
+for f in examples/*.btp examples/lib/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" && echo "FAIL: $f"; done
 # --expand DIR writes every loaded file with <?py ... ?> blocks replaced by their output
 ```
 
@@ -60,9 +60,8 @@ beta-reduction, so instead define `PRED(x) <=> BODY(x)` by axioms `⊢(BODY(x)=>
 `⊢EQ(x,y) -> ⊢EQ(S(x),S(y))` only fire on proved facts, so can't build
 `⊢(PRED(n)=>PRED(S(n)))`. By the deduction theorem, state facts as object-level
 implications (`⊢(EQ(x,y)=>EQ(S(x),S(y)))`, curried `rEqT : ⊢(EQ(x,y)=>(EQ(y,z)=>EQ(x,z)))`),
-chain with `rMp` and hypothetical syllogism `⊢((b=>c)=>((a=>b)=>(a=>c)))` (from K, S;
-see `hilbert.btp`). An unconditional fact (`⊢H` from `rAS`) feeds a curried implication
-via `rMp`, leaving `⊢(F=>G)` to chain. Never axiomatise the step
+chain with `rMp` and hypothetical syllogism (`thHS` in `lib/logic.btp`). An unconditional
+fact (`⊢H` from `rAS`) feeds a curried implication via `rMp`, leaving `⊢(F=>G)` to chain. Never axiomatise the step
 (`rImpl : ⊢(PRED(n)=>PRED(S(n)))`): that assumes the proof's content.
 
 **Schematic `n`.** Prove the step with literal `n` (`rTmN : n`, `tmN! : rTmN`) and omit
@@ -104,6 +103,11 @@ structural rule per constructor (a new constructor needs both):
 
 Both accept only `V(n)` with `LT(n,k)` (sentences): no shifting, no capture. Unchecked:
 eigenvariable `X` must not occur in non-logical axioms.
+
+**Library** (`examples/lib/`). `logic.btp`: K, S, `rNeg`, ∧, ∨, ⊤, MP; exports `thId`, `thHS`,
+`thMpI`, `thDNE`, `thDNI`, `thCP`, `thAndComm`, `thOrComm`, `thEFQ`, `thDS` (proofs in a, b, c,
+exported in i, j, l; internal steps prefixed `thLg…`). Examples load it with
+`<?py load('lib/logic.btp') ?>` and reuse it, never redefine it in any notation.
 
 ## Pitfalls
 

@@ -1,0 +1,270 @@
+# Classical propositional logic, Hilbert-style: axioms K, S, contraposition
+# (rNeg) and the axioms of ∧ and ∨, with modus ponens as the only inference rule
+#
+# Exports derived schemas:
+#   thId      : ⊢(i=>i)                          identity
+#   thHS      : ⊢((j=>l)=>((i=>j)=>(i=>l)))      hypothetical syllogism
+#   thMpI     : ⊢(i=>((i=>j)=>j))                modus ponens, internalised
+#   thDNE     : ⊢(¬¬i=>i)                        double negation elimination
+#   thAndComm : ⊢((i∧j)=>(j∧i))
+#   thOrComm  : ⊢((i∨j)=>(j∨i))
+#   thEFQ     : ⊢(¬i=>(i=>j))                    ex falso quodlibet
+#   thDS      : ⊢(¬j=>((i∨j)=>i))               disjunctive syllogism
+#   thDNI     : ⊢(i=>¬¬i)                       double negation introduction
+#   thCP      : ⊢((¬i=>j)=>(¬j=>i))             contraposition
+# They are stated in i, j, l, letters no rule uses as a variable, so they are
+# instantiated by using them as rules: thHS i=A;j=B;l=C. Proofs use a, b, c
+# internally (values substituted for i, j, l must not contain i, j, l), then
+# rename to i, j, l for export.
+
+rK   : ⊢(p=>(q=>p))
+rS   : ⊢((p=>(q=>r))=>((p=>q)=>(p=>r)))
+rNeg : ⊢((¬p=>¬q)=>(q=>p))
+rMp  : ⊢p -> ⊢(p=>q) -> ⊢q
+
+# Conjunction and disjunction
+rAndI : ⊢(p=>(q=>(p∧q)))
+rAndL : ⊢((p∧q)=>p)
+rAndR : ⊢((p∧q)=>q)
+rOrL  : ⊢(p=>(p∨q))
+rOrR  : ⊢(q=>(p∨q))
+rOrE  : ⊢((p=>r)=>((q=>r)=>((p∨q)=>r)))
+
+# Truth
+rTop : ⊢⊤
+
+# Terms
+rTmImp : (p=>q)
+rTmNeg : ¬p
+rTmAnd : (p∧q)
+rTmOr  : (p∨q)
+rTmTop : ⊤
+rTmi   : i
+rTmj   : j
+rTml   : l
+rTma   : a
+rTmb   : b
+rTmc   : c
+
+tmi! : rTmi
+tmj! : rTmj
+tml! : rTml
+tma! : rTma
+tmb! : rTmb
+tmc! : rTmc
+
+# Identity: ⊢(i=>i)
+tm(i=>i)!                : rTmImp p=tmi!;q=tmi!
+tm((i=>i)=>i)!           : rTmImp p=tm(i=>i)!;q=tmi!
+tm(i=>((i=>i)=>i))!      : rTmImp p=tmi!;q=tm((i=>i)=>i)!
+tm(i=>(i=>i))!           : rTmImp p=tmi!;q=tm(i=>i)!
+tm((i=>(i=>i))=>(i=>i))! : rTmImp p=tm(i=>(i=>i))!;q=tm(i=>i)!
+
+thLgId1! : rK p=tmi!;q=tm(i=>i)!                                       # ⊢(i=>((i=>i)=>i))
+thLgId2! : rS p=tmi!;q=tm(i=>i)!;r=tmi!
+thLgId3! : rMp p=tm(i=>((i=>i)=>i))!;q=tm((i=>(i=>i))=>(i=>i))! thLgId1! thLgId2!
+thLgId4! : rK p=tmi!;q=tmi!                                            # ⊢(i=>(i=>i))
+thId   : rMp p=tm(i=>(i=>i))!;q=tm(i=>i)! thLgId4! thLgId3!
+
+# Hypothetical syllogism: ⊢((j=>l)=>((i=>j)=>(i=>l)))
+tm(j=>l)!                         : rTmImp p=tmj!;q=tml!
+tm(i=>(j=>l))!                    : rTmImp p=tmi!;q=tm(j=>l)!
+tm(i=>j)!                         : rTmImp p=tmi!;q=tmj!
+tm(i=>l)!                         : rTmImp p=tmi!;q=tml!
+tm((i=>j)=>(i=>l))!               : rTmImp p=tm(i=>j)!;q=tm(i=>l)!
+tm((i=>(j=>l))=>((i=>j)=>(i=>l)))! : rTmImp p=tm(i=>(j=>l))!;q=tm((i=>j)=>(i=>l))!
+tm((j=>l)=>((i=>(j=>l))=>((i=>j)=>(i=>l))))! : rTmImp p=tm(j=>l)!;q=tm((i=>(j=>l))=>((i=>j)=>(i=>l)))!
+tm((j=>l)=>(i=>(j=>l)))!          : rTmImp p=tm(j=>l)!;q=tm(i=>(j=>l))!
+tm((j=>l)=>((i=>j)=>(i=>l)))!     : rTmImp p=tm(j=>l)!;q=tm((i=>j)=>(i=>l))!
+tm(((j=>l)=>(i=>(j=>l)))=>((j=>l)=>((i=>j)=>(i=>l))))! : rTmImp p=tm((j=>l)=>(i=>(j=>l)))!;q=tm((j=>l)=>((i=>j)=>(i=>l)))!
+
+thLgHS1! : rS p=tmi!;q=tmj!;r=tml!
+thLgHS2! : rK p=tm((i=>(j=>l))=>((i=>j)=>(i=>l)))!;q=tm(j=>l)!
+thLgHS3! : rMp p=tm((i=>(j=>l))=>((i=>j)=>(i=>l)))!;q=tm((j=>l)=>((i=>(j=>l))=>((i=>j)=>(i=>l))))! thLgHS1! thLgHS2!
+thLgHS4! : rS p=tm(j=>l)!;q=tm(i=>(j=>l))!;r=tm((i=>j)=>(i=>l))!
+thLgHS5! : rK p=tm(j=>l)!;q=tmi!
+thLgHS6! : rMp p=tm((j=>l)=>((i=>(j=>l))=>((i=>j)=>(i=>l))))!;q=tm(((j=>l)=>(i=>(j=>l)))=>((j=>l)=>((i=>j)=>(i=>l))))! thLgHS3! thLgHS4!
+thHS   : rMp p=tm((j=>l)=>(i=>(j=>l)))!;q=tm((j=>l)=>((i=>j)=>(i=>l)))! thLgHS5! thLgHS6!
+
+# ⊢(a=>((a=>b)=>b)), exported in i, j as thMpI
+## Terms needed for the proof
+tm(a=>b)! : rTmImp p=tma!;q=tmb!
+tm((a=>b)=>(a=>b))! : rTmImp p=tm(a=>b)!;q=tm(a=>b)!
+tm((a=>b)=>a)! : rTmImp p=tm(a=>b)!;q=tma!
+tm((a=>b)=>b)! : rTmImp p=tm(a=>b)!;q=tmb!
+tm(((a=>b)=>a)=>((a=>b)=>b))! : rTmImp p=tm((a=>b)=>a)!;q=tm((a=>b)=>b)!
+tm(a=>((a=>b)=>a))! : rTmImp p=tma!;q=tm((a=>b)=>a)!
+tm(a=>((a=>b)=>b))! : rTmImp p=tma!;q=tm((a=>b)=>b)!
+tm((a=>((a=>b)=>a))=>(a=>((a=>b)=>b)))! : rTmImp p=tm(a=>((a=>b)=>a))!;q=tm(a=>((a=>b)=>b))!
+## Proof
+thLgMpI1! : thId i=tm(a=>b)!
+thLgMpI2! : rS p=tm(a=>b)!;q=tma!;r=tmb!
+thLgMpI3! : rMp p=tm((a=>b)=>(a=>b))!;q=tm(((a=>b)=>a)=>((a=>b)=>b))! thLgMpI1! thLgMpI2!
+thLgMpI4! : thHS i=tma!;j=tm((a=>b)=>a)!;l=tm((a=>b)=>b)!
+thLgMpI5! : rK p=tma!;q=tm(a=>b)!
+thLgMpI6! : rMp p=tm(((a=>b)=>a)=>((a=>b)=>b))!;q=tm((a=>((a=>b)=>a))=>(a=>((a=>b)=>b)))! thLgMpI3! thLgMpI4!
+thLgMpI7! : rMp p=tm(a=>((a=>b)=>a))!;q=tm(a=>((a=>b)=>b))! thLgMpI5! thLgMpI6!
+thMpI   : thLgMpI7! a=tmi!;b=tmj!
+
+# ⊢(¬¬a=>a), exported in i as thDNE
+## Terms needed for the proof
+tm¬a! : rTmNeg p=tma!
+tm(c=>b)! : rTmImp p=tmc!;q=tmb!
+tm(b=>(c=>b))! : rTmImp p=tmb!;q=tm(c=>b)!
+tm¬(b=>(c=>b))! : rTmNeg p=tm(b=>(c=>b))!
+tm¬¬a! : rTmNeg p=tm¬a!
+tm(¬a=>¬(b=>(c=>b)))! : rTmImp p=tm¬a!;q=tm¬(b=>(c=>b))!
+tm((b=>(c=>b))=>a)! : rTmImp p=tm(b=>(c=>b))!;q=tma!
+tm((¬a=>¬(b=>(c=>b)))=>((b=>(c=>b))=>a))! : rTmImp p=tm(¬a=>¬(b=>(c=>b)))!;q=tm((b=>(c=>b))=>a)!
+tm¬¬(b=>(c=>b))! : rTmNeg p=tm¬(b=>(c=>b))!
+tm(¬¬(b=>(c=>b))=>¬¬a)! : rTmImp p=tm¬¬(b=>(c=>b))!;q=tm¬¬a!
+tm((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))! : rTmImp p=tm(¬¬(b=>(c=>b))=>¬¬a)!;q=tm(¬a=>¬(b=>(c=>b)))!
+tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))! : rTmImp p=tm(¬¬(b=>(c=>b))=>¬¬a)!;q=tm((b=>(c=>b))=>a)!
+tm(((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))=>((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a)))! : rTmImp p=tm((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))!;q=tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))!
+tm(((b=>(c=>b))=>a)=>a)! : rTmImp p=tm((b=>(c=>b))=>a)!;q=tma!
+tm(¬¬a=>((b=>(c=>b))=>a))! : rTmImp p=tm¬¬a!;q=tm((b=>(c=>b))=>a)!
+tm(¬¬a=>(¬¬(b=>(c=>b))=>¬¬a))! : rTmImp p=tm¬¬a!;q=tm(¬¬(b=>(c=>b))=>¬¬a)!
+tm((¬¬a=>(¬¬(b=>(c=>b))=>¬¬a))=>(¬¬a=>((b=>(c=>b))=>a)))! : rTmImp p=tm(¬¬a=>(¬¬(b=>(c=>b))=>¬¬a))!;q=tm(¬¬a=>((b=>(c=>b))=>a))!
+tm(¬¬a=>a)! : rTmImp p=tm¬¬a!;q=tma!
+tm((¬¬a=>((b=>(c=>b))=>a))=>(¬¬a=>a))! : rTmImp p=tm(¬¬a=>((b=>(c=>b))=>a))!;q=tm(¬¬a=>a)!
+
+## Proof
+thLgDNE1! : rK p=tmb!;q=tmc!
+thLgDNE2! : rNeg p=tm¬(b=>(c=>b))!;q=tm¬a!
+thLgDNE3! : rNeg p=tma!;q=tm(b=>(c=>b))!
+thLgDNE3'! : thHS i=tm(¬¬(b=>(c=>b))=>¬¬a)!;j=tm(¬a=>¬(b=>(c=>b)))!;l=tm((b=>(c=>b))=>a)!
+thLgDNE3''! : rMp p=tm((¬a=>¬(b=>(c=>b)))=>((b=>(c=>b))=>a))!;q=tm(((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))=>((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a)))! thLgDNE3! thLgDNE3'!
+thLgDNE4! : rMp p=tm((¬¬(b=>(c=>b))=>¬¬a)=>(¬a=>¬(b=>(c=>b))))!;q=tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))! thLgDNE2! thLgDNE3''!
+thLgDNE5! : rK p=tm¬¬a!;q=tm¬¬(b=>(c=>b))!
+thLgDNE6'! : thHS i=tm¬¬a!;j=tm(¬¬(b=>(c=>b))=>¬¬a)!;l=tm((b=>(c=>b))=>a)!
+thLgDNE6''! : rMp p=tm((¬¬(b=>(c=>b))=>¬¬a)=>((b=>(c=>b))=>a))!;q=tm((¬¬a=>(¬¬(b=>(c=>b))=>¬¬a))=>(¬¬a=>((b=>(c=>b))=>a)))! thLgDNE4! thLgDNE6'!
+thLgDNE6! : rMp p=tm(¬¬a=>(¬¬(b=>(c=>b))=>¬¬a))!;q=tm(¬¬a=>((b=>(c=>b))=>a))! thLgDNE5! thLgDNE6''!
+thLgDNE7! : thMpI i=tm(b=>(c=>b))!;j=tma!
+thLgDNE8! : rMp p=tm(b=>(c=>b))!;q=tm(((b=>(c=>b))=>a)=>a)! thLgDNE1! thLgDNE7!
+thLgDNE9''! : thHS i=tm¬¬a!;j=tm((b=>(c=>b))=>a)!;l=tma!
+thLgDNE9'! : rMp p=tm(((b=>(c=>b))=>a)=>a)!;q=tm((¬¬a=>((b=>(c=>b))=>a))=>(¬¬a=>a))! thLgDNE8! thLgDNE9''!
+thLgDNE9! : rMp p=tm(¬¬a=>((b=>(c=>b))=>a))!;q=tm(¬¬a=>a)! thLgDNE6! thLgDNE9'!
+thDNE   : thLgDNE9! a=tmi!
+
+# ⊢((a∧b)=>(b∧a)), exported in i, j as thAndComm. With A = a∧b: A=>b and
+# b=>(a=>(b∧a)) chain to A=>(a=>(b∧a)); axiom S with A=>a gives A=>(b∧a).
+tm(a∧b)!                         : rTmAnd p=tma!;q=tmb!
+tm(b∧a)!                         : rTmAnd p=tmb!;q=tma!
+tm(a=>(b∧a))!                    : rTmImp p=tma!;q=tm(b∧a)!
+tm(b=>(a=>(b∧a)))!               : rTmImp p=tmb!;q=tm(a=>(b∧a))!
+tm((a∧b)=>b)!                    : rTmImp p=tm(a∧b)!;q=tmb!
+tm((a∧b)=>a)!                    : rTmImp p=tm(a∧b)!;q=tma!
+tm((a∧b)=>(b∧a))!                : rTmImp p=tm(a∧b)!;q=tm(b∧a)!
+tm((a∧b)=>(a=>(b∧a)))!           : rTmImp p=tm(a∧b)!;q=tm(a=>(b∧a))!
+tm(((a∧b)=>b)=>((a∧b)=>(a=>(b∧a))))! : rTmImp p=tm((a∧b)=>b)!;q=tm((a∧b)=>(a=>(b∧a)))!
+tm(((a∧b)=>a)=>((a∧b)=>(b∧a)))!  : rTmImp p=tm((a∧b)=>a)!;q=tm((a∧b)=>(b∧a))!
+
+thLgAC1! : rAndI p=tmb!;q=tma!                                          # ⊢(b=>(a=>(b∧a)))
+thLgAC2! : rAndR p=tma!;q=tmb!                                          # ⊢((a∧b)=>b)
+thLgAC3! : thHS i=tm(a∧b)!;j=tmb!;l=tm(a=>(b∧a))!
+thLgAC4! : rMp p=tm(b=>(a=>(b∧a)))!;q=tm(((a∧b)=>b)=>((a∧b)=>(a=>(b∧a))))! thLgAC1! thLgAC3!
+thLgAC5! : rMp p=tm((a∧b)=>b)!;q=tm((a∧b)=>(a=>(b∧a)))! thLgAC2! thLgAC4!   # ⊢((a∧b)=>(a=>(b∧a)))
+thLgAC6! : rS p=tm(a∧b)!;q=tma!;r=tm(b∧a)!
+thLgAC7! : rMp p=tm((a∧b)=>(a=>(b∧a)))!;q=tm(((a∧b)=>a)=>((a∧b)=>(b∧a)))! thLgAC5! thLgAC6!
+thLgAC8! : rAndL p=tma!;q=tmb!                                          # ⊢((a∧b)=>a)
+thLgAC9! : rMp p=tm((a∧b)=>a)!;q=tm((a∧b)=>(b∧a))! thLgAC8! thLgAC7!
+thAndComm : thLgAC9! a=tmi!;b=tmj!
+
+# ⊢((a∨b)=>(b∨a)), exported in i, j as thOrComm: by cases (rOrE), each case
+# an injection into b∨a.
+tm(a∨b)!                         : rTmOr p=tma!;q=tmb!
+tm(b∨a)!                         : rTmOr p=tmb!;q=tma!
+tm(a=>(b∨a))!                    : rTmImp p=tma!;q=tm(b∨a)!
+tm(b=>(b∨a))!                    : rTmImp p=tmb!;q=tm(b∨a)!
+tm((a∨b)=>(b∨a))!                : rTmImp p=tm(a∨b)!;q=tm(b∨a)!
+tm((b=>(b∨a))=>((a∨b)=>(b∨a)))!  : rTmImp p=tm(b=>(b∨a))!;q=tm((a∨b)=>(b∨a))!
+
+thLgOC1! : rOrE p=tma!;q=tmb!;r=tm(b∨a)!
+thLgOC2! : rOrR p=tmb!;q=tma!                                           # ⊢(a=>(b∨a))
+thLgOC3! : rMp p=tm(a=>(b∨a))!;q=tm((b=>(b∨a))=>((a∨b)=>(b∨a)))! thLgOC2! thLgOC1!
+thLgOC4! : rOrL p=tmb!;q=tma!                                           # ⊢(b=>(b∨a))
+thLgOC5! : rMp p=tm(b=>(b∨a))!;q=tm((a∨b)=>(b∨a))! thLgOC4! thLgOC3!
+thOrComm : thLgOC5! a=tmi!;b=tmj!
+
+# ⊢(¬a=>(a=>b)), exported in i, j as thEFQ: K gives ¬a=>(¬b=>¬a), and
+# contraposition turns ¬b=>¬a into a=>b.
+tm¬b!                          : rTmNeg p=tmb!
+tm(¬b=>¬a)!                    : rTmImp p=tm¬b!;q=tm¬a!
+tm(¬a=>(¬b=>¬a))!              : rTmImp p=tm¬a!;q=tm(¬b=>¬a)!
+tm(¬a=>(a=>b))!                : rTmImp p=tm¬a!;q=tm(a=>b)!
+tm((¬b=>¬a)=>(a=>b))!          : rTmImp p=tm(¬b=>¬a)!;q=tm(a=>b)!
+tm((¬a=>(¬b=>¬a))=>(¬a=>(a=>b)))! : rTmImp p=tm(¬a=>(¬b=>¬a))!;q=tm(¬a=>(a=>b))!
+
+thLgEFQ1! : rK p=tm¬a!;q=tm¬b!                                       # ⊢(¬a=>(¬b=>¬a))
+thLgEFQ2! : rNeg p=tmb!;q=tma!                                        # ⊢((¬b=>¬a)=>(a=>b))
+thLgEFQ3! : thHS i=tm¬a!;j=tm(¬b=>¬a)!;l=tm(a=>b)!
+thLgEFQ4! : rMp p=tm((¬b=>¬a)=>(a=>b))!;q=tm((¬a=>(¬b=>¬a))=>(¬a=>(a=>b)))! thLgEFQ2! thLgEFQ3!
+thLgEFQ5! : rMp p=tm(¬a=>(¬b=>¬a))!;q=tm(¬a=>(a=>b))! thLgEFQ1! thLgEFQ4!
+thEFQ     : thLgEFQ5! a=tmi!;b=tmj!
+
+# ⊢(¬b=>((a∨b)=>a)), exported in i, j as thDS: by cases (rOrE) on a∨b, where
+# a gives a (thId) and b is impossible under ¬b (thEFQ). Both cases are carried
+# under the assumption ¬b with K and S.
+tm(a=>a)!                      : rTmImp p=tma!;q=tma!
+tm(b=>a)!                      : rTmImp p=tmb!;q=tma!
+tm((a∨b)=>a)!                  : rTmImp p=tm(a∨b)!;q=tma!
+tm((b=>a)=>((a∨b)=>a))!        : rTmImp p=tm(b=>a)!;q=tm((a∨b)=>a)!
+tm((a=>a)=>((b=>a)=>((a∨b)=>a)))! : rTmImp p=tm(a=>a)!;q=tm((b=>a)=>((a∨b)=>a))!
+tm(¬b=>((a=>a)=>((b=>a)=>((a∨b)=>a))))! : rTmImp p=tm¬b!;q=tm((a=>a)=>((b=>a)=>((a∨b)=>a)))!
+tm(¬b=>(a=>a))!                : rTmImp p=tm¬b!;q=tm(a=>a)!
+tm((a=>a)=>(¬b=>(a=>a)))!      : rTmImp p=tm(a=>a)!;q=tm(¬b=>(a=>a))!
+tm(¬b=>((b=>a)=>((a∨b)=>a)))!  : rTmImp p=tm¬b!;q=tm((b=>a)=>((a∨b)=>a))!
+tm((¬b=>(a=>a))=>(¬b=>((b=>a)=>((a∨b)=>a))))! : rTmImp p=tm(¬b=>(a=>a))!;q=tm(¬b=>((b=>a)=>((a∨b)=>a)))!
+tm(¬b=>(b=>a))!                : rTmImp p=tm¬b!;q=tm(b=>a)!
+tm(¬b=>((a∨b)=>a))!            : rTmImp p=tm¬b!;q=tm((a∨b)=>a)!
+tm((¬b=>(b=>a))=>(¬b=>((a∨b)=>a)))! : rTmImp p=tm(¬b=>(b=>a))!;q=tm(¬b=>((a∨b)=>a))!
+
+thLgDS1!  : rOrE p=tma!;q=tmb!;r=tma!                                 # ⊢((a=>a)=>((b=>a)=>((a∨b)=>a)))
+thLgDS2!  : rK p=tm((a=>a)=>((b=>a)=>((a∨b)=>a)))!;q=tm¬b!
+thLgDS3!  : rMp p=tm((a=>a)=>((b=>a)=>((a∨b)=>a)))!;q=tm(¬b=>((a=>a)=>((b=>a)=>((a∨b)=>a))))! thLgDS1! thLgDS2!
+thLgDS4!  : thId i=tma!                                               # ⊢(a=>a)
+thLgDS5!  : rK p=tm(a=>a)!;q=tm¬b!
+thLgDS6!  : rMp p=tm(a=>a)!;q=tm(¬b=>(a=>a))! thLgDS4! thLgDS5!       # ⊢(¬b=>(a=>a))
+thLgDS7!  : rS p=tm¬b!;q=tm(a=>a)!;r=tm((b=>a)=>((a∨b)=>a))!
+thLgDS8!  : rMp p=tm(¬b=>((a=>a)=>((b=>a)=>((a∨b)=>a))))!;q=tm((¬b=>(a=>a))=>(¬b=>((b=>a)=>((a∨b)=>a))))! thLgDS3! thLgDS7!
+thLgDS9!  : rMp p=tm(¬b=>(a=>a))!;q=tm(¬b=>((b=>a)=>((a∨b)=>a)))! thLgDS6! thLgDS8!
+thLgDS10! : thEFQ i=tmb!;j=tma!                                       # ⊢(¬b=>(b=>a))
+thLgDS11! : rS p=tm¬b!;q=tm(b=>a)!;r=tm((a∨b)=>a)!
+thLgDS12! : rMp p=tm(¬b=>((b=>a)=>((a∨b)=>a)))!;q=tm((¬b=>(b=>a))=>(¬b=>((a∨b)=>a)))! thLgDS9! thLgDS11!
+thLgDS13! : rMp p=tm(¬b=>(b=>a))!;q=tm(¬b=>((a∨b)=>a))! thLgDS10! thLgDS12!
+thDS      : thLgDS13! a=tmi!;b=tmj!
+
+# ⊢(a=>¬¬a), exported in i as thDNI: contraposition (rNeg) of ¬¬¬a=>¬a,
+# which is thDNE at ¬a.
+tm¬¬¬a!                        : rTmNeg p=tm¬¬a!
+tm(¬¬¬a=>¬a)!                  : rTmImp p=tm¬¬¬a!;q=tm¬a!
+tm(a=>¬¬a)!                    : rTmImp p=tma!;q=tm¬¬a!
+
+thLgDNI1! : thDNE i=tm¬a!                                             # ⊢(¬¬¬a=>¬a)
+thLgDNI2! : rNeg p=tm¬¬a!;q=tma!                                      # ⊢((¬¬¬a=>¬a)=>(a=>¬¬a))
+thLgDNI3! : rMp p=tm(¬¬¬a=>¬a)!;q=tm(a=>¬¬a)! thLgDNI1! thLgDNI2!
+thDNI     : thLgDNI3! a=tmi!
+
+# ⊢((¬a=>b)=>(¬b=>a)), exported in i, j as thCP: turn ¬a=>b into ¬a=>¬¬b
+# with thDNI, then contraposition (rNeg).
+tm¬¬b!                         : rTmNeg p=tm¬b!
+tm(¬a=>b)!                     : rTmImp p=tm¬a!;q=tmb!
+tm(¬b=>a)!                     : rTmImp p=tm¬b!;q=tma!
+tm(b=>¬¬b)!                    : rTmImp p=tmb!;q=tm¬¬b!
+tm(¬a=>¬¬b)!                   : rTmImp p=tm¬a!;q=tm¬¬b!
+tm((¬a=>b)=>(¬a=>¬¬b))!        : rTmImp p=tm(¬a=>b)!;q=tm(¬a=>¬¬b)!
+tm((¬a=>¬¬b)=>(¬b=>a))!        : rTmImp p=tm(¬a=>¬¬b)!;q=tm(¬b=>a)!
+tm((¬a=>b)=>(¬b=>a))!          : rTmImp p=tm(¬a=>b)!;q=tm(¬b=>a)!
+tm(((¬a=>b)=>(¬a=>¬¬b))=>((¬a=>b)=>(¬b=>a)))! : rTmImp p=tm((¬a=>b)=>(¬a=>¬¬b))!;q=tm((¬a=>b)=>(¬b=>a))!
+
+thLgCP1! : thDNI i=tmb!                                               # ⊢(b=>¬¬b)
+thLgCP2! : thHS i=tm¬a!;j=tmb!;l=tm¬¬b!
+thLgCP3! : rMp p=tm(b=>¬¬b)!;q=tm((¬a=>b)=>(¬a=>¬¬b))! thLgCP1! thLgCP2!
+thLgCP4! : rNeg p=tma!;q=tm¬b!                                        # ⊢((¬a=>¬¬b)=>(¬b=>a))
+thLgCP5! : thHS i=tm(¬a=>b)!;j=tm(¬a=>¬¬b)!;l=tm(¬b=>a)!
+thLgCP6! : rMp p=tm((¬a=>¬¬b)=>(¬b=>a))!;q=tm(((¬a=>b)=>(¬a=>¬¬b))=>((¬a=>b)=>(¬b=>a)))! thLgCP4! thLgCP5!
+thLgCP7! : rMp p=tm((¬a=>b)=>(¬a=>¬¬b))!;q=tm((¬a=>b)=>(¬b=>a))! thLgCP3! thLgCP6!
+thCP     : thLgCP7! a=tmi!;b=tmj!
+
+## Common terms
+tm⊤! : rTmTop

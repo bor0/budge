@@ -2,6 +2,9 @@
 
 # Without this, everything blurs together. Once differentiated, awareness shapes a clear figure from its ground. Differentiation is how awareness breathes.
 
+<?py load('lib/logic.btp') ?>
+# Joining is ∧-introduction and zooming in is ∧-elimination, from
+# lib/logic.btp. The experiences themselves are given: we notice them.
 rTmX : THOUGHT_X
 tmX! : rTmX
 
@@ -11,14 +14,25 @@ tmY! : rTmY
 rTmZ : BEHAVIOR_Z
 tmZ! : rTmZ
 
-rTmAnd : x∧y
+rNoticeX : ⊢THOUGHT_X
+rNoticeY : ⊢FEELING_Y
+rNoticeZ : ⊢BEHAVIOR_Z
 
-ruleJoin : x -> y -> (x∧y)
-ruleElimL : (x∧y) -> y
-ruleElimR : (x∧y) -> x
+thX! : rNoticeX
+thY! : rNoticeY
+thZ! : rNoticeZ
 
-th1step1! : ruleJoin x=tmX!;y=tmY! tmX! tmY!
-th1_confusion : ruleJoin x=th1step1!;y=tmZ! th1step1! tmZ!
+tmXY!  : rTmAnd p=tmX!;q=tmY!                     # (THOUGHT_X∧FEELING_Y)
+tmXYZ! : rTmAnd p=tmXY!;q=tmZ!                    # ((THOUGHT_X∧FEELING_Y)∧BEHAVIOR_Z)
+tm(Y=>XY)!   : rTmImp p=tmY!;q=tmXY!
+tm(Z=>XYZ)!  : rTmImp p=tmZ!;q=tmXYZ!
+
+th1step1! : rAndI p=tmX!;q=tmY!                   # ⊢(X=>(Y=>(X∧Y)))
+th1step2! : rMp p=tmX!;q=tm(Y=>XY)! thX! th1step1!
+th1step3! : rMp p=tmY!;q=tmXY! thY! th1step2!     # ⊢(X∧Y)
+th1step4! : rAndI p=tmXY!;q=tmZ!
+th1step5! : rMp p=tmXY!;q=tm(Z=>XYZ)! th1step3! th1step4!
+th1_confusion : rMp p=tmZ!;q=tmXYZ! thZ! th1step5!
 
 # th1_confusion is too complex, fused, leading to confusion. Humans can't deal with it. We need to untangle, unfuse to unconfuse, to bring clarity.
 
@@ -28,13 +42,19 @@ th1_confusion : ruleJoin x=th1step1!;y=tmZ! th1step1! tmZ!
 # And then th1 finally makes sense
 
 # Zoom in
-th2_focus_behavior : ruleElimL x=th1step1!;y=tmZ! th1_confusion
+th2step1! : rAndR p=tmXY!;q=tmZ!
+th2_focus_behavior : rMp p=tmXYZ!;q=tmZ! th1_confusion th2step1!
 # Zoom in lvl 1
-th3_zoom_lvl1 : ruleElimR x=th1step1!;y=tmZ! th1_confusion
-# Zoom in lvl 1 right
-th4_zoom_lvl2 : ruleElimR x=tmX!;y=tmY! th3_zoom_lvl1
+th3step1! : rAndL p=tmXY!;q=tmZ!
+th3_zoom_lvl1 : rMp p=tmXYZ!;q=tmXY! th1_confusion th3step1!
 # Zoom in lvl 2 left
-th5_zoom_lvl2 : ruleElimL x=tmX!;y=tmY! th3_zoom_lvl1
+th4step1! : rAndL p=tmX!;q=tmY!
+th4_zoom_lvl2 : rMp p=tmXY!;q=tmX! th3_zoom_lvl1 th4step1!
+# Zoom in lvl 2 right
+th5step1! : rAndR p=tmX!;q=tmY!
+th5_zoom_lvl2 : rMp p=tmXY!;q=tmY! th3_zoom_lvl1 th5step1!
 
 # Now Zoom out, rejoin, once we had "contact" with the atoms
-th1_clear : ruleJoin x=th3_zoom_lvl1;y=tmZ! th3_zoom_lvl1 tmZ!
+th6step1! : rAndI p=tmXY!;q=tmZ!
+th6step2! : rMp p=tmXY!;q=tm(Z=>XYZ)! th3_zoom_lvl1 th6step1!
+th1_clear : rMp p=tmZ!;q=tmXYZ! th2_focus_behavior th6step2!

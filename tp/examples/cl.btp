@@ -1,63 +1,47 @@
-# Inspired by https://twitter.com/SandMouth/status/1558473206239006720/
+# Propositional logic with ∧ and ∨, using lib/logic.btp
+#
+# Inspired by https://twitter.com/SandMouth/status/1558473206239006720/, which
+# presents logic as arrows that compose: ⊢a→b and ⊢b→c give ⊢a→c. In
+# lib/logic.btp, composition is hypothetical syllogism (thHS), the projections
+# and injections are the axioms of ∧ and ∨, and pairing and case analysis are
+# derived (thAndComm and thOrComm use them).
 
-# Rules
-rId : ⊢a→a
-rFst : ⊢a∧b→a
-rSnd : ⊢a∧b→b
-rInj1 : ⊢a→a∨b
-rInj2 : ⊢b→a∨b
-rInit : ⊢⊥→a
-rTerm : ⊢a→⊤
-rPair : ⊢a→b -> ⊢a→c -> ⊢a→b∧c
-rCase : ⊢a→b -> ⊢a→c -> ⊢a∨b→c
-rComp : ⊢a→b -> ⊢b→c -> ⊢a→c
-
-# Terms (logical operators)
-rTOr : a∨b
-rTAnd : a∧b
-rTImp : a→b
-
-# Terms
-rTTop : ⊤
-tTop! : rTTop
-rTBot : ⊥
-tBot! : rTBot
-
-# Terms (vars)
+<?py load('lib/logic.btp') ?>
+# Variables (object-level)
 rTW : W
-tW! : rTW
 rTX : X
-tX! : rTX
 rTY : Y
-tY! : rTY
 rTZ : Z
+tW! : rTW
+tX! : rTX
+tY! : rTY
 tZ! : rTZ
 
-# Example proof 1: ⊢W∧X∧Y∧Z→W∨Y
-# Terms needed for the proof
-tW|Y! : rTOr a=tW!;b=tY!
-tW&X! : rTAnd a=tW!;b=tX!
-tW&X&Y! : rTAnd a=tW&X!;b=tY!
-tW&X&Y&Z! : rTAnd a=tW&X&Y!;b=tZ!
-# Proof
-t1Step1! : rInj2 a=tW!;b=tY!
-t1Step2! : rSnd a=tW&X!;b=tY!
-t1Step3! : rComp a=tW&X&Y!;b=tY!;c=tW|Y! t1Step2! t1Step1!
-t1Step4! : rFst a=tW&X&Y!;b=tZ!
-t1 : rComp a=tW&X&Y&Z!;b=tW&X&Y!;c=tW|Y! t1Step4! t1Step3!
+# Example 1: ⊢(((W∧X)∧Y)∧Z) => (W∨Y): project twice, inject, compose
+tW&X!       : rTmAnd p=tW!;q=tX!
+tW&X&Y!     : rTmAnd p=tW&X!;q=tY!
+tW&X&Y&Z!   : rTmAnd p=tW&X&Y!;q=tZ!
+tW|Y!       : rTmOr p=tW!;q=tY!
+t(4=>3)!    : rTmImp p=tW&X&Y&Z!;q=tW&X&Y!
+t(3=>Y)!    : rTmImp p=tW&X&Y!;q=tY!
+t(4=>Y)!    : rTmImp p=tW&X&Y&Z!;q=tY!
+t(Y=>W|Y)!  : rTmImp p=tY!;q=tW|Y!
+t(4=>W|Y)!  : rTmImp p=tW&X&Y&Z!;q=tW|Y!
+t((4=>3)=>(4=>Y))!   : rTmImp p=t(4=>3)!;q=t(4=>Y)!
+t((4=>Y)=>(4=>W|Y))! : rTmImp p=t(4=>Y)!;q=t(4=>W|Y)!
 
-# Example proof 2: ⊢W∧X→X∧W
-t2Step1! : rSnd a=tW!;b=tX!
-t2Step2! : rFst a=tW!;b=tX!
-t2 : rPair a=tW&X!;b=tX!;c=tW! t2Step1! t2Step2!
+t1Step1! : rAndL p=tW&X&Y!;q=tZ!                          # ⊢((((W∧X)∧Y)∧Z)=>((W∧X)∧Y))
+t1Step2! : rAndR p=tW&X!;q=tY!                            # ⊢(((W∧X)∧Y)=>Y)
+t1Step3! : rOrR p=tW!;q=tY!                               # ⊢(Y=>(W∨Y))
+t1Step4! : thHS i=tW&X&Y&Z!;j=tW&X&Y!;l=tY!
+t1Step5! : rMp p=t(3=>Y)!;q=t((4=>3)=>(4=>Y))! t1Step2! t1Step4!
+t1Step6! : rMp p=t(4=>3)!;q=t(4=>Y)! t1Step1! t1Step5!     # ⊢((((W∧X)∧Y)∧Z)=>Y)
+t1Step7! : thHS i=tW&X&Y&Z!;j=tY!;l=tW|Y!
+t1Step8! : rMp p=t(Y=>W|Y)!;q=t((4=>Y)=>(4=>W|Y))! t1Step3! t1Step7!
+t1 : rMp p=t(4=>Y)!;q=t(4=>W|Y)! t1Step6! t1Step8!
 
-# Example proof 3: ⊢Y∨W→W∨Y
-# Terms needed for the proof
-tY|W! : rTOr a=tY!;b=tW!
-tY|Y|W! : rTOr a=tY!;b=tY|W!
-# Proof
-t3Step1! : rInj1 a=tY!;b=tW!
-t3Step2! : rInj2 a=tW!;b=tY!
-t3Step3! : rCase a=tY!;b=tY|W!;c=tW|Y! t3Step1! t3Step2!
-t3Step4! : rInj2 b=tY|W!;a=tY!
-t3 : rComp a=tY|W!;b=tY|Y|W!;c=tW|Y! t3Step4! t3Step3!
+# Example 2: ⊢(W∧X) => (X∧W), an instance of the library's thAndComm
+t2 : thAndComm i=tW!;j=tX!
+
+# Example 3: ⊢(Y∨W) => (W∨Y), an instance of the library's thOrComm
+t3 : thOrComm i=tY!;j=tW!

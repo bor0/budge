@@ -39,22 +39,26 @@ For theorems, the rule `<ruleN>` will be applied to the corresponding arguments.
 
 Budge-TP will print all derived theorems except those whose name ends in a `!`.
 
+## Library
+
+[`examples/lib`](./examples/lib) holds reusable theories:
+
+- [logic.btp](./examples/lib/logic.btp) - Classical propositional logic in Hilbert's system (axioms K, S, contraposition, ∧, ∨, modus ponens), deriving identity, hypothetical syllogism, double negation elimination and introduction, contraposition, ex falso, disjunctive syllogism and commutativity of ∧ and ∨
+
 ## Example
 
 In the `examples` folder you can find the following proofs:
 
 - [Gestalt](./examples/gestalt.btp) - Differentiation and contact in Gestalt therapy
-- [God](./examples/God.btp) - Simpler variant of Anselm's argument
+- [God](./examples/God.btp) - Anselm's ontological argument as a contraposition, using the library
 - [Automaton](./examples/automaton.btp) - A finite-state machine
 - [Boolean](./examples/boolean.btp) - Boolean logic
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
-- [CL](./examples/cl.btp) - Combinatory logic
+- [CL](./examples/cl.btp) - Propositional logic with ∧ and ∨ by hand, using the library
 - [Coord](./examples/coord.btp) - Coordinates implementation
 - [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation
 - [DND](./examples/dnd.btp) - Prime numbers (divisibility)
-- [Gentzen](./examples/gentzen.btp) - Gentzen system
 - [Hanoi](./examples/hanoi.btp) - An implementation of the rules for Hanoi's tower
-- [Hilbert's system](./examples/hilbert.btp) - Hilbert's logical system
 - [Hoare logic](./examples/hoare.btp) - Partial correctness proof of a tiny imperative program
 - [List](./examples/list.btp) - List implementation and some example functions on them
 - [LLM](./examples/llm.btp) - A toy bigram language model with greedy decoding
