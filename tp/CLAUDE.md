@@ -72,7 +72,7 @@ thResult : rInd p=tmP!;n=tmZ! thBase! thStep!   # wrong: step only checked at n=
 thResult : rInd p=tmP! thBase! thStep!          # right: step schematic in n
 ```
 
-**Tally numbers** (`rsa.btp`). `|||` = 3; template `zx` concatenates, so adding is free:
+**Tally numbers** (`lib/tally.btp`, `rsa.btp`). `|||` = 3; template `zx` concatenates, so adding is free:
 ```
 rMulSucc : x*y=z MOD n -> x*y|=zx MOD n   # x*(y+1) = x*y + x, one step
 rMulRed  : x*y=zn MOD n -> x*y=z MOD n    # subtract n in one step
@@ -123,6 +123,8 @@ in an example would duplicate `rEqS`.
 `strings.btp` (loads nothing): concatenation `xy`, sequences `x y`, GEB's hyphen strings
 (`tm-!`…`tm----!`). Same text with a different meaning (`0` as a bit, `K` as a combinator) is
 not a duplicate: don't load a library for a coincidental symbol.
+`tally.btp` (loads strings): bar tallies `|||`, ≤, multiplication and powers MOD n; exports
+`tmBar1!`…`tmBar10!`. Cheap arithmetic for computations; proofs about all numbers use peano.
 
 **Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
 `rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;

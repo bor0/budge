@@ -1,0 +1,34 @@
+# Tally numbers: n written as n bars (||| is 3)
+#
+# Rules only, plus common terms. A tally is a string, so adding tallies is
+# concatenating them: in a rule, zx means z+x. This gives cheap arithmetic for
+# computations (rsa.btp, llm.btp); for proofs about all numbers use peano.btp.
+
+<?py load('strings.btp') ?>
+## Numbers
+rTmBar  : |
+rTmBarS : x|
+
+## Order: x≤y
+rLeEq   : x≤x
+rLeSucc : x≤y -> x≤y|
+
+## Multiplication and powers modulo n. Statements x*y=z MOD n and x^k=z MOD n
+## mean "congruent modulo n".
+rMulOne  : x*|=x MOD n                           # x*1 = x
+rMulSucc : x*y=z MOD n -> x*y|=zx MOD n          # x*(y+1) = x*y + x
+rMulRed  : x*y=zn MOD n -> x*y=z MOD n           # subtract n once
+rPowOne  : x^|=x MOD n                           # x^1 = x
+rPowSucc : b^k=a MOD n -> a*b=c MOD n -> b^k|=c MOD n   # b^(k+1) = b^k * b
+
+## Common terms
+tmBar1!  : rTmBar
+tmBar2!  : rTmBarS x=tmBar1!
+tmBar3!  : rTmBarS x=tmBar2!
+tmBar4!  : rTmBarS x=tmBar3!
+tmBar5!  : rTmBarS x=tmBar4!
+tmBar6!  : rTmBarS x=tmBar5!
+tmBar7!  : rTmBarS x=tmBar6!
+tmBar8!  : rTmBarS x=tmBar7!
+tmBar9!  : rTmBarS x=tmBar8!
+tmBar10! : rTmBarS x=tmBar9!

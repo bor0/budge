@@ -32,6 +32,7 @@
 #   - rPickSecond assumes v and u are the only successors, in that order
 #   - rolls are supplied by hand, so "random" is up to the prover
 
+<?py load('lib/tally.btp') ?>
 # Rules
 
 # Tokens (the vocabulary) and concatenation
@@ -45,9 +46,6 @@ rTmCHASES : CHASES
 rTmCAKE   : CAKE
 rTmFISH   : FISH
 rTmDOT    : .
-rTmOne    : |
-rTmS      : x|
-rTmCat    : x y
 
 # Training data
 rCorpus : DATA THE QUEEN EATS CAKE . THE CAT EATS FISH . A CAT EATS FISH . A DOG CHASES THE CAT .
@@ -81,8 +79,6 @@ rGen   : s w @ x -> PROB(w,v)=y -> PREDICT(w)=v -> s w v @ x·y
 
 # Sampling: a roll r from 1 to TOTAL(w) lands on one successor's tickets.
 # With PROB(w,v)=n/t and PROB(w,u)=m/t, v owns tickets 1..n and u owns n+1..n+m
-rLeEq       : x≤x
-rLeSucc     : x≤y -> x≤y|
 rPickFirst  : PROB(w,v)=n/t -> r≤n -> PICK(w,r)=v
 rPickSecond : PROB(w,v)=n/t -> PROB(w,u)=m/t -> nk≤nm -> PICK(w,nk)=u
 rSample     : s w @ x -> PROB(w,v)=y -> PICK(w,r)=v -> s w v @ x·y
@@ -99,36 +95,33 @@ tmCHASES! : rTmCHASES
 tmCAKE!   : rTmCAKE
 tmFISH!   : rTmFISH
 tmDOT!    : rTmDOT
-tmONE!    : rTmOne
-tmTWO!    : rTmS x=tmONE!
-tmTHREE!  : rTmS x=tmTWO!
-tmP1_1!   : rTmFrac n=tmONE!;t=tmONE!
-tmP2_2!   : rTmFrac n=tmTWO!;t=tmTWO!
-tmP1_3!   : rTmFrac n=tmONE!;t=tmTHREE!
-tmP2_3!   : rTmFrac n=tmTWO!;t=tmTHREE!
+tmP1_1!   : rTmFrac n=tmBar1!;t=tmBar1!
+tmP2_2!   : rTmFrac n=tmBar2!;t=tmBar2!
+tmP1_3!   : rTmFrac n=tmBar1!;t=tmBar3!
+tmP2_3!   : rTmFrac n=tmBar2!;t=tmBar3!
 
 # 1. Corpus
 
 # Suffixes of the corpus (built right to left), used to name `s` in rShift/rRead
-tmC20!   : rTmCat x=tmCAT!;y=tmDOT!
-tmC19!   : rTmCat x=tmTHE!;y=tmC20!
-tmC18!   : rTmCat x=tmCHASES!;y=tmC19!
-tmC17!   : rTmCat x=tmDOG!;y=tmC18!
-tmC16!   : rTmCat x=tmA!;y=tmC17!
-tmC15!   : rTmCat x=tmDOT!;y=tmC16!
-tmC14!   : rTmCat x=tmFISH!;y=tmC15!
-tmC13!   : rTmCat x=tmEATS!;y=tmC14!
-tmC12!   : rTmCat x=tmCAT!;y=tmC13!
-tmC11!   : rTmCat x=tmA!;y=tmC12!
-tmC10!   : rTmCat x=tmDOT!;y=tmC11!
-tmC9!    : rTmCat x=tmFISH!;y=tmC10!
-tmC8!    : rTmCat x=tmEATS!;y=tmC9!
-tmC7!    : rTmCat x=tmCAT!;y=tmC8!
-tmC6!    : rTmCat x=tmTHE!;y=tmC7!
-tmC5!    : rTmCat x=tmDOT!;y=tmC6!
-tmC4!    : rTmCat x=tmCAKE!;y=tmC5!
-tmC3!    : rTmCat x=tmEATS!;y=tmC4!
-tmC2!    : rTmCat x=tmQUEEN!;y=tmC3!
+tmC20!   : rTmSeq x=tmCAT!;y=tmDOT!
+tmC19!   : rTmSeq x=tmTHE!;y=tmC20!
+tmC18!   : rTmSeq x=tmCHASES!;y=tmC19!
+tmC17!   : rTmSeq x=tmDOG!;y=tmC18!
+tmC16!   : rTmSeq x=tmA!;y=tmC17!
+tmC15!   : rTmSeq x=tmDOT!;y=tmC16!
+tmC14!   : rTmSeq x=tmFISH!;y=tmC15!
+tmC13!   : rTmSeq x=tmEATS!;y=tmC14!
+tmC12!   : rTmSeq x=tmCAT!;y=tmC13!
+tmC11!   : rTmSeq x=tmA!;y=tmC12!
+tmC10!   : rTmSeq x=tmDOT!;y=tmC11!
+tmC9!    : rTmSeq x=tmFISH!;y=tmC10!
+tmC8!    : rTmSeq x=tmEATS!;y=tmC9!
+tmC7!    : rTmSeq x=tmCAT!;y=tmC8!
+tmC6!    : rTmSeq x=tmTHE!;y=tmC7!
+tmC5!    : rTmSeq x=tmDOT!;y=tmC6!
+tmC4!    : rTmSeq x=tmCAKE!;y=tmC5!
+tmC3!    : rTmSeq x=tmEATS!;y=tmC4!
+tmC2!    : rTmSeq x=tmQUEEN!;y=tmC3!
 
 thCorpus : rCorpus
 
@@ -180,89 +173,89 @@ thO20! : rReadEnd w=tmCAT!;v=tmDOT!                 thD20!    # CAT .
 
 thTHE_QUEEN    : rFirst w=tmTHE!;v=tmQUEEN! thO1!
 thTHE_CAT1!    : rFirst w=tmTHE!;v=tmCAT! thO6!
-thTHE_CAT      : rMore  w=tmTHE!;v=tmCAT!;n=tmONE! thTHE_CAT1! thO19!
+thTHE_CAT      : rMore  w=tmTHE!;v=tmCAT!;n=tmBar1! thTHE_CAT1! thO19!
 thQUEEN_EATS   : rFirst w=tmQUEEN!;v=tmEATS! thO2!
 thEATS_CAKE    : rFirst w=tmEATS!;v=tmCAKE! thO3!
 thCAKE_DOT     : rFirst w=tmCAKE!;v=tmDOT! thO4!
 thEATS_FISH1!  : rFirst w=tmEATS!;v=tmFISH! thO8!
-thEATS_FISH    : rMore  w=tmEATS!;v=tmFISH!;n=tmONE! thEATS_FISH1! thO13!
+thEATS_FISH    : rMore  w=tmEATS!;v=tmFISH!;n=tmBar1! thEATS_FISH1! thO13!
 thCAT_EATS1!   : rFirst w=tmCAT!;v=tmEATS! thO7!
-thCAT_EATS     : rMore  w=tmCAT!;v=tmEATS!;n=tmONE! thCAT_EATS1! thO12!
+thCAT_EATS     : rMore  w=tmCAT!;v=tmEATS!;n=tmBar1! thCAT_EATS1! thO12!
 thCAT_DOT      : rFirst w=tmCAT!;v=tmDOT! thO20!
 thFISH_DOT1!   : rFirst w=tmFISH!;v=tmDOT! thO9!
-thFISH_DOT     : rMore  w=tmFISH!;v=tmDOT!;n=tmONE! thFISH_DOT1! thO14!
+thFISH_DOT     : rMore  w=tmFISH!;v=tmDOT!;n=tmBar1! thFISH_DOT1! thO14!
 thDOG_CHASES   : rFirst w=tmDOG!;v=tmCHASES! thO17!
 thCHASES_THE   : rFirst w=tmCHASES!;v=tmTHE! thO18!
 
 # 3b. Probabilities
 
-thTotalTHE1!   : rTotal    w=tmTHE!;v=tmCAT!;n=tmTWO! thTHE_CAT
-thTotalTHE!    : rTotalAdd w=tmTHE!;v=tmQUEEN!;n=tmTWO!;m=tmONE! thTotalTHE1! thTHE_QUEEN
-thTotalEATS1!  : rTotal    w=tmEATS!;v=tmFISH!;n=tmTWO! thEATS_FISH
-thTotalEATS!   : rTotalAdd w=tmEATS!;v=tmCAKE!;n=tmTWO!;m=tmONE! thTotalEATS1! thEATS_CAKE
-thTotalCAT1!   : rTotal    w=tmCAT!;v=tmEATS!;n=tmTWO! thCAT_EATS
-thTotalCAT!    : rTotalAdd w=tmCAT!;v=tmDOT!;n=tmTWO!;m=tmONE! thTotalCAT1! thCAT_DOT
-thTotalQUEEN!  : rTotal    w=tmQUEEN!;v=tmEATS!;n=tmONE! thQUEEN_EATS
-thTotalFISH!   : rTotal    w=tmFISH!;v=tmDOT!;n=tmTWO! thFISH_DOT
-thTotalDOG!    : rTotal    w=tmDOG!;v=tmCHASES!;n=tmONE! thDOG_CHASES
-thTotalCHASES! : rTotal    w=tmCHASES!;v=tmTHE!;n=tmONE! thCHASES_THE
-thTotalCAKE!   : rTotal    w=tmCAKE!;v=tmDOT!;n=tmONE! thCAKE_DOT
+thTotalTHE1!   : rTotal    w=tmTHE!;v=tmCAT!;n=tmBar2! thTHE_CAT
+thTotalTHE!    : rTotalAdd w=tmTHE!;v=tmQUEEN!;n=tmBar2!;m=tmBar1! thTotalTHE1! thTHE_QUEEN
+thTotalEATS1!  : rTotal    w=tmEATS!;v=tmFISH!;n=tmBar2! thEATS_FISH
+thTotalEATS!   : rTotalAdd w=tmEATS!;v=tmCAKE!;n=tmBar2!;m=tmBar1! thTotalEATS1! thEATS_CAKE
+thTotalCAT1!   : rTotal    w=tmCAT!;v=tmEATS!;n=tmBar2! thCAT_EATS
+thTotalCAT!    : rTotalAdd w=tmCAT!;v=tmDOT!;n=tmBar2!;m=tmBar1! thTotalCAT1! thCAT_DOT
+thTotalQUEEN!  : rTotal    w=tmQUEEN!;v=tmEATS!;n=tmBar1! thQUEEN_EATS
+thTotalFISH!   : rTotal    w=tmFISH!;v=tmDOT!;n=tmBar2! thFISH_DOT
+thTotalDOG!    : rTotal    w=tmDOG!;v=tmCHASES!;n=tmBar1! thDOG_CHASES
+thTotalCHASES! : rTotal    w=tmCHASES!;v=tmTHE!;n=tmBar1! thCHASES_THE
+thTotalCAKE!   : rTotal    w=tmCAKE!;v=tmDOT!;n=tmBar1! thCAKE_DOT
 
 pProbs            : Next-token probabilities (tally fractions, ||/||| = 2/3)
-thProbTHE_CAT     : rProb w=tmTHE!;v=tmCAT!;n=tmTWO!;t=tmTHREE!     thTHE_CAT    thTotalTHE!
-thProbTHE_QUEEN   : rProb w=tmTHE!;v=tmQUEEN!;n=tmONE!;t=tmTHREE!   thTHE_QUEEN  thTotalTHE!
-thProbEATS_FISH   : rProb w=tmEATS!;v=tmFISH!;n=tmTWO!;t=tmTHREE!   thEATS_FISH  thTotalEATS!
-thProbEATS_CAKE   : rProb w=tmEATS!;v=tmCAKE!;n=tmONE!;t=tmTHREE!   thEATS_CAKE  thTotalEATS!
-thProbCAT_EATS    : rProb w=tmCAT!;v=tmEATS!;n=tmTWO!;t=tmTHREE!    thCAT_EATS   thTotalCAT!
-thProbCAT_DOT     : rProb w=tmCAT!;v=tmDOT!;n=tmONE!;t=tmTHREE!     thCAT_DOT    thTotalCAT!
-thProbQUEEN_EATS  : rProb w=tmQUEEN!;v=tmEATS!;n=tmONE!;t=tmONE!    thQUEEN_EATS thTotalQUEEN!
-thProbFISH_DOT    : rProb w=tmFISH!;v=tmDOT!;n=tmTWO!;t=tmTWO!      thFISH_DOT   thTotalFISH!
-thProbDOG_CHASES  : rProb w=tmDOG!;v=tmCHASES!;n=tmONE!;t=tmONE!    thDOG_CHASES thTotalDOG!
-thProbCHASES_THE  : rProb w=tmCHASES!;v=tmTHE!;n=tmONE!;t=tmONE!    thCHASES_THE thTotalCHASES!
-thProbCAKE_DOT    : rProb w=tmCAKE!;v=tmDOT!;n=tmONE!;t=tmONE!      thCAKE_DOT   thTotalCAKE!
+thProbTHE_CAT     : rProb w=tmTHE!;v=tmCAT!;n=tmBar2!;t=tmBar3!     thTHE_CAT    thTotalTHE!
+thProbTHE_QUEEN   : rProb w=tmTHE!;v=tmQUEEN!;n=tmBar1!;t=tmBar3!   thTHE_QUEEN  thTotalTHE!
+thProbEATS_FISH   : rProb w=tmEATS!;v=tmFISH!;n=tmBar2!;t=tmBar3!   thEATS_FISH  thTotalEATS!
+thProbEATS_CAKE   : rProb w=tmEATS!;v=tmCAKE!;n=tmBar1!;t=tmBar3!   thEATS_CAKE  thTotalEATS!
+thProbCAT_EATS    : rProb w=tmCAT!;v=tmEATS!;n=tmBar2!;t=tmBar3!    thCAT_EATS   thTotalCAT!
+thProbCAT_DOT     : rProb w=tmCAT!;v=tmDOT!;n=tmBar1!;t=tmBar3!     thCAT_DOT    thTotalCAT!
+thProbQUEEN_EATS  : rProb w=tmQUEEN!;v=tmEATS!;n=tmBar1!;t=tmBar1!    thQUEEN_EATS thTotalQUEEN!
+thProbFISH_DOT    : rProb w=tmFISH!;v=tmDOT!;n=tmBar2!;t=tmBar2!      thFISH_DOT   thTotalFISH!
+thProbDOG_CHASES  : rProb w=tmDOG!;v=tmCHASES!;n=tmBar1!;t=tmBar1!    thDOG_CHASES thTotalDOG!
+thProbCHASES_THE  : rProb w=tmCHASES!;v=tmTHE!;n=tmBar1!;t=tmBar1!    thCHASES_THE thTotalCHASES!
+thProbCAKE_DOT    : rProb w=tmCAKE!;v=tmDOT!;n=tmBar1!;t=tmBar1!      thCAKE_DOT   thTotalCAKE!
 
 # 4. Weights: most probable next token for each context
 
 pWeights         : Learned weights (greedy next-token table)
-thPredictTHE     : rArgmax  w=tmTHE!;v=tmCAT!;u=tmQUEEN!;n=tmONE!;m=tmONE!;t=tmTHREE! thProbTHE_CAT thProbTHE_QUEEN
-thPredictEATS    : rArgmax  w=tmEATS!;v=tmFISH!;u=tmCAKE!;n=tmONE!;m=tmONE!;t=tmTHREE! thProbEATS_FISH thProbEATS_CAKE
-thPredictCAT     : rArgmax  w=tmCAT!;v=tmEATS!;u=tmDOT!;n=tmONE!;m=tmONE!;t=tmTHREE! thProbCAT_EATS thProbCAT_DOT
-thPredictQUEEN   : rCertain w=tmQUEEN!;v=tmEATS!;n=tmONE! thProbQUEEN_EATS
-thPredictFISH    : rCertain w=tmFISH!;v=tmDOT!;n=tmTWO! thProbFISH_DOT
-thPredictDOG     : rCertain w=tmDOG!;v=tmCHASES!;n=tmONE! thProbDOG_CHASES
-thPredictCHASES  : rCertain w=tmCHASES!;v=tmTHE!;n=tmONE! thProbCHASES_THE
+thPredictTHE     : rArgmax  w=tmTHE!;v=tmCAT!;u=tmQUEEN!;n=tmBar1!;m=tmBar1!;t=tmBar3! thProbTHE_CAT thProbTHE_QUEEN
+thPredictEATS    : rArgmax  w=tmEATS!;v=tmFISH!;u=tmCAKE!;n=tmBar1!;m=tmBar1!;t=tmBar3! thProbEATS_FISH thProbEATS_CAKE
+thPredictCAT     : rArgmax  w=tmCAT!;v=tmEATS!;u=tmDOT!;n=tmBar1!;m=tmBar1!;t=tmBar3! thProbCAT_EATS thProbCAT_DOT
+thPredictQUEEN   : rCertain w=tmQUEEN!;v=tmEATS!;n=tmBar1! thProbQUEEN_EATS
+thPredictFISH    : rCertain w=tmFISH!;v=tmDOT!;n=tmBar2! thProbFISH_DOT
+thPredictDOG     : rCertain w=tmDOG!;v=tmCHASES!;n=tmBar1! thProbDOG_CHASES
+thPredictCHASES  : rCertain w=tmCHASES!;v=tmTHE!;n=tmBar1! thProbCHASES_THE
 
 # 5. Generate greedily, scoring each reply with the chain rule
 #    (tmXs! = text so far, tmXx! = probability so far)
 
 # The queen only ever ate cake in the corpus, but EATS -> FISH outvotes it
 pPrompt1 : Prompt: THE QUEEN (greedy)
-tmP1!    : rTmCat x=tmTHE!;y=tmQUEEN!
+tmP1!    : rTmSeq x=tmTHE!;y=tmQUEEN!
 thG0!    : rStart s=tmTHE!;w=tmQUEEN! tmP1!
 thG1!    : rGen s=tmTHE!;w=tmQUEEN!;v=tmEATS!;x=tmP1_1!;y=tmP1_1! thG0! thProbQUEEN_EATS thPredictQUEEN
 tmGx1!   : rTmMul x=tmP1_1!;y=tmP1_1!
 thG2!    : rGen s=tmP1!;w=tmEATS!;v=tmFISH!;x=tmGx1!;y=tmP2_3! thG1! thProbEATS_FISH thPredictEATS
-tmGs2!   : rTmCat x=tmP1!;y=tmEATS!
+tmGs2!   : rTmSeq x=tmP1!;y=tmEATS!
 tmGx2!   : rTmMul x=tmGx1!;y=tmP2_3!
 thReply1 : rGen s=tmGs2!;w=tmFISH!;v=tmDOT!;x=tmGx2!;y=tmP2_2! thG2! thProbFISH_DOT thPredictFISH
 
 # The dog chases the cat, and then the cat's sentence takes over
 pPrompt2 : Prompt: A DOG (greedy)
-tmP2!    : rTmCat x=tmA!;y=tmDOG!
+tmP2!    : rTmSeq x=tmA!;y=tmDOG!
 thH0!    : rStart s=tmA!;w=tmDOG! tmP2!
 thH1!    : rGen s=tmA!;w=tmDOG!;v=tmCHASES!;x=tmP1_1!;y=tmP1_1! thH0! thProbDOG_CHASES thPredictDOG
 tmHx1!   : rTmMul x=tmP1_1!;y=tmP1_1!
 thH2!    : rGen s=tmP2!;w=tmCHASES!;v=tmTHE!;x=tmHx1!;y=tmP1_1! thH1! thProbCHASES_THE thPredictCHASES
-tmHs2!   : rTmCat x=tmP2!;y=tmCHASES!
+tmHs2!   : rTmSeq x=tmP2!;y=tmCHASES!
 tmHx2!   : rTmMul x=tmHx1!;y=tmP1_1!
 thH3!    : rGen s=tmHs2!;w=tmTHE!;v=tmCAT!;x=tmHx2!;y=tmP2_3! thH2! thProbTHE_CAT thPredictTHE
-tmHs3!   : rTmCat x=tmHs2!;y=tmTHE!
+tmHs3!   : rTmSeq x=tmHs2!;y=tmTHE!
 tmHx3!   : rTmMul x=tmHx2!;y=tmP2_3!
 thH4!    : rGen s=tmHs3!;w=tmCAT!;v=tmEATS!;x=tmHx3!;y=tmP2_3! thH3! thProbCAT_EATS thPredictCAT
-tmHs4!   : rTmCat x=tmHs3!;y=tmCAT!
+tmHs4!   : rTmSeq x=tmHs3!;y=tmCAT!
 tmHx4!   : rTmMul x=tmHx3!;y=tmP2_3!
 thH5!    : rGen s=tmHs4!;w=tmEATS!;v=tmFISH!;x=tmHx4!;y=tmP2_3! thH4! thProbEATS_FISH thPredictEATS
-tmHs5!   : rTmCat x=tmHs4!;y=tmEATS!
+tmHs5!   : rTmSeq x=tmHs4!;y=tmEATS!
 tmHx5!   : rTmMul x=tmHx4!;y=tmP2_3!
 thReply2 : rGen s=tmHs5!;w=tmFISH!;v=tmDOT!;x=tmHx5!;y=tmP2_2! thH5! thProbFISH_DOT thPredictFISH
 
@@ -270,13 +263,13 @@ thReply2 : rGen s=tmHs5!;w=tmFISH!;v=tmDOT!;x=tmHx5!;y=tmP2_2! thH5! thProbFISH_
 #    Roll ||| after EATS lands on CAKE's ticket (FISH owns 1..2, CAKE owns 3)
 
 pPrompt3    : Prompt: THE QUEEN (sampled, rolls 1, 3, 1)
-thLe1!      : rLeEq x=tmONE!
-thLe3!      : rLeEq x=tmTHREE!
-thPickQUEEN : rPickFirst  w=tmQUEEN!;v=tmEATS!;n=tmONE!;t=tmONE!;r=tmONE! thProbQUEEN_EATS thLe1!
-thPickEATS  : rPickSecond w=tmEATS!;v=tmFISH!;u=tmCAKE!;n=tmTWO!;m=tmONE!;t=tmTHREE!;k=tmONE! thProbEATS_FISH thProbEATS_CAKE thLe3!
-thPickCAKE  : rPickFirst  w=tmCAKE!;v=tmDOT!;n=tmONE!;t=tmONE!;r=tmONE! thProbCAKE_DOT thLe1!
+thLe1!      : rLeEq x=tmBar1!
+thLe3!      : rLeEq x=tmBar3!
+thPickQUEEN : rPickFirst  w=tmQUEEN!;v=tmEATS!;n=tmBar1!;t=tmBar1!;r=tmBar1! thProbQUEEN_EATS thLe1!
+thPickEATS  : rPickSecond w=tmEATS!;v=tmFISH!;u=tmCAKE!;n=tmBar2!;m=tmBar1!;t=tmBar3!;k=tmBar1! thProbEATS_FISH thProbEATS_CAKE thLe3!
+thPickCAKE  : rPickFirst  w=tmCAKE!;v=tmDOT!;n=tmBar1!;t=tmBar1!;r=tmBar1! thProbCAKE_DOT thLe1!
 thS0!       : rStart s=tmTHE!;w=tmQUEEN! tmP1!
-thS1!       : rSample s=tmTHE!;w=tmQUEEN!;v=tmEATS!;x=tmP1_1!;y=tmP1_1!;r=tmONE! thS0! thProbQUEEN_EATS thPickQUEEN
-thS2!       : rSample s=tmP1!;w=tmEATS!;v=tmCAKE!;x=tmGx1!;y=tmP1_3!;r=tmTHREE! thS1! thProbEATS_CAKE thPickEATS
+thS1!       : rSample s=tmTHE!;w=tmQUEEN!;v=tmEATS!;x=tmP1_1!;y=tmP1_1!;r=tmBar1! thS0! thProbQUEEN_EATS thPickQUEEN
+thS2!       : rSample s=tmP1!;w=tmEATS!;v=tmCAKE!;x=tmGx1!;y=tmP1_3!;r=tmBar3! thS1! thProbEATS_CAKE thPickEATS
 tmSx2!      : rTmMul x=tmGx1!;y=tmP1_3!
-thReply3    : rSample s=tmGs2!;w=tmCAKE!;v=tmDOT!;x=tmSx2!;y=tmP1_1!;r=tmONE! thS2! thProbCAKE_DOT thPickCAKE
+thReply3    : rSample s=tmGs2!;w=tmCAKE!;v=tmDOT!;x=tmSx2!;y=tmP1_1!;r=tmBar1! thS2! thProbCAKE_DOT thPickCAKE
