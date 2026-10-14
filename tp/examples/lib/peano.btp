@@ -1,0 +1,51 @@
+# Peano arithmetic in first-order logic
+#
+# Rules only: congruence of equality for S, ADD and MUL, the defining equations
+# of + and ×, the syntax rules for 0, S, ADD and MUL (see fol.btp), and
+# induction. Equality itself is in fol.btp, and numbers reuse its index
+# numerals 0 and S.
+#
+# ∀m∀n. m+n = n+m is
+#   ALL(ALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0))))))
+# The axioms are schematic in lowercase variables, so no parameter occurs in
+# them, as fol.btp requires.
+
+<?py load('fol.btp') ?>
+## Congruence: equal arguments give equal results
+rCongS    : ⊢(EQ(x,y)=>EQ(S(x),S(y)))
+rCongAddL : ⊢(EQ(x,y)=>EQ(ADD(x,z),ADD(y,z)))
+rCongAddR : ⊢(EQ(x,y)=>EQ(ADD(z,x),ADD(z,y)))
+rCongMulL : ⊢(EQ(x,y)=>EQ(MUL(x,z),MUL(y,z)))
+rCongMulR : ⊢(EQ(x,y)=>EQ(MUL(z,x),MUL(z,y)))
+
+## Successor: never 0, and injective (Peano's axioms 7 and 8)
+rSNZ  : ⊢¬EQ(S(x),0)
+rSInj : ⊢(EQ(S(x),S(y))=>EQ(x,y))
+
+## Defining equations of + and ×
+rAZ : ⊢EQ(ADD(x,0),x)
+rAS : ⊢EQ(ADD(x,S(y)),S(ADD(x,y)))
+rMZ : ⊢EQ(MUL(x,0),0)
+rMS : ⊢EQ(MUL(x,S(y)),ADD(MUL(x,y),x))
+
+## Syntax of S, ADD, MUL (0 is in fol.btp)
+rCtS   : CT(x) -> CT(S(x))
+rCtAdd : CT(x) -> CT(y) -> CT(ADD(x,y))
+rCtMul : CT(x) -> CT(y) -> CT(MUL(x,y))
+
+rOpenS   : OPEN(k,x,t,u) -> OPEN(k,S(x),t,S(u))
+rOpenAdd : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,ADD(x,y),t,ADD(u,v))
+rOpenMul : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,MUL(x,y),t,MUL(u,v))
+
+rAbsS   : ABS(k,w,x,u) -> ABS(k,w,S(x),S(u))
+rAbsAdd : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,ADD(x,y),ADD(u,v))
+rAbsMul : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,MUL(x,y),MUL(u,v))
+
+## Induction. The premise ABS(0,N,g,f) both instantiates f at the parameter N
+## and checks that N does not occur in f. The step ⊢(g=>h) is proved with no
+## assumptions (Budge proofs have none), so N is arbitrary there.
+rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)
+
+## Term constructors
+rTmAdd : ADD(x,y)
+rTmMul : MUL(x,y)

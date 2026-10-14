@@ -45,6 +45,7 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 
 - [logic.btp](./examples/lib/logic.btp) - Classical propositional logic in Hilbert's system (axioms K, S, contraposition, ∧, ∨, modus ponens), deriving identity, hypothetical syllogism, double negation elimination and introduction, contraposition, ex falso, disjunctive syllogism and commutativity of ∧ and ∨
 - [fol.btp](./examples/lib/fol.btp) - First-order logic with equality: ∀ and ∃ with de Bruijn indices (capture-free instantiation, generalisation, ∃-elimination) and the equality axioms
+- [peano.btp](./examples/lib/peano.btp) - The defining equations of + and ·, congruence, and induction
 
 ## Example
 
@@ -56,7 +57,6 @@ In the `examples` folder you can find the following proofs:
 - [Boolean](./examples/boolean.btp) - Boolean logic
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
 - [CL](./examples/cl.btp) - Propositional logic with ∧ and ∨ by hand, using the library
-- [Coord](./examples/coord.btp) - Coordinates implementation
 - [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation
 - [DND](./examples/dnd.btp) - Prime numbers (divisibility)
 - [Hanoi](./examples/hanoi.btp) - An implementation of the rules for Hanoi's tower

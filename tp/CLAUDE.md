@@ -113,6 +113,14 @@ exported in i, j, l; internal steps prefixed `thLg…`). Examples load it with
 `rAllE`/`rExI`/`rGen`/`rExE`/`rAllImp`, numerals 0 and S; exports `tm0!`…`tm4!`, `tmV0!`,
 `tmV1!`, `tmK!`…`tmZ!`, `thLt01!`, `thParK!`…, `thCt0!`, `thCtM!`, `thAbsM!`. A file adding a
 symbol declares its term/CT/OPEN/ABS(/congruence) rules (`quantifiers.btp`: A, P, Q, R).
+`peano.btp` (loads fol): S never 0 and injective, + and × by recursion, congruence for S,
+ADD, MUL, their CT/OPEN/ABS, and induction `rInd`; numbers are fol's numerals.
+
+**Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
+`rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;
+the ABS premise also checks N ∉ f. Several parameters: `ABS(k,w,g,f)` names the
+parameter `w` (`PAR(w)`), others pass via `DIFF(w,o)`. Use the IH as `thId` `⊢(G=>G)`;
+steps under G: `rK` weakens facts, `thHS` chains, `rS` + `rEqT` give transitivity.
 
 ## Pitfalls
 
