@@ -128,3 +128,9 @@ apply('rSeq', [('p', TOP), ('a', init), ('q', Inv), ('b', loop), ('r', Post)],
       [tInit, tLoopPost], name='thProgram')
 prose('pProgram', 'The program sets $S to DIV2($N) = ⌊$N/2⌋, the number of odd numbers below $N.')
 ?>
+
+## Extraction: hoare.py, generated from the checked value of thProgram (lib/extract.py)
+<?py
+from extract import write_py
+write_py(env, 'thProgram', 'count_odd_below', 'hoare.py', __file__)
+?>

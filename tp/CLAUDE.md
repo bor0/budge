@@ -88,6 +88,10 @@ Keep assertions in shape by ordering: the increment comes *after* the `IF`, so s
 back over `$I = S($I)` gives `EQ($S,DIV2(S($I)))`. Program text and conditions use library
 notation (`EQ`, `¬`, `MOD2`), so `rIf`/`rWhile` put conditions into assertions as is, and
 the verification conditions are library lemmas (`lib/parity.btp`), not axioms.
+Extraction: a last block calls `lib/extract.py`'s `write_py(env, 'thProgram', fn, 'hoare.py', __file__)`,
+which parses the *checked* triple from `env['theorems']` and writes Python (unassigned variables are
+parameters, assigned ones in the postcondition the result, pre/post become `assert`s). Trusted: its
+symbol table (MOD2 as `% 2`, `$` dropped, …; unknown symbols are errors) and termination.
 
 **Quantifiers** (`lib/fol.btp`). `rInst` can't handle nesting or capture; use de
 Bruijn indices: `ALL(EX(R(V(S(0)),V(0))))` is ∀x∃y R(x,y). Two judgements, one
