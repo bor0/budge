@@ -29,8 +29,6 @@ rHanoiCANil : NIL y (a z) -> (a NIL) y z
 
 # Example of a game
 
-## Terms (numbers) we need for the game
-
 ## Inequalities needed for the game
 tLT12! : rLtS a=tm0!;b=tm1! thLt01!
 tLT03! : rLtZ n=tm2!

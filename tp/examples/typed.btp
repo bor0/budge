@@ -1,21 +1,17 @@
-## Numbers
+# Terms vs. typed theorems
+#
+# The terms 0, S(x) and NIL come from the library (lib/fol.btp, lib/list.btp)
+# and can be combined freely. N(x), "x is a natural number", is a theorem,
+# derivable only for 0 and successors of natural numbers.
 
 <?py load('lib/list.btp') ?>
-# Zero is a natural number (term)
-
-# Zero is a natural number (proof)
+## Numbers
+# Zero is a natural number
 rThmZ : N(0)
 thmZ! : rThmZ
 
-# Successor (term)
-
-# Successor (proof)
+# The successor of a natural number is a natural number
 rThmS : N(x) -> N(S(x))
-
-## Lists
-# Constructing pairs (lists)
-
-# NIL (term)
 
 ## Example
 
