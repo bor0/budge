@@ -9,6 +9,9 @@
 #   thDvdEq     ∀d∀x∀y. x = y => (d|x => d|y)
 #   thMulOne    ∀x∀y. x·y = 1 => x = 1
 #   thDvdSucc   ∀p∀a. p|a => (p|S(a) => p = 1)
+#   thDvdZero   ∀d. d|0
+#   thDvdAdd    ∀d∀a∀b. d|a => (d|b => d|a+b)
+#   thDvdCancel ∀d∀a∀b. d|a => (d|a+b => d|b)
 #
 # thDvdSucc is the heart of Euclid's proof that there are infinitely many
 # primes: a common divisor of a and a+1 divides 1.
@@ -171,4 +174,82 @@ def with_c(c3, cc):
 h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(dvd(p_, a_)), with_c))))
 DvdSucc = lemma('thDvdSucc', closed(IMP(dvd(p_, a_), IMP(dvd(p_, S(a_)), GOAL)), p_, a_),
                 gen_all(h, p_, a_))
+
+# ---- d|0
+section('Lemma: d|0', 'DiG', ['0 = d·0.'])
+root = Ctx(reserved={K_})
+h = root.close(root.ex_i(sym(aMZ(K_)), dvd(K_, Z)[1], Z))
+DvdZero = lemma('thDvdZero', closed(dvd(K_, Z), K_), gen(h, K_))
+
+# ---- d|a => (d|b => d|a+b)
+section('Lemma: d|a => (d|b => d|a+b)', 'DiH', ['a + b = d·x + d·y = d·(x+y).'])
+d_, a_, b_ = K_, M_, N_
+root = Ctx(reserved={d_, a_, b_})
+c1 = root.assume(dvd(d_, a_))
+c2 = c1.assume(dvd(d_, b_))
+
+
+def with_x(c3, x):
+    def with_y(c4, y):
+        h = c4.chain(ADD(a_, b_), [([0], c4.hyp_(instantiate(dvd(d_, a_)[1], x))), ([1], c4.hyp_()),
+                                   ([], sym(inst('thDistrib', d_, x, y)))])
+        return c4.ex_i(h, dvd(d_, ADD(a_, b_))[1], ADD(x, y))
+    return c3.ex_e(c3.hyp_(dvd(d_, b_)), with_y)
+
+
+h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(dvd(d_, a_)), with_x))))
+DvdAdd = lemma('thDvdAdd', closed(IMP(dvd(d_, a_), IMP(dvd(d_, b_), dvd(d_, ADD(a_, b_)))), d_, a_, b_),
+               gen_all(h, d_, a_, b_))
+
+# ---- d|a => (d|a+b => d|b)
+section('Lemma: d|a => (d|a+b => d|b)', 'DiI', [
+    'a = d·x and a+b = d·y. If x ≤ y, y = x+k: a+b = d·x + d·k = a + d·k, so',
+    'b = d·k (thAddCancel). If y < x, x = S(y)+k: a + 0 = a = d·S(y) + d·k =',
+    '(a+b) + (d + d·k) = a + (b + (d + d·k)), so b + (d + d·k) = 0 and b = 0',
+    '(thAddZeroR), and d|0.'])
+d_, a_, b_ = K_, M_, N_
+root = Ctx(reserved={d_, a_, b_})
+c1 = root.assume(dvd(d_, a_))
+c2 = c1.assume(dvd(d_, ADD(a_, b_)))
+GOAL = dvd(d_, b_)
+
+
+def with_x(c3, x):
+    ha = EQ(a_, MUL(d_, x))
+
+    def with_y(c4, y):
+        hab = EQ(ADD(a_, b_), MUL(d_, y))
+
+        def x_le_y(c5):
+            def with_k(c6, k):
+                h = c6.chain(ADD(a_, b_), [([], c6.hyp_(hab)), ([1], c6.hyp_()),
+                                           ([], inst('thDistrib', d_, x, k)),
+                                           ([0], c6.sym(c6.hyp_(ha)))])      # a+b = a + d·k
+                h = c6.thru(h, inst('thAddCancel', b_, MUL(d_, k), a_))     # b = d·k
+                return c6.ex_i(h, GOAL[1], k)
+            return c5.ex_e(c5.hyp_(), with_k)
+
+        def y_lt_x(c5):
+            def with_k(c6, k):
+                t = ADD(d_, MUL(d_, k))
+                h = c6.chain(ADD(a_, Z), [
+                    ([], aAZ(a_)), ([], c6.hyp_(ha)), ([1], c6.hyp_()),      # = d·(S(y)+k)
+                    ([], inst('thDistrib', d_, S(y), k)),                     # = d·S(y) + d·k
+                    ([0], aMS(d_, y)),                                        # = (d·y + d) + d·k
+                    ([], inst('thAddAssoc', MUL(d_, y), d_, MUL(d_, k))),
+                    ([0], c6.sym(c6.hyp_(hab))),                              # = (a+b) + t
+                    ([], inst('thAddAssoc', a_, b_, t))])                     # = a + (b+t)
+                h = c6.thru(h, inst('thAddCancel', Z, ADD(b_, t), a_))      # 0 = b+t
+                h = c6.trans(inst('thAddComm', t, b_), c6.sym(h))            # t+b = 0
+                hb = c6.thru(h, inst('thAddZeroR', t, b_))                  # b = 0
+                h = c6.chain(b_, [([], hb), ([], sym(aMZ(d_)))])
+                return c6.ex_i(h, GOAL[1], Z)
+            return c5.ex_e(c5.hyp_(), with_k)
+        return c4.cases(c4.get(inst('thLeTotal', y, x)), x_le_y, y_lt_x)
+    return c3.ex_e(c3.hyp_(dvd(d_, ADD(a_, b_))), with_y)
+
+
+h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(dvd(d_, a_)), with_x))))
+DvdCancel = lemma('thDvdCancel', closed(IMP(dvd(d_, a_), IMP(dvd(d_, ADD(a_, b_)), GOAL)), d_, a_, b_),
+                  gen_all(h, d_, a_, b_))
 ?>

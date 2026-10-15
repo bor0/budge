@@ -5,11 +5,14 @@
 # and conditions of IF and WHILE are formulas too, so the rules can put them
 # into assertions directly.
 #
-# Assignment is not here: Q[e/x] can't be computed by string substitution on
-# a value, so each program states its own assignment axioms for the assertion
-# shapes it uses (see ../hoare.btp).
+# Assignment, {Q[e/x]} x = e; {Q}: Q[e/x] can't be computed by string
+# substitution on a value, but fol.btp's judgements compute it: ABS turns the
+# parameter x into V(0), OPEN puts the closed term e in its place. So rAssign
+# needs program variables to be parameters (PAR, ordered by PLT after Z; see
+# ../gcd.btp). Programs with constants for variables instead state their own
+# assignment axioms for the assertion shapes they use (see ../hoare.btp).
 
-<?py load('logic.btp') ?>
+<?py load('fol.btp') ?>
 <?py load('strings.btp') ?>
 ## Program syntax: assignment, skip, sequence (x y, from strings.btp), IF, WHILE
 rTmAsg   : x = y;
@@ -19,6 +22,7 @@ rTmWhile : WHILE (b) { c }
 
 ## Rules
 rSkip     : {p} ; {p}
+rAssign   : ABS(0,x,q,f) -> OPEN(0,f,e,p) -> {p} x = e; {q}
 rSeq      : {p} a {q} -> {q} b {r} -> {p} a b {r}
 rIf       : {(p∧b)} c {q} -> {(p∧¬b)} d {q} -> {p} IF (b) { c } ELSE { d } {q}
 rWhile    : {(p∧b)} c {p} -> {p} WHILE (b) { c } {(p∧¬b)}

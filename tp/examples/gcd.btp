@@ -1,0 +1,227 @@
+# Euclid's algorithm, verified from Peano's axioms with Hoare logic
+#
+# Proved by the Python blocks below; Budge checks every
+# step, including those of the imported library.
+#
+# Program:
+#
+#   $A = $X; $B = $Y;
+#   WHILE (¬EQ($B,0)) { $T = MOD($A,$B); $A = $B; $B = $T; }
+#
+# Goal: {⊤} program {∀d. (d|$A => d|$X ∧ d|$Y) ∧ (d|$X ∧ d|$Y => d|$A)},
+# i.e. $A is the greatest common divisor of $X and $Y: a common divisor that
+# every common divisor divides (so gcd(0,0) = 0).
+#
+# Invariant: $A, $B have the same common divisors as $X, $Y. A step keeps it
+# because a = b·q + MOD(a,b) (thModDiv): d|b, d|MOD(a,b) => d|a (thDvdAdd) and
+# d|a, d|b => d|MOD(a,b) (thDvdCancel). At the exit $B = 0, which every d
+# divides.
+#
+# MOD is defined by recursion, like MOD2 in lib/parity.btp. Program variables
+# are parameters (after Z in the PLT order), so assignment is lib/hoare.btp's
+# general rAssign: no assignment axioms here, and its side conditions are
+# checked. Partial correctness: termination (MOD(a,b) < b) is not proved.
+
+<?py load('lib/divides.btp') ?>
+<?py load('lib/hoare.btp') ?>
+## a mod b, by recursion on a: count up, wrapping to 0 on reaching b
+rModZ    : ⊢EQ(MOD(0,y),0)
+rModWrap : ⊢(EQ(S(MOD(x,y)),y)=>EQ(MOD(S(x),y),0))
+rModNext : ⊢(¬EQ(S(MOD(x,y)),y)=>EQ(MOD(S(x),y),S(MOD(x,y))))
+
+## Congruence and syntax (see lib/fol.btp)
+rCongModL : ⊢(EQ(x,y)=>EQ(MOD(x,z),MOD(y,z)))
+rCongModR : ⊢(EQ(x,y)=>EQ(MOD(z,x),MOD(z,y)))
+rTmMod    : MOD(x,y)
+rCtMod    : CT(x) -> CT(y) -> CT(MOD(x,y))
+rOpenMod  : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,MOD(x,y),t,MOD(u,v))
+rAbsMod   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,MOD(x,y),MOD(u,v))
+
+## Program variables: parameters, after Z in the PLT order
+rTm$A    : $A
+rTm$B    : $B
+rTm$T    : $T
+rTm$X    : $X
+rTm$Y    : $Y
+rPar$A   : PAR($A)
+rPar$B   : PAR($B)
+rPar$T   : PAR($T)
+rPar$X   : PAR($X)
+rPar$Y   : PAR($Y)
+rPltZ$A  : PLT(Z,$A)
+rPlt$A$B : PLT($A,$B)
+rPlt$B$T : PLT($B,$T)
+rPlt$T$X : PLT($T,$X)
+rPlt$X$Y : PLT($X,$Y)
+
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+add_symbol('MOD', 'rTmMod', 'rCtMod', 'rOpenMod', 'rAbsMod', {0: 'rCongModL', 1: 'rCongModR'})
+A, B, T_, X, Y = '$A', '$B', '$T', '$X', '$Y'
+add_program_vars(A, B, T_, X, Y)
+
+
+def MOD(x, y): return ('MOD', x, y)
+
+
+# ---- a = b·q + MOD(a,b)
+section('Lemma: ∀b∀a ∃q. a = b·q + MOD(a,b)', 'GcA', [
+    'Induction on a, for the parameter b = M. Base: 0 = b·0 + 0. Step from',
+    'a = b·q + r, r = MOD(a,b): S(a) = b·q + S(r). If S(r) = b, MOD(S(a),b) = 0',
+    'and S(a) = b·q + b = b·S(q) + 0; otherwise MOD(S(a),b) = S(r).'])
+
+
+def stmt(a):
+    q = spare(a, M_)
+    return exists(q, EQ(a, ADD(MUL(M_, q), MOD(a, M_))))
+
+
+f = abstract(stmt(N_), N_)
+root = Ctx(reserved={N_, M_})
+h0 = chain(ADD(MUL(M_, Z), MOD(Z, M_)), [([0], aMZ(M_)), ([1], apply('rModZ', [('y', M_)], [])),
+                                          ([], aAZ(Z))])                  # M·0 + MOD(0,M) = 0
+base = root.close(root.ex_i(sym(h0), stmt(Z)[1], Z))
+c1 = root.assume(instantiate(f, N_))
+
+
+def with_q(c2, q):
+    R = MOD(N_, M_)
+    h_succ = c2.chain(S(N_), [([0], c2.hyp_()), ([], sym(aAS(MUL(M_, q), R)))])   # S(N) = M·q + S(R)
+    wrap = EQ(S(R), M_)
+    goal = stmt(S(N_))
+
+    def hit(c3):
+        h0 = c3.thru(c3.hyp_(), apply('rModWrap', [('x', N_), ('y', M_)], []))     # MOD(S(N),M) = 0
+        h = c3.chain(S(N_), [([], h_succ), ([1], c3.hyp_()), ([], sym(aMS(M_, q))),
+                             ([], sym(aAZ(MUL(M_, S(q))))), ([1], c3.sym(h0))])
+        return c3.ex_i(h, goal[1], S(q))
+
+    def miss(c3):
+        hn = c3.thru(c3.hyp_(), apply('rModNext', [('x', N_), ('y', M_)], []))     # MOD(S(N),M) = S(R)
+        h = c3.chain(S(N_), [([], h_succ), ([1], c3.sym(hn))])
+        return c3.ex_i(h, goal[1], q)
+    return c2.cases(c2.lem(wrap), hit, miss)
+
+
+step = root.close(c1.discharge(c1.ex_e(c1.hyp_(), with_q)))
+ModDiv = lemma('thModDiv', closed(stmt(N_), M_, N_), gen(induction(f, base, step), M_))
+
+# ---- Assertions
+def cd(d, a, b): return AND(dvd(d, a), dvd(d, b))   # d is a common divisor of a and b
+
+
+def inv(a, b):
+    """∀d. d|a ∧ d|b <=> d|$X ∧ d|$Y"""
+    d = spare(a, b, X, Y)
+    return forall(d, AND(IMP(cd(d, a, b), cd(d, X, Y)), IMP(cd(d, X, Y), cd(d, a, b))))
+
+
+d = spare(A, X, Y)
+Inv = inv(A, B)
+G = NOT(EQ(B, Z))
+Post = forall(d, AND(IMP(dvd(d, A), cd(d, X, Y)), IMP(cd(d, X, Y), dvd(d, A))))
+
+# Program
+cA0, cB0 = ASG(A, X), ASG(B, Y)
+init = SEQ(cA0, cB0)
+cT, cA, cB = ASG(T_, MOD(A, B)), ASG(A, B), ASG(B, T_)
+body = SEQ(cT, SEQ(cA, cB))
+loop = WHILE(G, body)
+prog = SEQ(init, loop)
+
+section('Initialisation', 'GcB', [
+    'Backwards from Inv over $B = $Y and $A = $X: Inv($X,$Y), which is',
+    'p => p twice (thId).'])
+t1 = assign(B, Y, Inv)                                      # {inv($A,$Y)} $B = $Y; {Inv}
+t2 = assign(A, X, inv(A, Y))                                # {inv($X,$Y)} $A = $X; {inv($A,$Y)}
+t3 = apply('rSeq', [('p', inv(X, Y)), ('a', cA0), ('q', inv(A, Y)), ('b', cB0), ('r', Inv)],
+           [t2, t1])
+root = Ctx()
+vcInit = root.all_i(inv(X, Y)[1], lambda c, w: c.and_i(apply('thId', [('i', cd(w, X, Y))], []),
+                                                       apply('thId', [('i', cd(w, X, Y))], [])))
+tInit = apply('rConsPre', [('p', TOP), ('q', inv(X, Y)), ('c', init), ('r', Inv)], [vcInit, t3],
+              name='thInit')
+
+section('Loop body', 'GcC', [
+    'Backwards from Inv over $B = $T, $A = $B, $T = MOD($A,$B): Inv($B,MOD($A,$B)).',
+    'VC: Inv ∧ G => Inv($B,R), R = MOD($A,$B). Take q with $A = $B·q + R (thModDiv).',
+    '  d|$B, d|R  =>  d|$B·q + R = $A, so d|$X, d|$Y by Inv;',
+    '  d|$X, d|$Y =>  d|$A, d|$B by Inv, and d|R by thDvdCancel.'])
+R = MOD(A, B)
+t1 = assign(B, T_, Inv)                                     # {inv($A,$T)} $B = $T; {Inv}
+t2 = assign(A, B, inv(A, T_))                               # {inv($B,$T)} $A = $B; {inv($A,$T)}
+t3 = assign(T_, R, inv(B, T_))                              # {inv($B,R)} $T = R; {inv($B,$T)}
+t4 = apply('rSeq', [('p', inv(B, T_)), ('a', cA), ('q', inv(A, T_)), ('b', cB), ('r', Inv)], [t2, t1])
+t5 = apply('rSeq', [('p', inv(B, R)), ('a', cT), ('q', inv(B, T_)), ('b', SEQ(cA, cB)), ('r', Inv)],
+           [t3, t4])
+
+root = Ctx()
+c = root.assume(AND(Inv, G))
+h_inv = c.and_l(c.hyp_())
+
+
+def with_q(c2, q):
+    BQ = MUL(B, q)
+    h_eq = c2.hyp_()                                        # $A = $B·q + R
+
+    def prove(c3, w):
+        h_w = c3.all_e(h_inv, w)
+
+        c4 = c3.assume(cd(w, B, R))
+        dB, dR = c4.and_l(c4.hyp_()), c4.and_r(c4.hyp_())
+        dBQ = c4.thru(dB, inst('thDvdMulR', w, B, q))
+        dSum = c4.mp(dR, c4.thru(dBQ, inst('thDvdAdd', w, BQ, R)))
+        dA = c4.mp(dSum, c4.thru(c4.sym(h_eq), inst('thDvdEq', w, ADD(BQ, R), A)))
+        fwd = c4.discharge(c4.mp(c4.and_i(dA, dB), c4.and_l(h_w)))
+
+        c5 = c3.assume(cd(w, X, Y))
+        h_ab = c5.mp(c5.hyp_(), c5.and_r(h_w))
+        dA, dB = c5.and_l(h_ab), c5.and_r(h_ab)
+        dSum = c5.mp(dA, c5.thru(h_eq, inst('thDvdEq', w, A, ADD(BQ, R))))
+        dBQ = c5.thru(dB, inst('thDvdMulR', w, B, q))
+        dR = c5.mp(dSum, c5.thru(dBQ, inst('thDvdCancel', w, BQ, R)))
+        bwd = c5.discharge(c5.and_i(dB, dR))
+        return c3.and_i(fwd, bwd)
+    return c2.all_i(inv(B, R)[1], prove)
+
+
+vcBody = root.close(c.discharge(c.ex_e(c.get(inst(ModDiv, B, A)), with_q)))
+tBody = apply('rConsPre', [('p', AND(Inv, G)), ('q', inv(B, R)), ('c', body), ('r', Inv)],
+              [vcBody, t5], name='thBody')
+tLoop = apply('rWhile', [('p', Inv), ('b', G), ('c', body)], [tBody])
+
+section('Loop exit and the whole program', 'GcD', [
+    'VC: Inv ∧ ¬¬EQ($B,0) => Post. $B = 0 (thDNE), so every d divides $B',
+    '(thDvdZero), and d|$A <=> d|$A ∧ d|$B <=> d|$X ∧ d|$Y by Inv.'])
+root = Ctx()
+c = root.assume(AND(Inv, NOT(G)))
+h_inv = c.and_l(c.hyp_())
+h_b0 = c.thru(c.and_r(c.hyp_()), apply('thDNE', [('i', EQ(B, Z))], []))   # $B = 0
+
+
+def prove(c2, w):
+    h_w = c2.all_e(h_inv, w)
+    c3 = c2.assume(dvd(w, A))
+    dB = c3.mp(c3.get(inst('thDvdZero', w)), c3.thru(c3.sym(h_b0), inst('thDvdEq', w, Z, B)))
+    fwd = c3.discharge(c3.mp(c3.and_i(c3.hyp_(), dB), c3.and_l(h_w)))
+    c4 = c2.assume(cd(w, X, Y))
+    bwd = c4.discharge(c4.and_l(c4.mp(c4.hyp_(), c4.and_r(h_w))))
+    return c2.and_i(fwd, bwd)
+
+
+vcExit = root.close(c.discharge(c.all_i(Post[1], prove)))
+tLoopPost = apply('rConsPost', [('p', Inv), ('c', loop), ('q', AND(Inv, NOT(G))), ('r', Post)],
+                  [tLoop, vcExit], name='thLoop')
+apply('rSeq', [('p', TOP), ('a', init), ('q', Inv), ('b', loop), ('r', Post)],
+      [tInit, tLoopPost], name='thProgram')
+prose('pProgram', 'The program sets $A to the greatest common divisor of $X and $Y.')
+?>
+
+## Extraction: gcd.py, generated from the checked value of thProgram (lib/extract.py)
+<?py
+from extract import write_py
+write_py(env, 'thProgram', 'gcd', 'gcd.py', __file__)
+?>

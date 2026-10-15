@@ -123,6 +123,7 @@ def V(n): return ('V', n)
 Z = '0'
 K_, M_, N_ = 'K', 'M', 'N'
 PARAMS = ('K', 'M', 'N', 'U', 'W', 'X', 'Y', 'Z')   # in their PLT order
+ORDER = list(PARAMS)   # all parameters in PLT order, program variables ($A, ...) after Z
 V0 = V(Z)
 
 
@@ -174,6 +175,16 @@ def add_symbol(op, term, ct, open_, abs_, cong):
     ABS_RULES[op] = abs_
     for i, rule in cong.items():
         CONG[(op, i)] = rule
+
+
+def add_program_vars(*names):
+    """Program variables that are parameters (rTm$A, rPar$A, PLT after Z),
+    for the general assignment rule rAssign of hoare.btp."""
+    for w in names:
+        if w in ORDER:
+            continue
+        ORDER.append(w)
+        ATOM_RULES[w] = 'rTm' + w
 
 
 # ---------------------------------------------------------------- state
@@ -436,18 +447,18 @@ def par(w):
 
 def plt(a, b):
     def go():
-        i, j = PARAMS.index(a), PARAMS.index(b)
+        i, j = ORDER.index(a), ORDER.index(b)
         assert i < j
         if j == i + 1:
             return apply(f'rPlt{a}{b}', [], [])
-        m = PARAMS[i + 1]
+        m = ORDER[i + 1]
         return apply('rPltT', [('a', a), ('b', m), ('c', b)], [plt(a, m), plt(m, b)])
     return memo(('PLT', a, b), go)
 
 
 def diff(w, o):
     def go():
-        if PARAMS.index(w) < PARAMS.index(o):
+        if ORDER.index(w) < ORDER.index(o):
             return apply('rDiffL', [('w', w), ('o', o)], [plt(w, o)])
         return apply('rDiffG', [('w', w), ('o', o)], [plt(o, w)])
     return memo(('DIFF', w, o), go)
@@ -465,7 +476,7 @@ def ct(t):
     def go():
         if t == Z:
             return apply('rCt0', [], [])
-        if t in PARAMS:
+        if t in ORDER:
             return apply('rCtPar', [('w', t)], [par(t)])
         if t in CT_ATOMS:
             return apply(CT_ATOMS[t], [], [])
@@ -483,7 +494,7 @@ def open_(k, f, t):
             return apply('rOpenBound', [('n', f[1]), ('k', k), ('t', t)], [ltj(f[1], k)])
         if f in OPEN_ATOMS:
             return apply(OPEN_ATOMS[f], [('k', k), ('t', t)], [])
-        if f in PARAMS:
+        if f in ORDER:
             return apply('rOpenPar', [('w', f), ('k', k), ('t', t)], [par(f)])
         if f[0] in BINDERS:
             inner, g = open_(S(k), f[1], t)
@@ -505,7 +516,7 @@ def abs_(k, w, g):
             return apply('rAbsBound', [('n', g[1]), ('k', k), ('w', w)], [ltj(g[1], k)])
         if g in ABS_ATOMS:
             return apply(ABS_ATOMS[g], [('k', k), ('w', w)], [])
-        if g in PARAMS:
+        if g in ORDER:
             return apply('rAbsPar', [('k', k), ('w', w), ('o', g)], [diff(w, g)])
         if g[0] in BINDERS:
             inner, f = abs_(S(k), w, g[1])
@@ -882,6 +893,14 @@ def or_elim(h_p, h_q, r_):
     p, q = val(h_p)[1][1], val(h_q)[1][1]
     e = apply('rOrE', [('p', p), ('q', q), ('r', r_)], [])
     return mp(h_q, mp(h_p, e))
+
+
+# ---------------------------------------------------------------- Hoare logic
+def assign(x, e, q):
+    """{q[e/x]} x = e; {q} for a program variable x (rAssign, lib/hoare.btp)"""
+    a, f = abs_(Z, x, q)
+    o, p = open_(Z, f, e)
+    return apply('rAssign', [('x', x), ('e', e), ('q', q), ('f', f), ('p', p)], [a, o])
 
 
 # ---------------------------------------------------------------- computation

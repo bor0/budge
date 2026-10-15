@@ -76,10 +76,12 @@ rMulRed  : x*y=zn MOD n -> x*y=z MOD n    # subtract n in one step
 No zero (values can't be empty): pick inputs with no 0 intermediates. `rMulRed` proves
 congruence, not full reduction.
 
-**Hoare assignment** (`hoare.btp`, rules in `lib/hoare.btp`). `{Q[e/x]} x:=e {Q}` can't be
-generic (no substitution inside values); `{q} x:=e {p}` is unsound (accepts any
-precondition). Fix the assertion shape, one axiom per program variable (side conditions
-unchecked), so Q[e/x] is just filling in `e`; they stay in the program's file:
+**Hoare assignment** (rules in `lib/hoare.btp`). General: `rAssign : ABS(0,x,q,f) ->
+OPEN(0,f,e,p) -> {p} x = e; {q}` computes Q[e/x] with fol's judgements, all checked; program
+variables must be parameters (`gcd.btp`: `rTm$A`, `rPar$A`, `PLT` chain after Z; tactics'
+`add_program_vars`, `assign(x, e, q)`). `{q} x:=e {p}` is unsound (accepts any precondition).
+Older style (`hoare.btp`, variables as constants): fix the assertion shape, one axiom per
+program variable (side conditions unchecked), so Q[e/x] is just filling in `e`:
 ```
 rAssignI : {EQ(a,DIV2(e))} $I = e; {EQ(a,DIV2($I))}   # a must not mention $I
 rAssignS : {EQ(e,g)} $S = e; {EQ($S,g)}               # g must not mention $S
@@ -90,8 +92,10 @@ notation (`EQ`, `¬`, `MOD2`), so `rIf`/`rWhile` put conditions into assertions 
 the verification conditions are library lemmas (`lib/parity.btp`), not axioms.
 Extraction: a last block calls `lib/extract.py`'s `write_py(env, 'thProgram', fn, 'hoare.py', __file__)`,
 which parses the *checked* triple from `env['theorems']` and writes Python (unassigned variables are
-parameters, assigned ones in the postcondition the result, pre/post become `assert`s). Trusted: its
-symbol table (MOD2 as `% 2`, `$` dropped, …; unknown symbols are errors) and termination.
+parameters, assigned ones in the postcondition the result, pre/post become `assert`s, or comments
+when quantified). Trusted: its symbol table (MOD2 as `% 2`, MOD as `%`, `$` dropped, …; unknown
+symbols are errors) and termination. `gcd.btp`: Euclid, invariant "same common divisors as
+$X, $Y"; MOD by recursion (`rModWrap`/`rModNext`), `thModDiv`: a = b·q + MOD(a,b).
 
 **Quantifiers** (`lib/fol.btp`). `rInst` can't handle nesting or capture; use de
 Bruijn indices: `ALL(EX(R(V(S(0)),V(0))))` is ∀x∃y R(x,y). Two judgements, one
@@ -129,11 +133,12 @@ not a duplicate: don't load a library for a coincidental symbol.
 (0+n = n, S(m)+n = S(m+n), + and · commutative and associative, distributivity, …).
 `sum.btp` (loads peano): SUM(n) = 0+1+…+n by recursion; `gauss.btp` proves 2·SUM(n) = n·S(n).
 `parity.btp` (loads peano; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
-`thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads logic, strings): Hoare rules and program syntax.
+`thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads fol, strings): Hoare rules and program syntax.
 `nd.btp` (loads logic; Python block): `thCurry`, `thC`, `thW`, `thCP2`, `thAbs`, `thLEM`, the
 schemas natural deduction compiles to. `order.btp` (loads semiring, nd; Python block): ≤ is
 ∃k. b = a+k, < is S(a) ≤ b, as formulas; totality, cancellation, `thLeSuccNZ`, `thLeTwoNotOne`, ….
-`divides.btp` (loads order): d|m is ∃c. m = d·c; `thDvdSucc`: p|a, p|S(a) ⇒ p = 1. `fact.btp` (loads divides): FACT, `thFactPos`,
+`divides.btp` (loads order): d|m is ∃c. m = d·c; `thDvdSucc`: p|a, p|S(a) ⇒ p = 1; `thDvdZero`,
+`thDvdAdd`, `thDvdCancel` (d|a, d|a+b ⇒ d|b). `fact.btp` (loads divides): FACT, `thFactPos`,
 `thDvdFact`; `primes.btp` proves Euclid's theorem on them.
 
 Big proofs are `<?py ... ?>` blocks over `examples/lib/tactics.py`. A block starts

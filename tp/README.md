@@ -53,11 +53,11 @@ Budge-TP will print all derived theorems except those whose name ends in a `!`.
 - [semiring.btp](./examples/lib/semiring.btp) - Commutativity, associativity and distributivity of + and ·, each proved by induction
 - [nd.btp](./examples/lib/nd.btp) - Natural deduction as derived Hilbert schemas: currying, permutation, contraction, contraposition, reductio, excluded middle
 - [order.btp](./examples/lib/order.btp) - ≤ and < as formulas: totality, cancellation, and their interaction with successor
-- [divides.btp](./examples/lib/divides.btp) - Divisibility: transitivity, products, and a common divisor of a and a+1 is 1
+- [divides.btp](./examples/lib/divides.btp) - Divisibility: transitivity, products, sums, cancellation, and a common divisor of a and a+1 is 1
 - [fact.btp](./examples/lib/fact.btp) - Factorial: n! ≥ 1, and every 1 ≤ d ≤ n divides n!
 - [sum.btp](./examples/lib/sum.btp) - SUM(n) = 0 + 1 + ... + n, defined by recursion
 - [parity.btp](./examples/lib/parity.btp) - n mod 2 and n div 2 defined by recursion, with lemmas about them
-- [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: sequence, skip, if, while and consequence rules over a small imperative language
+- [hoare.btp](./examples/lib/hoare.btp) - Hoare logic: assignment, sequence, skip, if, while and consequence rules over a small imperative language
 
 ## Example
 
@@ -73,8 +73,9 @@ In the `examples` folder you can find the following proofs:
 - [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation
 - [Division](./examples/division.btp) - Division with remainder: ∀b ≠ 0 ∀a ∃q ∃r. a = b·q + r ∧ r < b
 - [DND](./examples/dnd.btp) - Prime numbers (divisibility)
+- [GCD](./examples/gcd.btp) - Euclid's algorithm verified with Hoare logic: the result is the greatest common divisor, extracted to [gcd.py](./examples/gcd.py)
 - [Hanoi](./examples/hanoi.btp) - An implementation of the rules for Hanoi's tower
-- [Hoare logic](./examples/hoare.btp) - A program counting odd numbers, verified from Peano's axioms with Hoare logic
+- [Hoare logic](./examples/hoare.btp) - A program counting odd numbers, verified from Peano's axioms with Hoare logic, extracted to [hoare.py](./examples/hoare.py)
 - [List](./examples/list.btp) - List implementation and some example functions on them
 - [LLM](./examples/llm.btp) - A toy bigram language model with greedy decoding
 - [MU puzzle](./examples/miu.btp) - A simple usage of a small formal system

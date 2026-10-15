@@ -9,10 +9,11 @@ terms the proof was built from), so the Python is the program Budge verified.
 Program variables ($I, $N, ...) are Python variables without the $; the ones read
 but never assigned are the function's parameters, the assigned ones the
 postcondition mentions are its result. Pre- and postcondition become
-asserts.
+asserts, or comments if they can't run (quantifiers).
 
 Trusted, as in Coq's extraction: the table below, which reads library
-symbols as Python on natural numbers (MOD2 as % 2, DIV2 as // 2, ...), and
+symbols as Python on natural numbers (MOD2 as % 2, DIV2 as // 2, MOD as %,
+which agree with the library's definitions where the program uses them), and
 termination, which partial correctness does not give. A symbol not in the
 table is an error, never passed through.
 """
@@ -24,6 +25,7 @@ TERMS = {
     'S': lambda x: f'{x} + 1',
     'ADD': lambda x, y: f'{x} + {y}',
     'MUL': lambda x, y: f'{x} * {y}',
+    'MOD': lambda x, y: f'{x} % {y}',
     'MOD2': lambda x: f'{x} % 2',
     'DIV2': lambda x: f'{x} // 2',
     'EQ': lambda x, y: f'{x} == {y}',
@@ -157,6 +159,14 @@ def triple(value):
     return value[1:i], value[i + 2:j], value[j + 2:-1]
 
 
+def check(assertion, what):
+    """An assert, or a comment if the assertion can't run"""
+    try:
+        return f'    assert {expr(assertion)}'
+    except ValueError:
+        return f'    # {what} (proved, not executable): {assertion}'
+
+
 def to_py(name, function, value):
     pre, prog, post = triple(value)
     cmds = commands(prog)
@@ -176,9 +186,9 @@ def to_py(name, function, value):
     for p in params:        # the proof is about natural numbers
         lines.append(f"    if {p} < 0:\n        raise ValueError('{p} < 0')")
     if pre != '⊤':
-        lines.append(f'    assert {expr(pre)}')
+        lines.append(check(pre, 'precondition'))
     lines += emit(cmds, 1)
-    lines += [f'    assert {expr(post)}', f"    return {', '.join(results)}", '']
+    lines += [check(post, 'postcondition'), f"    return {', '.join(results)}", '']
     return '\n'.join(lines)
 
 
