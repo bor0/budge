@@ -160,7 +160,8 @@ per subterm (`rIndExp`: M, N, each with OPEN and ABS premises; IHs as curried pr
 `⊢(h=>(g=>p))`). One sort, so it and `rInd` both say "every object is one of these"; consistent
 because numbers can code the terms. Quantify the IH over everything that varies (`∀k∀s`), and
 use continuations (`COMP(e,k)`) instead of appending lists. Constants register in `ATOM_RULES`,
-`CT_ATOMS`, `OPEN_ATOMS`, `ABS_ATOMS`.
+`CT_ATOMS`, `OPEN_ATOMS`, `ABS_ATOMS`. Well-founded induction over a relation (`aquinas.btp`'s
+`rNoRegress`): IH `ALL((MOVES(V(0),N)=>f))`, putting f as is under the new ∀ rebinds its V(0).
 
 **Natural deduction in Python blocks** (`lib/tactics.py` `Ctx`, over `lib/nd.btp`). A proof
 under hypotheses is a context formula G (⊤, then (G∧H) per assumption); a fact X there is

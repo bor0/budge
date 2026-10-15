@@ -1,0 +1,147 @@
+# Aquinas's First Way: the argument from motion (Summa Theologiae I, q.2, a.3)
+#
+# "It is certain, and evident to our senses, that in the world some things
+# are in motion. Now whatever is in motion is put in motion by another. [...]
+# But this cannot go on to infinity, because then there would be no first
+# mover, and, consequently, no other mover. [...] Therefore it is necessary
+# to arrive at a first mover, moved by no other; and this everyone
+# understands to be God."
+#
+# Proved by the Python block below; Budge checks every step.
+#
+# MOVES(x,y) is "x moves y". Premises:
+#   rSomethingMoves  something is moved by something: ∃y∃x. MOVES(x,y)
+#   rNoRegress       the chain of movers cannot go on to infinity
+# "Cannot go on to infinity" is made precise as well-foundedness, stated as
+# an induction principle: if a property holds of y whenever it holds of
+# everything that moves y, it holds of everything. (No infinite chain
+# ... x₃ moves x₂ moves x₁ is the same thing: the property "no infinite chain
+# of movers leads to y" passes from the movers of y to y.)
+#
+# Theorems:
+#   thFirstMover     ∃x. ¬(∃z. z moves x) ∧ (∃y. x moves y): an unmoved mover
+#   thNotSelfMoved   ∀x. ¬(x moves x)
+# The proof of thFirstMover is by contradiction: if every mover were moved,
+# then, by rNoRegress, nothing would be a mover (a mover of y is moved by some
+# z, which is then a mover too, and the property passes down). But
+# something moves something.
+#
+# What the logic shows:
+# - "Whatever is moved is moved by another" is not needed as a premise: it
+#   follows from the no-regress premise (thNotSelfMoved). The no-regress
+#   premise carries the whole argument.
+# - The conclusion is that there is *an* unmoved mover. Nothing here makes it
+#   unique, so "and this everyone understands to be God" is a further step,
+#   one Aquinas argues for later (q.11, God's unity).
+
+<?py load('lib/fol.btp') ?>
+<?py load('lib/nd.btp') ?>
+## x moves y
+rTmMoves   : MOVES(x,y)
+rOpenMoves : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,MOVES(x,y),t,MOVES(u,v))
+rAbsMoves  : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,MOVES(x,y),MOVES(u,v))
+
+## Premise 1: some things are in motion
+rSomethingMoves : ⊢EX(EX(MOVES(V(0),V(S(0)))))
+
+## Premise 2: no infinite regress of movers. If f holds of N whenever it
+## holds of every mover of N (N arbitrary: the ABS premise checks N ∉ f),
+## f holds of everything.
+rNoRegress : ABS(0,N,g,f) -> ⊢(ALL((MOVES(V(0),N)=>f))=>g) -> ⊢ALL(f)
+
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+TERM_RULES['MOVES'], OPEN_RULES['MOVES'], ABS_RULES['MOVES'] = 'rTmMoves', 'rOpenMoves', 'rAbsMoves'
+
+
+def MOVES(x, y): return ('MOVES', x, y)
+
+
+def moved(y):
+    z = spare(y)
+    return exists(z, MOVES(z, y))      # something moves y
+
+
+def mover(x):
+    y = spare(x)
+    return exists(y, MOVES(x, y))      # x moves something
+
+
+def no_regress(f, premise, name=None):
+    """From ⊢(∀x(MOVES(x,N) => f(x)) => f(N)), conclude ⊢ALL(f)."""
+    g = instantiate(f, N_)
+    a, f2 = abs_(Z, N_, g)
+    assert f2 == f
+    return apply('rNoRegress', [('f', f), ('g', g)], [a, premise], name=name)
+
+
+def ih(f):
+    return ALL(IMP(MOVES(V0, N_), f))
+
+
+section('Nothing moves itself', 'AqA', [
+    'By rNoRegress with f(y) = ¬MOVES(y,y): if no mover of N moves itself and',
+    'N moved itself, N would be a mover of N that moves itself.'])
+f = abstract(NOT(MOVES(N_, N_)), N_)
+root = Ctx(reserved={N_})
+c = root.assume(ih(f))
+
+
+def contra(c2):
+    h = c2.mp(c2.hyp_(), c2.all_e(c2.hyp_(ih(f)), N_))     # ¬MOVES(N,N)
+    return c2.hyp_(), h
+
+
+premise = root.close(c.discharge(c.absurd(MOVES(N_, N_), contra)))
+no_regress(f, premise, name='thNotSelfMoved')
+
+section('There is a first mover', 'AqB', [
+    'Suppose not (¬FM): every mover is moved. By rNoRegress with',
+    'f(y) = ¬FM => ¬mover(y): if N is a mover, it is moved (¬FM), by some x,',
+    'which is a mover (of N), against the hypothesis for x. So nothing is a',
+    'mover; but rSomethingMoves gives one.'])
+x_ = spare()
+FM = exists(x_, AND(NOT(moved(x_)), mover(x_)))
+f = abstract(IMP(NOT(FM), NOT(mover(N_))), N_)
+root = Ctx(reserved={N_})
+c1 = root.assume(ih(f))
+c2 = c1.assume(NOT(FM))
+
+
+def n_is_mover(c3):
+    def first(c4):                                         # ¬moved(N) gives FM
+        h = c4.and_i(c4.hyp_(), c4.hyp_(mover(N_)))
+        return c4.ex_i(h, FM[1], N_), c4.hyp_(NOT(FM))
+    h_moved = c3.by_contra(moved(N_), first)
+
+    def with_x(c4, x):                                     # MOVES(x,N)
+        h_mover = c4.ex_i(c4.hyp_(), mover(x)[1], N_)       # x is a mover
+        h_ih = c4.mp(c4.hyp_(), c4.all_e(c4.hyp_(ih(f)), x))
+        h_not = c4.mp(c4.hyp_(NOT(FM)), h_ih)               # ¬mover(x)
+        return c4.efq(h_mover, h_not, NOT(mover(N_)))
+    return c3.hyp_(), c3.ex_e(h_moved, with_x)
+
+
+premise = root.close(c1.discharge(c2.discharge(c2.absurd(mover(N_), n_is_mover))))
+NoMover = no_regress(f, premise)                           # ∀y. ¬FM => ¬mover(y)
+
+root = Ctx()
+
+
+def no_first(c):
+    def with_y(c2, y):
+        def with_x(c3, x):                                 # MOVES(x,y)
+            h_mover = c3.ex_i(c3.hyp_(), mover(x)[1], y)
+            h_not = c3.mp(c3.hyp_(NOT(FM)), c3.all_e(NoMover, x))
+            return c3.efq(h_mover, h_not, FM)
+        return c2.ex_e(c2.hyp_(), with_x)
+    return c.ex_e(c.get(apply('rSomethingMoves', [], [])), with_y), c.hyp_()
+
+
+h = root.close(root.by_contra(FM, no_first))
+lemma('thFirstMover', FM, h)
+prose('pFirstMover', 'There is a first mover, moved by no other.')
+?>

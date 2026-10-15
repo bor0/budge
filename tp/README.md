@@ -66,6 +66,7 @@ In the `examples` folder you can find the following proofs:
 - [Gestalt](./examples/gestalt.btp) - Differentiation and contact in Gestalt therapy
 - [Gauss](./examples/gauss.btp) - Gauss's sum formula 0 + 1 + ... + n = n(n+1)/2 from Peano's axioms, using the library
 - [God](./examples/God.btp) - Anselm's ontological argument as a contraposition, using the library
+- [Aquinas](./examples/aquinas.btp) - Aquinas's First Way: no infinite regress of movers gives an unmoved mover, and makes "moved by another" redundant
 - [Automaton](./examples/automaton.btp) - A finite-state machine
 - [Boolean](./examples/boolean.btp) - An identity of Boolean algebra, proved for an arbitrary element, generalised and instantiated
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
