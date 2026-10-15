@@ -70,6 +70,7 @@ In the `examples` folder you can find the following proofs:
 - [Boolean](./examples/boolean.btp) - An identity of Boolean algebra, proved for an arbitrary element, generalised and instantiated
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
 - [CL](./examples/cl.btp) - Propositional logic with ∧ and ∨ by hand, using the library
+- [Compiler](./examples/compiler.btp) - A verified compiler: arithmetic expressions compiled to a stack machine compute their value, for every expression (McCarthy–Painter)
 - [Coordgame](./examples/coordgame.btp) - Game on coordinates implementation
 - [Division](./examples/division.btp) - Division with remainder: ∀b ≠ 0 ∀a ∃q ∃r. a = b·q + r ∧ r < b
 - [DND](./examples/dnd.btp) - Prime numbers (divisibility)

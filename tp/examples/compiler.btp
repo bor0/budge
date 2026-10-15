@@ -1,0 +1,237 @@
+# A verified compiler: arithmetic expressions to a stack machine
+#
+# Proved by the Python block below; Budge checks every
+# step, including those of the imported library.
+#
+# Source: NUM(n), PLUS(a,b), TIMES(a,b), with EVAL their value.
+# Target: code for a stack machine, a chain of instructions ending in HALT:
+#   PUSH(n,k)   push n, continue with k
+#   IADD(k)     replace the top two values x, y (y on top) by x+y, continue with k
+#   IMUL(k)     the same with x·y
+# EXEC(k,s) runs code k on stack s (CONS(x,s) is x on top of s, EMPTY the
+# empty stack) and is the stack at HALT.
+#
+# COMP(e,k) is the code for e followed by k, so no appending is needed:
+#   COMP(PLUS(a,b),k) = COMP(a, COMP(b, IADD(k)))
+#
+# Theorem (McCarthy and Painter, 1967):
+#   thCorrect  ∀e∀k∀s. EXEC(COMP(e,k),s) = EXEC(k,CONS(EVAL(e),s))
+#   thCompile  ∀e. EXEC(COMP(e,HALT),EMPTY) = CONS(EVAL(e),EMPTY)
+# i.e. running the compiled code of any e leaves exactly its value. By
+# induction on e (rIndExp); in the PLUS case, with ⟦a⟧ = EVAL(a):
+#   EXEC(COMP(a, COMP(b,IADD(k))), s)
+#     = EXEC(COMP(b,IADD(k)), ⟦a⟧::s)     induction hypothesis for a
+#     = EXEC(IADD(k), ⟦b⟧::⟦a⟧::s)        induction hypothesis for b
+#     = EXEC(k, ⟦a⟧+⟦b⟧::s)               one machine step
+#     = EXEC(k, ⟦PLUS(a,b)⟧::s)           definition of EVAL
+# The hypotheses must hold for every k and s: for a it is used with
+# k = COMP(b,IADD(k)), for b with the stack ⟦a⟧::s.
+#
+# Expression induction is stated like peano.btp's rInd, with parameters M and
+# N for the subexpressions (the ABS premises also check M, N ∉ f). There is one
+# sort, so it says every object is an expression, while rInd says every object
+# is a number. Both hold when the numbers code the expressions (NUM(n) = 3n,
+# PLUS(a,b) = 3⟨a,b⟩+1, TIMES(a,b) = 3⟨a,b⟩+2 for a pairing ⟨a,b⟩ ≥ a, b).
+
+<?py load('lib/peano.btp') ?>
+<?py load('lib/nd.btp') ?>
+## Source language and its meaning
+rEvalNum   : ⊢EQ(EVAL(NUM(x)),x)
+rEvalPlus  : ⊢EQ(EVAL(PLUS(x,y)),ADD(EVAL(x),EVAL(y)))
+rEvalTimes : ⊢EQ(EVAL(TIMES(x,y)),MUL(EVAL(x),EVAL(y)))
+
+## The stack machine
+rExecHalt : ⊢EQ(EXEC(HALT,s),s)
+rExecPush : ⊢EQ(EXEC(PUSH(x,k),s),EXEC(k,CONS(x,s)))
+rExecAdd  : ⊢EQ(EXEC(IADD(k),CONS(y,CONS(x,s))),EXEC(k,CONS(ADD(x,y),s)))
+rExecMul  : ⊢EQ(EXEC(IMUL(k),CONS(y,CONS(x,s))),EXEC(k,CONS(MUL(x,y),s)))
+
+## The compiler
+rCompNum   : ⊢EQ(COMP(NUM(x),k),PUSH(x,k))
+rCompPlus  : ⊢EQ(COMP(PLUS(x,y),k),COMP(x,COMP(y,IADD(k))))
+rCompTimes : ⊢EQ(COMP(TIMES(x,y),k),COMP(x,COMP(y,IMUL(k))))
+
+## Induction on expressions: f holds for NUM(N), and for PLUS(M,N) and
+## TIMES(M,N) if it holds for M and N
+rIndExp : OPEN(0,f,NUM(N),b) -> ABS(0,N,g,f) -> OPEN(0,f,M,h) -> ABS(0,M,h,f) -> OPEN(0,f,PLUS(M,N),p) -> OPEN(0,f,TIMES(M,N),q) -> ⊢b -> ⊢(h=>(g=>p)) -> ⊢(h=>(g=>q)) -> ⊢ALL(f)
+
+## Syntax (see lib/fol.btp): terms, CT, OPEN, ABS and congruence
+rTmNum    : NUM(x)
+rTmPlus   : PLUS(x,y)
+rTmTimes  : TIMES(x,y)
+rTmEval   : EVAL(x)
+rTmHalt   : HALT
+rTmPush   : PUSH(x,y)
+rTmIadd   : IADD(x)
+rTmImul   : IMUL(x)
+rTmEmpty  : EMPTY
+rTmCons   : CONS(x,y)
+rTmExec   : EXEC(x,y)
+rTmComp   : COMP(x,y)
+rCtNum    : CT(x) -> CT(NUM(x))
+rCtPlus   : CT(x) -> CT(y) -> CT(PLUS(x,y))
+rCtTimes  : CT(x) -> CT(y) -> CT(TIMES(x,y))
+rCtEval   : CT(x) -> CT(EVAL(x))
+rCtHalt   : CT(HALT)
+rCtPush   : CT(x) -> CT(y) -> CT(PUSH(x,y))
+rCtIadd   : CT(x) -> CT(IADD(x))
+rCtImul   : CT(x) -> CT(IMUL(x))
+rCtEmpty  : CT(EMPTY)
+rCtCons   : CT(x) -> CT(y) -> CT(CONS(x,y))
+rCtExec   : CT(x) -> CT(y) -> CT(EXEC(x,y))
+rCtComp   : CT(x) -> CT(y) -> CT(COMP(x,y))
+rOpenNum   : OPEN(k,x,t,u) -> OPEN(k,NUM(x),t,NUM(u))
+rOpenPlus  : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,PLUS(x,y),t,PLUS(u,v))
+rOpenTimes : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,TIMES(x,y),t,TIMES(u,v))
+rOpenEval  : OPEN(k,x,t,u) -> OPEN(k,EVAL(x),t,EVAL(u))
+rOpenHalt  : OPEN(k,HALT,t,HALT)
+rOpenPush  : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,PUSH(x,y),t,PUSH(u,v))
+rOpenIadd  : OPEN(k,x,t,u) -> OPEN(k,IADD(x),t,IADD(u))
+rOpenImul  : OPEN(k,x,t,u) -> OPEN(k,IMUL(x),t,IMUL(u))
+rOpenEmpty : OPEN(k,EMPTY,t,EMPTY)
+rOpenCons  : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,CONS(x,y),t,CONS(u,v))
+rOpenExec  : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,EXEC(x,y),t,EXEC(u,v))
+rOpenComp  : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,COMP(x,y),t,COMP(u,v))
+rAbsNum    : ABS(k,w,x,u) -> ABS(k,w,NUM(x),NUM(u))
+rAbsPlus   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,PLUS(x,y),PLUS(u,v))
+rAbsTimes  : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,TIMES(x,y),TIMES(u,v))
+rAbsEval   : ABS(k,w,x,u) -> ABS(k,w,EVAL(x),EVAL(u))
+rAbsHalt   : ABS(k,w,HALT,HALT)
+rAbsPush   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,PUSH(x,y),PUSH(u,v))
+rAbsIadd   : ABS(k,w,x,u) -> ABS(k,w,IADD(x),IADD(u))
+rAbsImul   : ABS(k,w,x,u) -> ABS(k,w,IMUL(x),IMUL(u))
+rAbsEmpty  : ABS(k,w,EMPTY,EMPTY)
+rAbsCons   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,CONS(x,y),CONS(u,v))
+rAbsExec   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,EXEC(x,y),EXEC(u,v))
+rAbsComp   : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,COMP(x,y),COMP(u,v))
+rCongNum    : ⊢(EQ(x,y)=>EQ(NUM(x),NUM(y)))
+rCongPlusL  : ⊢(EQ(x,y)=>EQ(PLUS(x,z),PLUS(y,z)))
+rCongPlusR  : ⊢(EQ(x,y)=>EQ(PLUS(z,x),PLUS(z,y)))
+rCongTimesL : ⊢(EQ(x,y)=>EQ(TIMES(x,z),TIMES(y,z)))
+rCongTimesR : ⊢(EQ(x,y)=>EQ(TIMES(z,x),TIMES(z,y)))
+rCongEval   : ⊢(EQ(x,y)=>EQ(EVAL(x),EVAL(y)))
+rCongPushL  : ⊢(EQ(x,y)=>EQ(PUSH(x,z),PUSH(y,z)))
+rCongPushR  : ⊢(EQ(x,y)=>EQ(PUSH(z,x),PUSH(z,y)))
+rCongIadd   : ⊢(EQ(x,y)=>EQ(IADD(x),IADD(y)))
+rCongImul   : ⊢(EQ(x,y)=>EQ(IMUL(x),IMUL(y)))
+rCongConsL  : ⊢(EQ(x,y)=>EQ(CONS(x,z),CONS(y,z)))
+rCongConsR  : ⊢(EQ(x,y)=>EQ(CONS(z,x),CONS(z,y)))
+rCongExecL  : ⊢(EQ(x,y)=>EQ(EXEC(x,z),EXEC(y,z)))
+rCongExecR  : ⊢(EQ(x,y)=>EQ(EXEC(z,x),EXEC(z,y)))
+rCongCompL  : ⊢(EQ(x,y)=>EQ(COMP(x,z),COMP(y,z)))
+rCongCompR  : ⊢(EQ(x,y)=>EQ(COMP(z,x),COMP(z,y)))
+
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+for _op, _n in (('NUM', 'Num'), ('EVAL', 'Eval'), ('IADD', 'Iadd'), ('IMUL', 'Imul')):
+    add_symbol(_op, f'rTm{_n}', f'rCt{_n}', f'rOpen{_n}', f'rAbs{_n}', {0: f'rCong{_n}'})
+for _op, _n in (('PLUS', 'Plus'), ('TIMES', 'Times'), ('PUSH', 'Push'), ('CONS', 'Cons'),
+                ('EXEC', 'Exec'), ('COMP', 'Comp')):
+    add_symbol(_op, f'rTm{_n}', f'rCt{_n}', f'rOpen{_n}', f'rAbs{_n}',
+               {0: f'rCong{_n}L', 1: f'rCong{_n}R'})
+for _c, _n in (('HALT', 'Halt'), ('EMPTY', 'Empty')):
+    ATOM_RULES[_c], CT_ATOMS[_c] = f'rTm{_n}', f'rCt{_n}'
+    OPEN_ATOMS[_c], ABS_ATOMS[_c] = f'rOpen{_n}', f'rAbs{_n}'
+
+
+def NUM(x): return ('NUM', x)
+def PLUS(x, y): return ('PLUS', x, y)
+def TIMES(x, y): return ('TIMES', x, y)
+def EVAL(x): return ('EVAL', x)
+def PUSH(x, k): return ('PUSH', x, k)
+def IADD(k): return ('IADD', k)
+def IMUL(k): return ('IMUL', k)
+def CONS(x, s): return ('CONS', x, s)
+def EXEC(k, s): return ('EXEC', k, s)
+def COMP(e, k): return ('COMP', e, k)
+
+
+HALT, EMPTY = 'HALT', 'EMPTY'
+U_ = 'U'
+
+
+def correct(e):
+    """∀k∀s. EXEC(COMP(e,k),s) = EXEC(k,CONS(EVAL(e),s))"""
+    return forall(K_, forall(U_, EQ(EXEC(COMP(e, K_), U_), EXEC(K_, CONS(EVAL(e), U_)))))
+
+
+def exp_induction(f, base, step_plus, step_times):
+    """From ⊢f(NUM(N)), ⊢(f(M)=>(f(N)=>f(PLUS(M,N)))) and the same for TIMES, ⊢ALL(f)."""
+    o1, b = open_(Z, f, NUM(N_))
+    a1, f1 = abs_(Z, N_, instantiate(f, N_))
+    o2, h = open_(Z, f, M_)
+    a2, f2 = abs_(Z, M_, h)
+    o3, p = open_(Z, f, PLUS(M_, N_))
+    o4, q = open_(Z, f, TIMES(M_, N_))
+    assert f1 == f2 == f
+    return apply('rIndExp', [('f', f), ('b', b), ('g', instantiate(f, N_)), ('h', h), ('p', p), ('q', q)],
+                 [o1, a1, o2, a2, o3, o4, base, step_plus, step_times])
+
+
+f = abstract(correct(N_), N_)
+
+section('Base: NUM(n)', 'CoA', [
+    'EXEC(COMP(NUM(n),k),s) = EXEC(PUSH(n,k),s) = EXEC(k,CONS(n,s))',
+    '                       = EXEC(k,CONS(EVAL(NUM(n)),s))'])
+h = chain(EXEC(COMP(NUM(N_), K_), U_), [
+    ([0], apply('rCompNum', [('x', N_), ('k', K_)], [])),
+    ([], apply('rExecPush', [('x', N_), ('k', K_), ('s', U_)], [])),
+    ([1, 0], sym(apply('rEvalNum', [('x', N_)], [])))])
+base = gen_all(h, K_, U_)
+assert val(base)[1] == instantiate(f, NUM(N_))
+
+
+def step(op, comp_rule, exec_rule, eval_rule, instr):
+    """⊢(f(M)=>(f(N)=>f(op(M,N)))), by the chain in the header."""
+    root = Ctx(reserved={M_, N_})
+    c1 = root.assume(instantiate(f, M_))
+    c2 = c1.assume(instantiate(f, N_))
+    goal = instantiate(f, (op, M_, N_))
+
+    def prove(c3, k):
+        def prove_s(c4, s):
+            ih_a = c4.all_e(c4.hyp_(instantiate(f, M_)), COMP(N_, instr(k)), s)
+            ih_b = c4.all_e(c4.hyp_(instantiate(f, N_)), instr(k), CONS(EVAL(M_), s))
+            return c4.chain(EXEC(COMP((op, M_, N_), k), s), [
+                ([0], apply(comp_rule, [('x', M_), ('y', N_), ('k', k)], [])),
+                ([], ih_a),
+                ([], ih_b),
+                ([], apply(exec_rule, [('x', EVAL(M_)), ('y', EVAL(N_)), ('k', k), ('s', s)], [])),
+                ([1, 0], sym(apply(eval_rule, [('x', M_), ('y', N_)], [])))])
+        return c3.all_i(instantiate(goal[1], k)[1], prove_s)
+    return root.close(c1.discharge(c2.discharge(c2.all_i(goal[1], prove))))
+
+
+section('Step: PLUS(a,b)', 'CoB', ['The chain in the header.'])
+step_plus = step('PLUS', 'rCompPlus', 'rExecAdd', 'rEvalPlus', IADD)
+section('Step: TIMES(a,b)', 'CoC', ['The same, with IMUL and MUL.'])
+step_times = step('TIMES', 'rCompTimes', 'rExecMul', 'rEvalTimes', IMUL)
+
+section('The theorems', 'CoD', [
+    'thCompile: thCorrect at k = HALT, s = EMPTY, and EXEC(HALT,s) = s.'])
+Correct = lemma('thCorrect', ALL(f), exp_induction(f, base, step_plus, step_times))
+h = trans(inst(Correct, N_, HALT, EMPTY), apply('rExecHalt', [('s', CONS(EVAL(N_), EMPTY))], []))
+lemma('thCompile', forall(N_, EQ(EXEC(COMP(N_, HALT), EMPTY), CONS(EVAL(N_), EMPTY))), gen(h, N_))
+
+section('Example: 1 + 2', 'CoE', [
+    'The code for PLUS(NUM(1),NUM(2)), by the compiler equations, and its result',
+    'by thCompile: no run of the machine needed.'])
+ONE, TWO = S(Z), S(S(Z))
+e = PLUS(NUM(ONE), NUM(TWO))
+code = chain(COMP(e, HALT), [
+    ([], apply('rCompPlus', [('x', NUM(ONE)), ('y', NUM(TWO)), ('k', HALT)], [])),
+    ([1], apply('rCompNum', [('x', TWO), ('k', IADD(HALT))], [])),
+    ([], apply('rCompNum', [('x', ONE), ('k', PUSH(TWO, IADD(HALT)))], []))])
+visible(code, 'thExampleCode')
+value = chain(EVAL(e), [
+    ([], apply('rEvalPlus', [('x', NUM(ONE)), ('y', NUM(TWO))], [])),
+    ([0], apply('rEvalNum', [('x', ONE)], [])),
+    ([1], apply('rEvalNum', [('x', TWO)], [])),
+    ([], add_eval(ONE, TWO))])
+run = chain(EXEC(val(code)[1][2], EMPTY), [
+    ([0], sym(code)), ([], inst('thCompile', e)), ([0], value)])
+visible(run, 'thExampleRun')
+?>

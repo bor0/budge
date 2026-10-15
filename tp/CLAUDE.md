@@ -155,6 +155,13 @@ the ABS premise also checks N ∉ f. Several parameters: `ABS(k,w,g,f)` names th
 parameter `w` (`PAR(w)`), others pass via `DIFF(w,o)`. Use the IH as `thId` `⊢(G=>G)`;
 steps under G: `rK` weakens facts, `thHS` chains, `rS` + `rEqT` give transitivity.
 
+**Other inductive types** (`compiler.btp`). Structural induction like `rInd`, one parameter
+per subterm (`rIndExp`: M, N, each with OPEN and ABS premises; IHs as curried premises
+`⊢(h=>(g=>p))`). One sort, so it and `rInd` both say "every object is one of these"; consistent
+because numbers can code the terms. Quantify the IH over everything that varies (`∀k∀s`), and
+use continuations (`COMP(e,k)`) instead of appending lists. Constants register in `ATOM_RULES`,
+`CT_ATOMS`, `OPEN_ATOMS`, `ABS_ATOMS`.
+
 **Natural deduction in Python blocks** (`lib/tactics.py` `Ctx`, over `lib/nd.btp`). A proof
 under hypotheses is a context formula G (⊤, then (G∧H) per assumption); a fact X there is
 ⊢(G=>X). `assume`, `hyp_`, `discharge` (thCurry), `mp`/`thru` (axiom S / HS), `and_i/l/r`,
