@@ -2,6 +2,8 @@
 
 Budge-TP is a computer program that allows expressing formal systems and deriving theorems.
 
+Try online: https://budge.space.fast/
+
 ## Syntax
 
 Every statement in a Budge-TP code is of the form:

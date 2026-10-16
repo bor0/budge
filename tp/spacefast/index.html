@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Budge-TP Playground · run proofs in your browser</title>
+<meta name="description" content="An unofficial interactive playground for Budge-TP: step through substitutions, run the real checker in your browser, and learn the tactics.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--panel:#141821;--panel2:#1a1f2b;--line:#262d3d;--ink:#e8e6df;--mute:#9aa1b2;--gold:#e7b54a;--teal:#4fd1b5;--red:#ff6b6b;--violet:#a48bff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Inter,system-ui,sans-serif}
+a{color:var(--teal)}
+code,pre,textarea,.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+code{background:#1d2330;padding:.1em .4em;border-radius:5px;font-size:.88em;color:#f3d79a}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+nav{position:sticky;top:0;z-index:5;background:rgba(13,15,20,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:18px;align-items:center;height:54px;overflow-x:auto}
+nav b{font-family:Fraunces,serif;font-size:19px;color:var(--gold);white-space:nowrap}
+nav a{color:var(--mute);text-decoration:none;font-size:14px;white-space:nowrap}
+nav a:hover{color:var(--ink)}
+header{position:relative;overflow:hidden;padding:84px 0 64px;border-bottom:1px solid var(--line)}
+#sym{position:absolute;inset:0;opacity:.35;pointer-events:none}
+header .wrap{position:relative}
+.kicker{color:var(--teal);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
+h1{font-family:Fraunces,serif;font-weight:800;font-size:clamp(40px,7vw,80px);line-height:1.02;margin:12px 0 18px}
+h1 span{color:var(--gold)}
+h2{font-family:Fraunces,serif;font-size:clamp(28px,4vw,40px);margin:0 0 8px}
+h3{font-family:Fraunces,serif;font-size:21px;margin:0 0 6px}
+.lede{font-size:19px;color:#cfd3dc;max-width:720px}
+.hero-line{margin-top:28px;display:inline-flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);padding:12px 16px;border-radius:12px;font-family:"JetBrains Mono",monospace;font-size:15px}
+.hero-line .ok{color:var(--teal)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:10px 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;gap:8px;align-items:center}
+.btn:hover{border-color:#3a4458}
+.btn.primary{background:var(--gold);color:#1a1405;border-color:var(--gold)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.5;cursor:default}
+section{padding:72px 0;border-bottom:1px solid var(--line)}
+.sub{color:var(--mute);max-width:760px;margin:0 0 28px}
+.grid{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card pre{margin:10px 0 0;background:#0f131b;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:13.5px;line-height:1.55}
+.tag{display:inline-block;font:600 12px "JetBrains Mono",monospace;padding:2px 8px;border-radius:999px;margin-right:6px}
+.t-r{background:#2a2140;color:var(--violet)}.t-t{background:#14322c;color:var(--teal)}.t-p{background:#3a2e12;color:var(--gold)}.t-py{background:#331a1f;color:#ff9aa8}
+/* stepper */
+.stepper{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media(max-width:860px){.stepper{grid-template-columns:1fr}}
+textarea{width:100%;background:#0f131b;color:#dfe3ea;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.6;resize:vertical;tab-size:4}
+textarea:focus{outline:2px solid #3b4a66}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:500 14px Inter,sans-serif}
+.steps{display:flex;flex-direction:column;gap:10px;max-height:620px;overflow:auto;padding-right:4px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:14px;animation:pop .35s ease}
+.step.cur{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.step.bad{border-color:var(--red)}
+.step .nm{font:600 14px "JetBrains Mono",monospace;color:var(--gold)}
+.step .row{display:grid;grid-template-columns:120px 1fr;gap:8px;margin-top:6px;align-items:start}
+.step .k{color:var(--mute);font-size:12.5px;padding-top:2px}
+.step .v{font-family:"JetBrains Mono",monospace;font-size:13px;word-break:break-all}
+.sub-x{color:var(--violet)} .ok{color:var(--teal)} .no{color:var(--red)}
+.concl{background:#10261f;border:1px solid #1f4a3d;border-radius:8px;padding:6px 10px;display:inline-block;color:#9ff0db}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.hint{font-size:13px;color:var(--mute)}
+/* runner */
+.runner{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+@media(max-width:860px){.runner{grid-template-columns:1fr}}
+.out{background:#0a0c11;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:300px;max-height:560px;overflow:auto;font:13px/1.6 "JetBrains Mono",monospace;white-space:pre-wrap;word-break:break-all}
+.out .th{color:#dfe3ea}.out .th b{color:var(--teal);font-weight:600}
+.out .pr{color:var(--gold)}
+.out .err{color:var(--red)}
+.out .meta{color:var(--mute)}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin-top:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:#555}
+.dot.ld{background:var(--gold);animation:pulse 1s infinite}.dot.ok{background:var(--teal)}.dot.er{background:var(--red)}
+@keyframes pulse{50%{opacity:.3}}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+.stat b{font-family:Fraunces,serif;font-size:20px;color:var(--gold);margin-right:4px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:12px}
+details summary{cursor:pointer;color:var(--mute);font-size:14px}
+details pre{max-height:320px;overflow:auto;font-size:12px}
+/* lcf diagram */
+.lcf{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:center}
+@media(max-width:820px){.lcf{grid-template-columns:1fr}.lcf .arr{transform:rotate(90deg);justify-self:center}}
+.box{border-radius:14px;padding:18px;border:1px dashed #4a3a5a;background:#17121f}
+.box.trust{border:2px solid var(--teal);background:#0f201c}
+.box.gen{border-style:solid;border-color:#3a4458;background:var(--panel)}
+.arr{font-size:30px;color:var(--gold);text-align:center}
+.box small{color:var(--mute);display:block;margin-top:6px}
+.tactics{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.tac{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;transition:.2s}
+.tac:hover,.tac.on{border-color:var(--violet);transform:translateY(-2px)}
+.tac code{font-size:14px}
+.tac p{margin:6px 0 0;color:#c8ccd6;font-size:14px}
+.tac .more{display:none;margin-top:8px;font-size:13px;color:var(--mute)}
+.tac.on .more{display:block}
+.quiz{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+footer{padding:42px 0 60px;color:var(--mute);font-size:14px}
+footer a{color:var(--ink)}
+.unoff{font-size:13px;color:var(--mute);margin-top:6px}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>Budge-TP ∎</b><a href="#how">How it works</a><a href="#step">Stepper</a><a href="#run">Run proofs</a><a href="#meta">Meta-programs</a><a href="#tactics">Tactics</a><a href="#trust">Why trust it</a></div></nav>
+
+<header>
+<canvas id="sym"></canvas>
+<div class="wrap">
+<div class="kicker">An interactive playground</div>
+<h1>Proofs by <span>substitution</span>.<br>Nothing else.</h1>
+<p class="lede">Budge-TP is a theorem prover whose checker is about 300 lines of Python and only does string substitution. On this page you can step through it by hand, run the real checker in your browser, and see how Python meta-programs and tactics write the proofs for you while Budge-TP still checks every step.</p>
+<div class="hero-line"><span>thZeroAdd :</span><span class="ok">⊢ALL(EQ(ADD(0,V(0)),V(0)))</span><span style="color:var(--mute)">// ∀n. 0 + n = n</span></div>
+<div class="btns"><a class="btn primary" href="#run">▶ Run a proof</a><a class="btn" href="#step">Step through MIU</a><a class="btn" href="https://refl.blog/2026/10/16/writing-your-fourth-program-with-budge-tp/" target="_blank" rel="noopener">Read the blog post ↗</a></div>
+</div>
+</header>
+
+<section id="how"><div class="wrap">
+<h2>Four kinds of lines</h2>
+<p class="sub">A Budge-TP file is a list of statements. The first letter of a name says what it is. Names and expressions can be any characters except <code>:</code> and spaces, and <code>#</code> starts a comment.</p>
+<div class="grid g3">
+<div class="card"><span class="tag t-r">r…</span><h3>Rules</h3><p>Hypotheses, then a conclusion, joined by <code>-&gt;</code>. Lowercase letters are variables you can substitute.</p><pre>r2 : |- Mx -> |- Mxx</pre></div>
+<div class="card"><span class="tag t-t">t…</span><h3>Theorems</h3><p>Apply a rule (or an earlier theorem), give substitutions <code>x=X;y=Y</code>, then the theorems that satisfy its hypotheses.</p><pre>thMII : r2 x=tmI! thMI</pre></div>
+<div class="card"><span class="tag t-p">p…</span><h3>Prose</h3><p>Plain text printed as <code>-- text</code> between results. The prefix means prose can never pass for a theorem.</p><pre>pOnePlusOne : 1 + 1 = 2</pre></div>
+<div class="card"><span class="tag t-py">&lt;?py ?&gt;</span><h3>Meta-programs</h3><p>Python blocks. Whatever they print becomes Budge code and is checked like anything else. They see <code>env</code> and <code>load(path)</code>.</p><pre>&lt;?py load('lib/logic.btp') ?&gt;</pre></div>
+</div>
+<div class="grid g2" style="margin-top:16px">
+<div class="card"><h3>What "checking" means</h3><p>To check <code>t : rule x=X;y=Y h1 h2</code>, Budge-TP replaces every <code>x</code> and <code>y</code> in the rule's hypotheses and conclusion with the <em>values</em> of theorems <code>X</code> and <code>Y</code>, does the same to the given hypotheses, and requires the two lists to be identical strings. If they are, the substituted conclusion becomes the theorem. If not, you get <code>Hypotheses mismatch</code>.</p></div>
+<div class="card"><h3>Terms are theorems too</h3><p>Substitutions point at theorems, not raw text. So a term like <code>II</code> is built first with a rule like <code>rTmMk : xy</code>, and the theorem <code>tmII!</code> holds it. A trailing <code>!</code> hides a theorem from the output. That's why real proofs have so many <code>tm…!</code> lines.</p></div>
+</div>
+</div></section>
+
+<section id="step"><div class="wrap">
+<h2>The stepper</h2>
+<p class="sub">This is a line-for-line JavaScript port of the checking step, so you can watch each substitution happen. It handles plain Budge files (no Python blocks or <code>load</code>). Edit anything, then step. Try breaking a proof with the button and see exactly where it fails.</p>
+<div class="stepper">
+<div>
+<div class="toolbar">
+<select id="stepEx"><option value="miu">MIU puzzle (GEB)</option><option value="pq">pq-system: 2 + 2 = 4</option><option value="tq">tq-system: 4 is composite</option><option value="hilbert">Hilbert: ⊢ (A ⇒ A)</option></select>
+<button class="btn" id="breakBtn">💥 Break it</button>
+</div>
+<textarea id="stepSrc" rows="20" spellcheck="false"></textarea>
+<div class="toolbar" style="margin-top:10px">
+<button class="btn primary" id="stepBtn">Step ▸</button>
+<button class="btn" id="allBtn">Check all</button>
+<button class="btn" id="resetBtn">Reset</button>
+<span class="hint" id="stepInfo"></span>
+</div>
+</div>
+<div class="steps" id="steps"><div class="card hint">Press <b>Step</b> to check the first theorem.</div></div>
+</div>
+</div></section>
+
+<section id="run"><div class="wrap">
+<h2>Run real proofs</h2>
+<p class="sub">This runs the actual <code>budge-tp.py</code> checker and example library, pulled live from <a href="https://github.com/bor0/budge/tree/main/tp" target="_blank" rel="noopener">bor0/budge</a> and executed with Python in WebAssembly (Pyodide). Meta-programs and tactics work here, and so does <code>--expand</code>, which shows the plain Budge lines your Python generated. The first run downloads Python, so give it a few seconds.</p>
+<div class="runner">
+<div>
+<div class="toolbar">
+<select id="runEx">
+<option value="@zeroadd">0 + n = n with tactics</option>
+<option value="@zerofor">0 + n = n, one theorem per number</option>
+<option value="examples/miu.btp">MIU puzzle</option>
+<option value="examples/pq.btp">pq-system</option>
+<option value="examples/cl.btp">Propositional logic by hand</option>
+<option value="examples/peano.btp">Peano: 1 + 1 = 2 by hand</option>
+<option value="examples/gauss.btp">Gauss's sum formula</option>
+<option value="examples/primes.btp">Euclid: infinitely many primes</option>
+<option value="examples/gcd.btp">Euclid's GCD with Hoare logic</option>
+<option value="examples/compiler.btp">A verified compiler</option>
+<option value="@broken">A broken proof (spot the bug)</option>
+</select>
+<button class="btn primary" id="runBtn">▶ Check</button>
+<label class="hint"><input type="checkbox" id="expandChk" checked> show expansion</label>
+</div>
+<textarea id="runSrc" rows="22" spellcheck="false"></textarea>
+<div class="status"><span class="dot" id="dot"></span><span id="statusTxt">Python not loaded yet.</span></div>
+</div>
+<div>
+<div class="out" id="out"><span class="meta">Output appears here. Every line is a theorem Budge-TP derived and checked.</span></div>
+<div class="stats" id="stats"></div>
+<details id="expDetails"><summary>What the Python generated (expanded file)</summary><pre id="expanded" class="mono"></pre></details>
+</div>
+</div>
+</div></section>
+
+<section id="meta"><div class="wrap">
+<h2>Tired, wired, inspired</h2>
+<p class="sub">The blog post proves 0 + n = n three ways. Each step up hands more of the writing to Python, and none of it asks you to trust Python.</p>
+<div class="grid g3">
+<div class="card"><span class="tag t-t">tired</span><h3>By hand</h3><p>Every number needs its own theorem, written line by line. 1 + 1 = 2 alone takes a dozen steps of terms, axioms, and modus ponens.</p></div>
+<div class="card"><span class="tag t-py">wired</span><h3>Python prints the lines</h3><p>A loop emits the same theorems for you. Budge-TP neither knows nor cares that Python wrote them, but you only get the numbers you asked for (up to <code>tm4!</code>).</p></div>
+<div class="card"><span class="tag t-p">inspired</span><h3>Induction tactics</h3><p><code>ind_hyp</code>, <code>chain</code>, and <code>induction</code> produce one theorem, <code>thZeroAdd : ⊢ALL(EQ(ADD(0,V(0)),V(0)))</code>, which is ∀n. 0 + n = n.</p></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Reading the formulas</h3><p>Numbers are <code>0</code>, <code>S(0)</code>, <code>S(S(0))</code>… Bound variables use de Bruijn indices: <code>V(0)</code> is the variable of the nearest <code>ALL</code> or <code>EX</code>, <code>V(S(0))</code> the one outside that. So <code>ALL(ALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0))))))</code> reads ∀m∀n. m + n = n + m. Capital letters like <code>N</code> are parameters: arbitrary but fixed, which is how an induction step talks about "some n".</p>
+<div class="quiz" id="quiz"></div>
+<p class="hint" id="quizOut">Decode a formula: tap one.</p></div>
+</div></section>
+
+<section id="tactics"><div class="wrap">
+<h2>The tactics, in one place</h2>
+<p class="sub">Tactics live in <code>lib/tactics.py</code>. They are ordinary Python functions that print Budge-TP theorems. Tap a card for more.</p>
+<div class="tactics" id="tacs"></div>
+<div class="card" style="margin-top:16px"><h3>Natural deduction, sketched</h3><p>Transitivity of divisibility (a|b and b|c gives a|c) in <code>lib/divides.btp</code> starts like this:</p>
+<pre>root = Ctx(reserved={a_, b_, c_})
+c1 = root.assume(dvd(a_, b_))   # assume a|b
+c2 = c1.assume(dvd(b_, c_))     # assume b|c
+# ... unpack both ∃s, rewrite c = b·y = (a·x)·y = a·(x·y), pack again ...
+h = root.close(c1.discharge(c2.discharge(...)))</pre>
+<p class="hint">A context is a formula G: ⊤ at the root and (G∧H) after assuming H. A fact X proved there is really the theorem ⊢(G⇒X), so "assumptions" never leave plain Hilbert-style logic.</p></div>
+</div></section>
+
+<section id="trust"><div class="wrap">
+<h2>Why you don't have to trust the tactics</h2>
+<p class="sub">It's the Edinburgh LCF idea: a small trusted checker with a programming language on top. Python can't prove anything by itself. It can only produce candidate steps, and Budge-TP checks each one.</p>
+<div class="lcf">
+<div class="box"><h3>Untrusted</h3>Python blocks, <code>tactics.py</code>, loops, anything clever.<small>A bug here can only produce a step that gets rejected.</small></div>
+<div class="arr">→</div>
+<div class="box gen"><h3>Generated lines</h3>Plain <code>r…</code> / <code>t…</code> statements, exactly what <code>--expand</code> writes out.<small>Checkable later with no Python at all.</small></div>
+<div class="arr">→</div>
+<div class="box trust"><h3>Trusted</h3><code>budge-tp.py</code>: about 300 lines that only substitute and compare.<small>Plus the axioms in <code>lib/</code>. One bad rule there would make everything unsound.</small></div>
+</div>
+<div class="grid g3" style="margin-top:18px">
+<div class="card"><h3>Gauss's sum</h3><p>0 + 1 + … + n = n(n+1)/2 from Peano's axioms, via the semiring laws.</p></div>
+<div class="card"><h3>Infinitely many primes</h3><p>∀n ∃p. n &lt; p ∧ PRIME(p), Euclid's argument, checked step by step.</p></div>
+<div class="card"><h3>Verified GCD and compiler</h3><p>Euclid's algorithm in Hoare logic, extracted to Python, and expressions compiled to a stack machine that provably computes their value.</p></div>
+</div>
+</div></section>
+
+<footer><div class="wrap">
+<p>Budge-TP is by Boro Sitnikovski: <a href="https://github.com/bor0/budge/tree/main/tp" target="_blank" rel="noopener">source on GitHub</a> and <a href="https://refl.blog/2026/10/16/writing-your-fourth-program-with-budge-tp/" target="_blank" rel="noopener">"Writing your fourth program with Budge-TP"</a>. The runner loads the checker and examples straight from that repo at run time.</p>
+<p class="unoff">Unofficial fan playground. Built by <a href="https://x.com/SpacefastBot" target="_blank" rel="noopener">@SpacefastBot</a> with Grok Bot on <a href="https://spacefast.com" target="_blank" rel="noopener">Spacefast</a>.</p>
+</div></footer>
+
+<script>
+// ---------- hero symbols ----------
+(()=>{const c=document.getElementById('sym'),x=c.getContext('2d');const S='⊢∀∃⇒∧∨¬=S(0)+·∎→'.split('');let W,H,P=[];
+function rs(){W=c.width=c.offsetWidth*devicePixelRatio;H=c.height=c.offsetHeight*devicePixelRatio;P=Array.from({length:70},()=>({x:Math.random()*W,y:Math.random()*H,v:.2+Math.random()*.6,s:S[Math.random()*S.length|0],z:12+Math.random()*26}))}
+rs();addEventListener('resize',rs);
+(function f(){x.clearRect(0,0,W,H);for(const p of P){p.y-=p.v*devicePixelRatio;if(p.y<-40){p.y=H+20;p.x=Math.random()*W}x.font=`${p.z*devicePixelRatio}px Fraunces,serif`;x.fillStyle=p.s==='∎'?'#e7b54a':'#4fd1b5';x.globalAlpha=.25+.5*(p.z/38);x.fillText(p.s,p.x,p.y)}requestAnimationFrame(f)})();})();
+
+// ---------- JS port of the checking step ----------
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const rep=(s,a,b)=>s.split(a).join(b); // Python str.replace (all)
+function parseFile(src){
+  const env={rules:{},specs:{},order:[]};
+  src.split('\n').forEach((raw,i)=>{
+    const line=raw.split('#')[0].trim(); if(!line) return;
+    if(line.startsWith('<?py')) throw new Error(`line ${i+1}: Python blocks run in the real checker below, not the stepper`);
+    const k=line.indexOf(':'); const parts=(k<0?[line]:[line.slice(0,k),line.slice(k+1)]).map(s=>s.trim()).filter(Boolean);
+    if(parts.length!==2) throw new Error(`line ${i+1}: Invalid syntax: '${line}'`);
+    const [name,expr]=parts;
+    if(!'rtp'.includes(name[0])) throw new Error(`line ${i+1}: Invalid variable name: '${name}'`);
+    if(name[0]==='r'){ if(env.rules[name]) throw new Error(`line ${i+1}: Name redeclaration: '${name}'`); const r=expr.split('->').map(s=>s.trim()); env.rules[name]={hyp:r.slice(0,-1),concl:r[r.length-1],line:i+1}; }
+    else if(name[0]==='t'){ if(env.specs[name]) throw new Error(`line ${i+1}: Name redeclaration: '${name}'`);
+      const a=expr.split(' ').filter(Boolean); const reps=[];
+      (a[1]||'').split(';').filter(Boolean).forEach(e=>{const j=e.indexOf('=');const key=j<0?e:e.slice(0,j);if(j<0||key.length!==1||key!==key.toLowerCase()||key===key.toUpperCase())throw new Error(`line ${i+1}: Invalid syntax for replacement '${e}' in '${name}'`);reps.push([key,e.slice(j+1)])});
+      env.specs[name]={rule:a[0],reps,hyps:a.slice(2),line:i+1}; env.order.push(name);}
+  });
+  return env;
+}
+function applyOne(env,thms,name){
+  const t=env.specs[name]; const info={name,rule:t.rule,line:t.line};
+  let rh,rc; if(env.rules[t.rule]){rh=[...env.rules[t.rule].hyp];rc=env.rules[t.rule].concl;info.kind='rule'}
+  else if(t.rule in thms){rh=[];rc=thms[t.rule];info.kind='theorem'} else {info.err=`Invalid rule/theorem: '${t.rule}'`;return info}
+  info.rawHyp=[...rh]; info.rawConcl=rc;
+  const R=[]; for(const [k,v] of t.reps){ if(!(v in thms)){info.err=`Invalid theorem: '${v}' in '${name}'`;return info} R.push([k,thms[v],v]); }
+  info.R=R;
+  const th=[]; for(const h of t.hyps){ if(!(h in thms)){info.err=`Invalid theorem: '${h}' in '${name}'`;return info} let s=thms[h]; for(const [k,v] of R) s=rep(s,k,v); th.push(s); }
+  for(const [k,v] of R){ rh=rh.map(x=>rep(x,k,v)); rc=rep(rc,k,v); }
+  info.rh=rh; info.th=th; info.given=t.hyps;
+  if(JSON.stringify(rh)!==JSON.stringify(th)){ info.err=`Hypotheses mismatch for '${name}': cannot unify`; return info }
+  info.concl=rc; return info;
+}
+const STEP_EX={
+miu:`# The MIU puzzle (Hofstadter, GEB), self-contained
+# term rules: letters, and concatenation xy
+rTmM : M
+rTmI : I
+rTmU : U
+rTmMk : xy
+tmM! : rTmM
+tmI! : rTmI
+tmU! : rTmU
+tmII! : rTmMk x=tmI!;y=tmI!
+
+# the axiom and the rules of the system
+rMI : |- MI
+r1 : |- xI -> |- xIU
+r2 : |- Mx -> |- Mxx
+r3 : |- xIIIy -> |- xUy
+
+thMI : rMI
+thMII : r2 x=tmI! thMI
+thMIIII : r2 x=tmII! thMII
+thMUI : r3 x=tmM!;y=tmI! thMIIII
+tmMU! : rTmMk x=tmM!;y=tmU!
+thMUIU : r1 x=tmMU! thMUI
+`,
+pq:`# The pq-system (GEB): --P--Q---- means 2 + 2 = 4
+rTm- : -
+rTmMk : xy
+tm-! : rTm-
+tm--! : rTmMk x=tm-!;y=tm-!
+tm---! : rTmMk x=tm--!;y=tm-!
+tm----! : rTmMk x=tm--!;y=tm--!
+
+rBase : xP-Qx-              # x + 1 = x + 1
+rSucc : xPyQz -> xPy-Qz-    # x + y = z  gives  x + (y+1) = z + 1
+
+thmTwoPlusOne : rBase x=tm--!
+thmTwoPlusTwo : rSucc x=tm--!;y=tm-!;z=tm---! thmTwoPlusOne
+`,
+tq:`# The tq-system (GEB): --T--Q---- means 2 × 2 = 4
+rTm- : -
+rTmMk : xy
+tm-! : rTm-
+tm--! : rTmMk x=tm-!;y=tm-!
+tm----! : rTmMk x=tm--!;y=tm--!
+
+rBase : xT-Qx                # x × 1 = x
+rSucc : xTyQz -> xTy-Qzx     # x × y = z  gives  x × (y+1) = z + x
+rComp : x-Ty-Qz -> Cz        # (x+1) × (y+1) = z  gives  z is composite
+
+thmTwoMultOne : rBase x=tm--!
+thmTwoMultTwo : rSucc x=tm--!;y=tm-!;z=tm--! thmTwoMultOne
+thmFourComposite : rComp x=tm-!;y=tm-!;z=tm----! thmTwoMultTwo
+`,
+hilbert:`# Identity ⊢(A=>A) from axioms K and S with modus ponens
+rTmA : A
+rTmImp : (p=>q)
+tmA! : rTmA
+tmAA! : rTmImp p=tmA!;q=tmA!         # (A=>A)
+tmAAA! : rTmImp p=tmAA!;q=tmA!       # ((A=>A)=>A)
+tmP! : rTmImp p=tmA!;q=tmAAA!        # (A=>((A=>A)=>A))
+tmA_AA! : rTmImp p=tmA!;q=tmAA!      # (A=>(A=>A))
+tmQ! : rTmImp p=tmA_AA!;q=tmAA!      # ((A=>(A=>A))=>(A=>A))
+
+rK  : ⊢(p=>(q=>p))
+rS  : ⊢((p=>(q=>r))=>((p=>q)=>(p=>r)))
+rMp : ⊢p -> ⊢(p=>q) -> ⊢q
+
+th1 : rS p=tmA!;q=tmAA!;r=tmA!
+th2 : rK p=tmA!;q=tmAA!
+th3 : rMp p=tmP!;q=tmQ! th2 th1
+th4 : rK p=tmA!;q=tmA!
+thId : rMp p=tmA_AA!;q=tmAA! th4 th3
+`};
+const src=document.getElementById('stepSrc'),stepsEl=document.getElementById('steps'),info=document.getElementById('stepInfo');
+let st=null;
+function loadStep(k){src.value=STEP_EX[k];reset()}
+function reset(){st=null;stepsEl.innerHTML='<div class="card hint">Press <b>Step</b> to check the first theorem.</div>';info.textContent=''}
+function ensure(){ if(st) return true; try{const env=parseFile(src.value);st={env,thms:{},i:0,done:false};stepsEl.innerHTML='';return true}catch(e){stepsEl.innerHTML=`<div class="step bad"><span class="no">✗ ${esc(e.message)}</span></div>`;return false} }
+function card(r){
+  const d=document.createElement('div');d.className='step'+(r.err?' bad':'');
+  let h=`<div class="nm">${esc(r.name)} <span class="hint">line ${r.line}${r.name.endsWith('!')?' · hidden term':''}</span></div>`;
+  h+=`<div class="row"><div class="k">applies</div><div class="v">${esc(r.rule)} <span class="hint">(${r.kind||'?'})</span>${r.rawHyp?` : ${r.rawHyp.map(esc).join(' <span class=hint>-&gt;</span> ')}${r.rawHyp.length?' <span class=hint>-&gt;</span> ':''}${esc(r.rawConcl)}`:''}</div></div>`;
+  if(r.R&&r.R.length) h+=`<div class="row"><div class="k">substitute</div><div class="v">${r.R.map(([k,v,n])=>`<span class="sub-x">${esc(k)}</span> ↦ <b>${esc(v)}</b> <span class="hint">(${esc(n)})</span>`).join('<br>')}</div></div>`;
+  if(r.rh){ h+=`<div class="row"><div class="k">rule needs</div><div class="v">${r.rh.length?r.rh.map(esc).join('<br>'):'<span class=hint>nothing (an axiom)</span>'}</div></div>`;
+    h+=`<div class="row"><div class="k">you gave</div><div class="v">${r.th.length?r.th.map((x,i)=>`${esc(x)} <span class="hint">(${esc(r.given[i])})</span> ${x===r.rh[i]?'<span class=ok>✓</span>':'<span class=no>✗</span>'}`).join('<br>'):'<span class=hint>nothing</span>'}</div></div>`;}
+  if(r.err) h+=`<div class="row"><div class="k">result</div><div class="v no">✗ ${esc(r.err)}</div></div>`;
+  else h+=`<div class="row"><div class="k">derives</div><div class="v"><span class="concl">${esc(r.name)} : ${esc(r.concl)}</span></div></div>`;
+  d.innerHTML=h;return d;
+}
+function step(){
+  if(!ensure()||st.done) return;
+  if(st.i>=st.env.order.length){st.done=true;info.textContent='All theorems checked ∎';return}
+  const name=st.env.order[st.i++]; const r=applyOne(st.env,st.thms,name);
+  stepsEl.querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
+  const c=card(r);c.classList.add('cur');stepsEl.appendChild(c);c.scrollIntoView({block:'nearest',behavior:'smooth'});
+  if(r.err){st.done=true;info.innerHTML='<span class="no">Rejected. Nothing after this is checked.</span>';return}
+  st.thms[name]=r.concl; info.textContent=`${st.i} / ${st.env.order.length} theorems checked`;
+  if(st.i>=st.env.order.length){st.done=true;info.textContent+=' ∎'}
+}
+document.getElementById('stepBtn').onclick=step;
+document.getElementById('allBtn').onclick=()=>{if(!ensure())return;let n=0;while(!st.done&&n++<5000)step()};
+document.getElementById('resetBtn').onclick=reset;
+document.getElementById('stepEx').onchange=e=>loadStep(e.target.value);
+src.addEventListener('input',reset);
+document.getElementById('breakBtn').onclick=()=>{
+  // swap one substitution value for a different term so a hypothesis no longer matches
+  const lines=src.value.split('\n');const cand=lines.map((l,i)=>[l,i]).filter(([l])=>/^t[^:]*[^!]\s*:\s*\S+\s+\S*=/.test(l.trim()));
+  if(!cand.length) return; const [l,i]=cand[cand.length-1]; const terms=[...new Set((src.value.match(/^tm[^\s:]*!/gm)||[]))];
+  const m=l.match(/=([^;\s]+)/); if(!m) return; const alt=terms.find(t=>t!==m[1])||m[1];
+  lines[i]=l.replace('='+m[1],'='+alt)+'   # 💥 broken: was '+m[1]; src.value=lines.join('\n'); reset();
+  document.getElementById('allBtn').click();
+};
+loadStep('miu');
+
+// ---------- quiz ----------
+const QZ=[['S(S(0))','2'],['ADD(S(0),S(0))','1 + 1'],['ALL(EQ(ADD(V(0),0),V(0)))','∀m. m + 0 = m'],['ALL(EQ(ADD(0,V(0)),V(0)))','∀n. 0 + n = n'],['ALL(ALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0))))))','∀m∀n. m + n = n + m'],['¬EQ(S(x),0)','no successor is 0']];
+const qz=document.getElementById('quiz'),qo=document.getElementById('quizOut');
+QZ.forEach(([f,m])=>{const b=document.createElement('button');b.className='btn mono';b.style.fontSize='12.5px';b.textContent=f;b.onclick=()=>{qo.innerHTML=`<code>${esc(f)}</code> means <b style="color:var(--gold)">${esc(m)}</b>`};qz.appendChild(b)});
+
+// ---------- tactics ----------
+const TACS=[
+['use(env, __file__)','Start a block: load what budge-tp.py has read and checked so far.','Every tactic block begins with it, so the Python side knows which rules and theorems exist.'],
+['ind_hyp(f)','The induction hypothesis f(N), plus the proof ⊢(f(N)⇒f(N)) to use it.','Budge has no "assume", so the hypothesis rides along as an implication from f(N).'],
+['chain(start, steps)','Rewrites an equation step by step and proves EQ(start, end).','Each step is a path into the term (like [0] for the first argument) and a proof that rewrites the subterm there.'],
+['induction(f, base, step)','From ⊢f(0) and ⊢(f(N)⇒f(S(N))) it concludes ⊢ALL(f).','Pass name= to keep the result, e.g. name=\'thZeroAdd\'.'],
+['inst(h, t…)','∀-eliminate h at the given closed terms, outermost quantifier first.','Behind the scenes it builds the OPEN derivations that substitute into de Bruijn variables.'],
+['gen(…)','Generalise a parameter w: from ⊢g(w) to ⊢ALL(g(V(0))).','This is how a fact about an arbitrary N becomes a fact about every n.'],
+['sym(h)','Flip an equation: from EQ(a,b) to EQ(b,a).','Handy inside chain when a lemma points the wrong way.'],
+['Ctx.assume(H)','Reason under a hypothesis H.','A context is a formula G (⊤ at the root, (G∧H) after assuming H); a fact X proved there is the theorem ⊢(G⇒X).'],
+['ctx.discharge(p)','A proof of X under (G∧H) gives (H⇒X) in the parent context.','This is ⇒-introduction, done with derived Hilbert schemas.'],
+['root.close(p)','At the root: from ⊢(⊤⇒X) get ⊢X.','The last step of a natural-deduction proof.'],
+['ctx.ex_i(…)','∃-introduction: f[t] here gives EX(f).','Pack a witness into an existential.'],
+['ctx.ex_e(…)','∃-elimination: from EX(f), prove X using f[w] for a fresh w not in X.','Unpacks a witness, as in "a|b means b = a·x for some x".'],
+['ctx.by_contra(…)','Proof by contradiction: assume ¬A, derive some B and ¬B, conclude A.','Classical logic, from the axioms in lib/logic.btp.'],
+];
+const tg=document.getElementById('tacs');TACS.forEach(([n,d,m])=>{const e=document.createElement('div');e.className='tac';e.innerHTML=`<code>${esc(n)}</code><p>${esc(d)}</p><div class="more">${esc(m)}</div>`;e.onclick=()=>e.classList.toggle('on');tg.appendChild(e)});
+
+// ---------- real runner (Pyodide in a worker) ----------
+const RAW='https://raw.githubusercontent.com/bor0/budge/main/tp/';
+const LIB=['fol','logic','peano','semiring','sum','strings','tally','boolean','nd','order','divides','fact','parity','list','hoare'].map(n=>`examples/lib/${n}.btp`).concat(['examples/lib/tactics.py','examples/lib/extract.py']);
+const LOCAL={
+'@zeroadd':`# ∀n. 0 + n = n, proved by tactics (the "inspired" way)
+<?py load('lib/peano.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+f = EQ(ADD(Z, V0), V0)              # the formula 0 + n = n
+G, ih = ind_hyp(f)                  # induction hypothesis 0 + N = N
+base = aAZ(Z)                       # base case: 0 + 0 = 0
+step = chain(ADD(Z, S(N_)), [       # 0 + S(N)
+    ([], aAS(Z, N_)),               #   = S(0 + N)
+    ([0], ih),                      #   = S(N)
+])
+induction(f, base, step, name='thZeroAdd')
+?>
+pZeroAdd : ∀n. 0 + n = n
+`,
+'@zerofor':`# 0 + n = n, one theorem per number (the "wired" way)
+# Python prints lines; Budge-TP checks them. Change the range and re-run.
+<?py load('lib/peano.btp') ?>
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+def num(k):
+    t = Z
+    for _ in range(k): t = S(t)
+    return t
+
+# 0 + 0 = 0 straight from the axiom, then 0 + S(k) = S(0 + k) = S(k)
+prev = aAZ(Z)
+for k in range(1, 5):
+    prev = chain(ADD(Z, num(k)), [
+        ([], aAS(Z, num(k - 1))),
+        ([0], lambda t, p=prev: p),
+    ])
+    print(f'thZeroPlus{k} : {prev}')   # a visible copy of the checked fact
+?>
+pDone : 0 + 1 = 1, 0 + 2 = 2, 0 + 3 = 3, 0 + 4 = 4, each its own theorem
+`,
+'@broken':`# A broken proof. The checker should reject the last line.
+# 2 + 2 in the pq-system, but someone claimed the result is 5.
+<?py load('lib/strings.btp') ?>
+rBase : xP-Qx-
+rSucc : xPyQz -> xPy-Qz-
+tm-----! : rTmMk x=tm----!;y=tm-!
+
+thmTwoPlusOne : rBase x=tm--!
+thmTwoPlusTwo : rSucc x=tm--!;y=tm-!;z=tm-----! thmTwoPlusOne
+# fix it: z should be tm---! (2 + 1 = 3), so the result is 4
+`};
+const W=`
+importScripts('https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js');
+let py=null;
+async function init(files){ py=await loadPyodide(); py.FS.mkdirTree('/tp/examples/lib');
+  for(const [p,t] of Object.entries(files)) py.FS.writeFile('/tp/'+p,t);
+  await py.runPythonAsync(\`
+import importlib.util, sys, io, os, shutil, contextlib, time
+spec = importlib.util.spec_from_file_location('budgetp', '/tp/budge-tp.py')
+btp = importlib.util.module_from_spec(spec); spec.loader.exec_module(btp)
+def run_btp(path, expand):
+    for m in ('tactics','extract'): sys.modules.pop(m, None)
+    if os.path.isdir('/out'): shutil.rmtree('/out')
+    t0 = time.time(); env = btp.new_environment(); buf = io.StringIO(); exp = ''
+    try:
+        with contextlib.redirect_stdout(buf):
+            btp.load_file(env, path); btp.check_environment(env)
+            if expand:
+                btp.write_expanded(env, path, '/out')
+        if expand:
+            with open('/out/' + os.path.basename(path), encoding='utf-8') as fh: exp = fh.read()
+        lines = []
+        for kind, name, visible in env['order']:
+            if not visible or name[-1] == '!': continue
+            lines.append(('p', env['prose'][name]) if kind == 'prose' else ('t', name + ' : ' + env['theorems'][name]))
+        return dict(ok=True, lines=lines, rules=len(env['rules']), theorems=len(env['theorems']), files=len(env['loaded']), ms=int((time.time()-t0)*1000), expanded=exp, stray=buf.getvalue())
+    except Exception as e:
+        return dict(ok=False, error=str(e), theorems=len(env['theorems']), ms=int((time.time()-t0)*1000))
+\`);}
+onmessage=async e=>{const d=e.data; try{
+ if(d.type==='init'){await init(d.files);postMessage({type:'ready'});return}
+ if(d.type==='run'){py.FS.writeFile('/tp/'+d.path,d.src);const r=py.globals.get('run_btp')('/tp/'+d.path,d.expand);const o=r.toJs({dict_converter:Object.fromEntries});r.destroy();postMessage({type:'result',r:o})}
+}catch(err){postMessage({type:'fatal',msg:String(err)})}};`;
+let worker=null,ready=null,files=null;
+const out=document.getElementById('out'),dot=document.getElementById('dot'),stt=document.getElementById('statusTxt'),runSrc=document.getElementById('runSrc'),runEx=document.getElementById('runEx'),stats=document.getElementById('stats'),expEl=document.getElementById('expanded'),expD=document.getElementById('expDetails');
+function status(cls,t){dot.className='dot '+cls;stt.textContent=t}
+async function fetchText(p){const r=await fetch(RAW+p);if(!r.ok)throw new Error('fetch '+p+' '+r.status);return r.text()}
+async function getFiles(){ if(files) return files; status('ld','Fetching budge-tp.py and the library from GitHub…');
+  const list=['budge-tp.py',...LIB]; const txt=await Promise.all(list.map(fetchText)); files={}; list.forEach((p,i)=>files[p]=txt[i]); return files }
+function boot(){ if(ready) return ready; ready=(async()=>{const f=await getFiles(); status('ld','Starting Python in your browser (one time, ~10 MB)…');
+  worker=new Worker(URL.createObjectURL(new Blob([W],{type:'text/javascript'})));
+  await new Promise((res,rej)=>{worker.onmessage=e=>{if(e.data.type==='ready')res();else if(e.data.type==='fatal')rej(new Error(e.data.msg))};worker.postMessage({type:'init',files:f})});
+  status('ok','Python ready. The checker is live.');})(); ready.catch(e=>{ready=null;status('er','Could not start: '+e.message)}); return ready }
+async function loadRunEx(v){ if(LOCAL[v]){runSrc.value=LOCAL[v];return} runSrc.value='# loading '+v+' from GitHub…'; try{runSrc.value=await fetchText(v)}catch(e){runSrc.value='# could not fetch '+v+': '+e.message} }
+runEx.onchange=()=>loadRunEx(runEx.value);
+document.getElementById('runBtn').onclick=async()=>{
+  const b=document.getElementById('runBtn');b.disabled=true;
+  try{ await boot(); status('ld','Checking…'); out.innerHTML='';
+    const v=runEx.value; const path=(LOCAL[v]?'examples/playground.btp':v.replace(/\.btp$/,'.btp'));
+    const r=await new Promise(res=>{worker.onmessage=e=>res(e.data);worker.postMessage({type:'run',path,src:runSrc.value,expand:document.getElementById('expandChk').checked})});
+    if(r.type==='fatal'){out.innerHTML=`<span class="err">${esc(r.msg)}</span>`;status('er','Python error');return}
+    const o=r.r;
+    if(o.ok){ out.innerHTML=o.lines.map(([k,t])=>k==='p'?`<div class="pr">-- ${esc(t)}</div>`:`<div class="th"><b>${esc(t.split(' : ')[0])}</b> : ${esc(t.split(' : ').slice(1).join(' : '))}</div>`).join('')||'<span class="meta">Checked. (Every theorem here is hidden with !)</span>';
+      const genLines=(o.expanded||'').split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).length;
+      stats.innerHTML=`<div class="stat"><b>${o.theorems}</b>theorems checked</div><div class="stat"><b>${o.rules}</b>rules</div><div class="stat"><b>${o.files}</b>files</div><div class="stat"><b>${o.ms}</b>ms</div>`+(o.expanded?`<div class="stat"><b>${genLines}</b>lines in expanded file</div>`:'');
+      expEl.textContent=o.expanded||'(turn on "show expansion" to see it)'; status('ok','Accepted ∎ Every step checked.'); }
+    else { out.innerHTML=`<div class="err">✗ Rejected</div><div class="err">${esc(o.error)}</div><div class="meta" style="margin-top:8px">${o.theorems} theorems were checked before the failure.</div>`; stats.innerHTML=''; expEl.textContent=''; status('er','Rejected. Budge-TP found a step that does not follow.'); }
+  }catch(e){out.innerHTML=`<span class="err">${esc(e.message)}</span>`}
+  finally{b.disabled=false}
+};
+loadRunEx('@zeroadd');
+</script>
+<script src="https://remote-shortcode.space.fast/remix-cta.js" defer data-href="https://my.spacefast.com/new?git=https%3A%2F%2Fgit.spacefast.com%2Fsf-x-bot%2Fremote-shortcode"></script>
+</body>
+</html>
+
