@@ -50,7 +50,7 @@ section{padding:72px 0;border-bottom:1px solid var(--line)}
 .t-r{background:#2a2140;color:var(--violet)}.t-t{background:#14322c;color:var(--teal)}.t-p{background:#3a2e12;color:var(--gold)}.t-py{background:#331a1f;color:#ff9aa8}
 /* stepper */
 .stepper{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
-@media(max-width:860px){.stepper{grid-template-columns:1fr}}
+@media(max-width:860px){.stepper{grid-template-columns:minmax(0,1fr)}}
 textarea{width:100%;background:#0f131b;color:#dfe3ea;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.6;resize:vertical;tab-size:4}
 textarea:focus{outline:2px solid #3b4a66}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
@@ -69,8 +69,8 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 .hint{font-size:13px;color:var(--mute)}
 /* runner */
 .runner{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
-@media(max-width:860px){.runner{grid-template-columns:1fr}}
-.out{background:#0a0c11;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:300px;max-height:560px;overflow:auto;font:13px/1.6 "JetBrains Mono",monospace;white-space:pre-wrap;word-break:break-all}
+@media(max-width:860px){.runner{grid-template-columns:minmax(0,1fr)}}
+.out{background:#0a0c11;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:300px;max-height:560px;overflow:auto;font:13px/1.6 "JetBrains Mono",monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 .out .th{color:#dfe3ea}.out .th b{color:var(--teal);font-weight:600}
 .out .pr{color:var(--gold)}
 .out .err{color:var(--red)}
@@ -104,6 +104,31 @@ details pre{max-height:320px;overflow:auto;font-size:12px}
 footer{padding:42px 0 60px;color:var(--mute);font-size:14px}
 footer a{color:var(--ink)}
 .unoff{font-size:13px;color:var(--mute);margin-top:6px}
+/* mobile */
+code{overflow-wrap:anywhere}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr))}
+.tactics{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}
+select{max-width:100%;min-width:0}
+.btn{max-width:100%;overflow-wrap:anywhere}
+nav .wrap{scrollbar-width:none}
+nav .wrap::-webkit-scrollbar{display:none}
+@media(max-width:600px){
+  .wrap{padding:0 16px}
+  header{padding:48px 0 40px}
+  section{padding:48px 0}
+  .lede{font-size:17px}
+  .hero-line{display:flex;font-size:13px}
+  .card{padding:16px}
+  .sub{margin-bottom:20px}
+  .btn{min-height:44px}
+  .toolbar select{flex:1 1 100%}
+  textarea,select{font-size:16px}
+  textarea{white-space:pre;overflow-wrap:normal;overflow-x:auto}
+  .step .row{grid-template-columns:1fr;gap:2px}
+  .out{min-height:200px;max-height:420px}
+  .steps{max-height:none}
+}
 </style>
 </head>
 <body>
@@ -170,9 +195,13 @@ footer a{color:var(--ink)}
 <option value="examples/cl.btp">Propositional logic by hand</option>
 <option value="examples/peano.btp">Peano: 1 + 1 = 2 by hand</option>
 <option value="examples/gauss.btp">Gauss's sum formula</option>
+<option value="examples/parity.btp">Every number is even or odd</option>
+<option value="examples/division.btp">Division with remainder</option>
 <option value="examples/primes.btp">Euclid: infinitely many primes</option>
+<option value="examples/hoare.btp">Counting odd numbers with Hoare logic</option>
 <option value="examples/gcd.btp">Euclid's GCD with Hoare logic</option>
 <option value="examples/compiler.btp">A verified compiler</option>
+<option value="examples/aquinas.btp">Aquinas's First Way</option>
 <option value="@broken">A broken proof (spot the bug)</option>
 </select>
 <button class="btn primary" id="runBtn">▶ Check</button>
@@ -403,6 +432,7 @@ const TACS=[
 ['ind_hyp(f)','The induction hypothesis f(N), plus the proof ⊢(f(N)⇒f(N)) to use it.','Budge has no "assume", so the hypothesis rides along as an implication from f(N).'],
 ['chain(start, steps)','Rewrites an equation step by step and proves EQ(start, end).','Each step is a path into the term (like [0] for the first argument) and a proof that rewrites the subterm there.'],
 ['induction(f, base, step)','From ⊢f(0) and ⊢(f(N)⇒f(S(N))) it concludes ⊢ALL(f).','Pass name= to keep the result, e.g. name=\'thZeroAdd\'.'],
+['induction_rule(rule, f, side, …)','Applies any induction rule: builds its OPEN/ABS side conditions, then the rule.','induction is the rInd instance of it; the verified compiler uses it for induction over expressions, and Aquinas\'s First Way for its no-regress premise.'],
 ['inst(h, t…)','∀-eliminate h at the given closed terms, outermost quantifier first.','Behind the scenes it builds the OPEN derivations that substitute into de Bruijn variables.'],
 ['gen(…)','Generalise a parameter w: from ⊢g(w) to ⊢ALL(g(V(0))).','This is how a fact about an arbitrary N becomes a fact about every n.'],
 ['sym(h)','Flip an equation: from EQ(a,b) to EQ(b,a).','Handy inside chain when a lemma points the wrong way.'],
@@ -411,6 +441,8 @@ const TACS=[
 ['root.close(p)','At the root: from ⊢(⊤⇒X) get ⊢X.','The last step of a natural-deduction proof.'],
 ['ctx.ex_i(…)','∃-introduction: f[t] here gives EX(f).','Pack a witness into an existential.'],
 ['ctx.ex_e(…)','∃-elimination: from EX(f), prove X using f[w] for a fresh w not in X.','Unpacks a witness, as in "a|b means b = a·x for some x".'],
+['ctx.nat_cases(t, zero, succ)','Cases on a number: t = 0, or t = S(p) for some p.','The succ case gets p directly, the ∃ already unpacked.'],
+['ctx.subst(heq, h, path)','From a = b and a formula φ with a at path, prove φ with b there.','Goes through ∧, ∨, ⇒, ¬, ∀ and ∃ down to an equation, so it rewrites inside ≤, < and | as well.'],
 ['ctx.by_contra(…)','Proof by contradiction: assume ¬A, derive some B and ¬B, conclude A.','Classical logic, from the axioms in lib/logic.btp.'],
 ];
 const tg=document.getElementById('tacs');TACS.forEach(([n,d,m])=>{const e=document.createElement('div');e.className='tac';e.innerHTML=`<code>${esc(n)}</code><p>${esc(d)}</p><div class="more">${esc(m)}</div>`;e.onclick=()=>e.classList.toggle('on');tg.appendChild(e)});
@@ -533,7 +565,6 @@ document.getElementById('runBtn').onclick=async()=>{
 };
 loadRunEx('@zeroadd');
 </script>
-<script src="https://remote-shortcode.space.fast/remix-cta.js" defer data-href="https://my.spacefast.com/new?git=https%3A%2F%2Fgit.spacefast.com%2Fsf-x-bot%2Fremote-shortcode"></script>
 </body>
 </html>
 

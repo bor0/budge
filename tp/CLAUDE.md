@@ -12,6 +12,13 @@ for f in examples/*.btp examples/lib/*.btp; do python3 budge-tp.py "$f" 2>&1 | g
 # --expand DIR writes every loaded file with <?py ... ?> blocks replaced by their output
 ```
 
+`spacefast/index.html` is the browser playground; it fetches the checker and examples from
+GitHub `main` at run time. Keep it in step with any change: `LIB` lists every `examples/lib/`
+file, the `runEx` dropdown offers the showcase examples, the `TACS` cards match tactics.py's
+names and behaviour, and the prose matches the code. It must stay phone-friendly (no horizontal
+scroll at 320px). After changing it, republish it (spacefast skill) to its existing Space, https://budge.space.fast/ (linked from
+README.md), updating it rather than creating one; that needs the owner's API key. No `.spacefast/` folder.
+
 ## Syntax
 
 ```
