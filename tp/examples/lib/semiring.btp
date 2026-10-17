@@ -18,27 +18,28 @@
 # ones. Several-variable lemmas are proved by induction on the last variable
 # with the others as parameters (K, M), then generalised (rGen).
 #
-# The logic is strict Hilbert-style: every equation step is an instance of an
-# equality axiom discharged by modus ponens. Budge has no "assume P(N)", so an
-# induction step is carried as implications from P(N), chained with thHS and
-# axiom S, with unconditional facts weakened into it by axiom K.
+# Every equation step is an instance of an equality axiom discharged by modus
+# ponens. An induction step assumes P(N) in a Ctx (tactics.py, over nd.btp) and
+# discharges it, giving the theorem ⊢(P(N)=>P(S(N))) that rInd needs.
 
 <?py load('peano.btp') ?>
+<?py load('nd.btp') ?>
 <?py
 import os, sys; sys.path.insert(0, os.path.dirname(__file__))
 from tactics import *
 use(env, __file__)
 
-V1 = V(S(Z))
+root = Ctx(reserved={K_, M_, N_})
 
 # ---- 1. 0 + n = n
 section('Lemma: 0 + n = n', 'SrA', ['Induction on n. Step: 0+S(N) = S(0+N) = S(N).'])
 f = EQ(ADD(Z, V0), V0)
-G, ih = ind_hyp(f)
-L1 = induction(f, aAZ(Z), chain(ADD(Z, S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(ADD(Z, S(N_)), [
     ([], aAS(Z, N_)),
-    ([0], ih),
-]), name='thZeroAdd')
+    ([0], c.hyp_()),
+])
+L1 = induction(f, aAZ(Z), root.close(c.discharge(step)), name='thZeroAdd')
 
 # ---- 2. S(m) + n = S(m + n)
 section('Lemma: S(m) + n = S(m + n)', 'SrB', [
@@ -50,13 +51,13 @@ base = chain(ADD(S(M_), Z), [
     ([], aAZ(S(M_))),
     ([0], lambda t: sym(aAZ(M_))),
 ])
-G, ih = ind_hyp(f)
-step = chain(ADD(S(M_), S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(ADD(S(M_), S(N_)), [
     ([], aAS(S(M_), N_)),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([0], lambda t: sym(aAS(M_, N_))),
 ])
-L2 = gen(induction(f, base, step), M_, name='thSuccAdd')
+L2 = gen(induction(f, base, root.close(c.discharge(step))), M_, name='thSuccAdd')
 
 # ---- 3. m + n = n + m
 section('Lemma: m + n = n + m (commutativity of +)', 'SrC', [
@@ -67,13 +68,13 @@ base = chain(ADD(M_, Z), [
     ([], aAZ(M_)),
     ([], lambda t: sym(inst(L1, M_))),
 ])
-G, ih = ind_hyp(f)
-step = chain(ADD(M_, S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(ADD(M_, S(N_)), [
     ([], aAS(M_, N_)),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([], lambda t: sym(inst(L2, N_, M_))),
 ])
-L3 = gen(induction(f, base, step), M_, name='thAddComm')
+L3 = gen(induction(f, base, root.close(c.discharge(step))), M_, name='thAddComm')
 
 # ---- 4. (k + m) + n = k + (m + n)
 section('Lemma: (k + m) + n = k + (m + n) (associativity of +)', 'SrD', [
@@ -84,24 +85,25 @@ base = chain(ADD(ADD(K_, M_), Z), [
     ([], aAZ(ADD(K_, M_))),
     ([1], lambda t: sym(aAZ(M_))),
 ])
-G, ih = ind_hyp(f)
-step = chain(ADD(ADD(K_, M_), S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(ADD(ADD(K_, M_), S(N_)), [
     ([], aAS(ADD(K_, M_), N_)),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([], lambda t: sym(aAS(K_, ADD(M_, N_)))),
     ([1], lambda t: sym(aAS(M_, N_))),
 ])
-L4 = gen(gen(induction(f, base, step), M_), K_, name='thAddAssoc')
+L4 = gen(gen(induction(f, base, root.close(c.discharge(step))), M_), K_, name='thAddAssoc')
 
 # ---- 5. 0 · n = 0
 section('Lemma: 0 · n = 0', 'SrE', ['Induction on n. Step: 0·S(N) = 0·N+0 = 0·N = 0.'])
 f = EQ(MUL(Z, V0), Z)
-G, ih = ind_hyp(f)
-L5 = induction(f, aMZ(Z), chain(MUL(Z, S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(MUL(Z, S(N_)), [
     ([], aMS(Z, N_)),
     ([], lambda t: aAZ(MUL(Z, N_))),
-    ([], ih),
-]), name='thZeroMul')
+    ([], c.hyp_()),
+])
+L5 = induction(f, aMZ(Z), root.close(c.discharge(step)), name='thZeroMul')
 
 # ---- 6. S(m) · n = m · n + n
 section('Lemma: S(m) · n = m · n + n', 'SrF', [
@@ -114,11 +116,11 @@ base = chain(MUL(S(M_), Z), [
     ([], aMZ(S(M_))),
     ([], lambda t: sym(trans(aAZ(MUL(M_, Z)), aMZ(M_)))),
 ])
-G, ih = ind_hyp(f)
+c = root.assume(instantiate(f, N_))
 MN = MUL(M_, N_)
-step = chain(MUL(S(M_), S(N_)), [
+step = c.chain(MUL(S(M_), S(N_)), [
     ([], aMS(S(M_), N_)),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([], lambda t: inst(L4, MN, N_, S(M_))),
     ([1], lambda t: aAS(N_, M_)),
     ([1, 0], lambda t: inst(L3, N_, M_)),
@@ -126,7 +128,7 @@ step = chain(MUL(S(M_), S(N_)), [
     ([], lambda t: sym(inst(L4, MN, M_, S(N_)))),
     ([0], lambda t: sym(aMS(M_, N_))),
 ])
-L6 = gen(induction(f, base, step), M_, name='thSuccMul')
+L6 = gen(induction(f, base, root.close(c.discharge(step))), M_, name='thSuccMul')
 
 # ---- 7. m · n = n · m
 section('Lemma: m · n = n · m (commutativity of ·)', 'SrG', [
@@ -137,13 +139,13 @@ base = chain(MUL(M_, Z), [
     ([], aMZ(M_)),
     ([], lambda t: sym(inst(L5, M_))),
 ])
-G, ih = ind_hyp(f)
-step = chain(MUL(M_, S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(MUL(M_, S(N_)), [
     ([], aMS(M_, N_)),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([], lambda t: sym(inst(L6, N_, M_))),
 ])
-L7 = gen(induction(f, base, step), M_, name='thMulComm')
+L7 = gen(induction(f, base, root.close(c.discharge(step))), M_, name='thMulComm')
 
 # ---- 8. k · (m + n) = k · m + k · n
 section('Lemma: k · (m + n) = k · m + k · n (distributivity)', 'SrH', [
@@ -156,15 +158,15 @@ base = chain(MUL(K_, ADD(M_, Z)), [
     ([], lambda t: sym(aAZ(MUL(K_, M_)))),
     ([1], lambda t: sym(aMZ(K_))),
 ])
-G, ih = ind_hyp(f)
-step = chain(MUL(K_, ADD(M_, S(N_))), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(MUL(K_, ADD(M_, S(N_))), [
     ([1], lambda t: aAS(M_, N_)),
     ([], lambda t: aMS(K_, ADD(M_, N_))),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([], lambda t: inst(L4, MUL(K_, M_), MUL(K_, N_), K_)),
     ([1], lambda t: sym(aMS(K_, N_))),
 ])
-L8 = gen(gen(induction(f, base, step), M_), K_, name='thDistrib')
+L8 = gen(gen(induction(f, base, root.close(c.discharge(step))), M_), K_, name='thDistrib')
 
 # ---- 9. (k · m) · n = k · (m · n)
 section('Lemma: (k · m) · n = k · (m · n) (associativity of ·)', 'SrI', [
@@ -177,12 +179,12 @@ base = chain(MUL(MUL(K_, M_), Z), [
     ([], lambda t: sym(aMZ(K_))),
     ([1], lambda t: sym(aMZ(M_))),
 ])
-G, ih = ind_hyp(f)
-step = chain(MUL(MUL(K_, M_), S(N_)), [
+c = root.assume(instantiate(f, N_))
+step = c.chain(MUL(MUL(K_, M_), S(N_)), [
     ([], aMS(MUL(K_, M_), N_)),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([], lambda t: sym(inst(L8, K_, MUL(M_, N_), M_))),
     ([1], lambda t: sym(aMS(M_, N_))),
 ])
-L9 = gen(gen(induction(f, base, step), M_), K_, name='thMulAssoc')
+L9 = gen(gen(induction(f, base, root.close(c.discharge(step))), M_), K_, name='thMulAssoc')
 ?>

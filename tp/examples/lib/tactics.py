@@ -134,14 +134,6 @@ def num(n):
     return t
 
 
-def subst(t, old, new):
-    if t == old:
-        return new
-    if isinstance(t, str):
-        return t
-    return (t[0], *(subst(a, old, new) for a in t[1:]))
-
-
 # ---------------------------------------------------------------- registries
 # How each function symbol is built, checked closed, opened, abstracted and
 # rewritten. Files that add a symbol (e.g. SUM) register it with add_symbol.
@@ -356,8 +348,8 @@ def weaken(h, G):
     return mp(h, apply('rK', [('p', val(h)[1]), ('q', G)], []))
 
 
-# Equality proofs are either unconditional, ⊢EQ(a,b), or under an assumption
-# G (the induction hypothesis), ⊢(G=>EQ(a,b)).
+# Equality proofs are either unconditional, ⊢EQ(a,b), or under a Ctx's
+# context G, ⊢(G=>EQ(a,b)).
 def is_cond(h):
     return val(h)[1][0] == 'IMP'
 
@@ -372,9 +364,6 @@ def sides(h):
 
 def through(h, imp):
     """h : EQ (maybe under G), imp : ⊢(EQ=>X). Gives X (same mode)."""
-    e = val(h)[1]
-    if e[0] == 'IMP' and e[1] == e[2]:
-        return imp                       # h is ⊢(G=>G): imp already is G=>X
     return hs(h, imp) if is_cond(h) else mp(h, imp)
 
 
@@ -545,12 +534,6 @@ def gen(h, w, name=None):
     g = val(h)[1]
     a, f = abs_(Z, w, g)
     return apply('rGen', [('w', w), ('g', g), ('f', f)], [a, h], name=name)
-
-
-def ind_hyp(f):
-    """Induction hypothesis f(N) and the proof ⊢(f(N)=>f(N)) to use it."""
-    G = instantiate(f, N_)
-    return G, apply('thId', [('i', G)], [])
 
 
 def induction_rule(rule, f, side, premises, name=None):
@@ -945,17 +928,8 @@ def ax(rule, x=None):
     return apply(rule, [('x', x)] if x is not None else [], [])
 
 
-def andl(p, q): return apply('rAndL', [('p', p), ('q', q)], [])   # ⊢((p∧q)=>p)
-def andr(p, q): return apply('rAndR', [('p', p), ('q', q)], [])   # ⊢((p∧q)=>q)
 def aSumZ(): return apply('rSumZ', [], [])
 def aSumS(x): return apply('rSumS', [('x', x)], [])
-
-
-def or_elim(h_p, h_q, r_):
-    """From ⊢(P=>R) and ⊢(Q=>R) conclude ⊢((P∨Q)=>R)."""
-    p, q = val(h_p)[1][1], val(h_q)[1][1]
-    e = apply('rOrE', [('p', p), ('q', q), ('r', r_)], [])
-    return mp(h_q, mp(h_p, e))
 
 
 # ---------------------------------------------------------------- Hoare logic

@@ -20,9 +20,9 @@
 # recursion in lib/parity.btp, which also proves the arithmetic facts the
 # verification needs (thDiv2Odd, thDiv2Even); nothing about them is assumed.
 #
-# Invariant: $S = DIV2($I). The verification conditions are proved
-# Hilbert-style under their assumption (e.g. ⊢((Inv∧G)∧C => ...)), taking the
-# conjuncts apart with rAndL/rAndR.
+# Invariant: $S = DIV2($I). Each verification condition ⊢(P => Q) is proved
+# in a Ctx (tactics.py) that assumes P (e.g. (Inv∧G)∧C) and takes its
+# conjuncts apart.
 #
 # Side conditions (not checked by Budge): in rAssignS g must not mention $S,
 # in rAssignI a must not mention $I.
@@ -51,7 +51,7 @@ CT_ATOMS['$I'] = 'rCtVarI'
 
 
 I, Sv, Nv = '$I', '$S', '$N'
-ONE = S(Z)
+root = Ctx()
 
 # Assertions
 Inv = EQ(Sv, DIV2(I))                  # $S = ⌊$I/2⌋
@@ -80,7 +80,7 @@ section('Initialisation', 'HoA', [
 t1 = apply('rAssignI', [('a', Z), ('e', Z)], [])
 t2 = apply('rAssignS', [('e', Z), ('g', DIV2(I))], [])
 t3 = apply('rSeq', [('p', Init0), ('a', cI0), ('q', InitI), ('b', cS0), ('r', Inv)], [t1, t2])
-vcInit = weaken(sym(apply('rDiv2Z', [], [])), TOP)
+vcInit = root.get(sym(ax('rDiv2Z')))
 tInit = apply('rConsPre', [('p', TOP), ('q', Init0), ('c', init), ('r', Inv)], [vcInit, t3],
               name='thInit')
 
@@ -89,9 +89,10 @@ section('Loop body: odd $I', 'HoB', [
     '  S($S) = S(DIV2($I))      (Inv, under the assumption)',
     '        = DIV2(S($I))      (thDiv2Odd at $I, using C)'])
 A = AND(InvG, C)
-hInv = hs(andl(InvG, C), andl(Inv, G))                # ⊢(A => Inv)
-hOdd = hs(andr(InvG, C), inst('thDiv2Odd', I))        # ⊢(A => DIV2(S($I)) = S(DIV2($I)))
-vcThen = chain(S(Sv), [([0], hInv), ([], sym(hOdd))])
+c = root.assume(A)
+hInv = c.and_l(c.and_l(c.hyp_()))
+hOdd = c.thru(c.and_r(c.hyp_()), inst('thDiv2Odd', I))   # DIV2(S($I)) = S(DIV2($I))
+vcThen = root.close(c.discharge(c.chain(S(Sv), [([0], hInv), ([], c.sym(hOdd))])))
 tA = apply('rAssignS', [('e', S(Sv)), ('g', DIV2(S(I)))], [])
 tThen = apply('rConsPre', [('p', A), ('q', PreThen), ('c', cSS), ('r', Mid)], [vcThen, tA])
 
@@ -99,9 +100,9 @@ section('Loop body: even $I', 'HoC', [
     'VC: (Inv ∧ G) ∧ ¬C => EQ($S,DIV2(S($I))):',
     '  $S = DIV2($I) = DIV2(S($I))   (Inv; thDiv2Even at $I, using ¬C)'])
 A2 = AND(InvG, NOT(C))
-hInv2 = hs(andl(InvG, NOT(C)), andl(Inv, G))
-hEven = hs(andr(InvG, NOT(C)), inst('thDiv2Even', I))
-vcElse = trans(hInv2, sym(hEven))
+c = root.assume(A2)
+hEven = c.thru(c.and_r(c.hyp_()), inst('thDiv2Even', I))
+vcElse = root.close(c.discharge(c.trans(c.and_l(c.and_l(c.hyp_())), c.sym(hEven))))
 tSkip = apply('rSkip', [('p', Mid)], [])
 tElse = apply('rConsPre', [('p', A2), ('q', Mid), ('c', SKIP), ('r', Mid)], [vcElse, tSkip])
 
@@ -119,9 +120,10 @@ section('Loop exit and the whole program', 'HoE', [
     '(thDNE) gives $I = $N, congruence of DIV2 gives DIV2($I) = DIV2($N).'])
 E = EQ(I, Nv)
 A3 = AND(Inv, NOT(G))
-hE = hs(andr(Inv, NOT(G)), apply('thDNE', [('i', E)], []))
-hH = hs(hE, apply('rCongDiv2', [('x', I), ('y', Nv)], []))
-vcExit = trans(andl(Inv, NOT(G)), hH)
+c = root.assume(A3)
+hE = c.thru(c.and_r(c.hyp_()), apply('thDNE', [('i', E)], []))
+hH = c.thru(hE, apply('rCongDiv2', [('x', I), ('y', Nv)], []))
+vcExit = root.close(c.discharge(c.trans(c.and_l(c.hyp_()), hH)))
 tLoopPost = apply('rConsPost', [('p', Inv), ('c', loop), ('q', A3), ('r', Post)],
                   [tLoop, vcExit], name='thLoop')
 apply('rSeq', [('p', TOP), ('a', init), ('q', Inv), ('b', loop), ('r', Post)],

@@ -224,7 +224,7 @@ nav .wrap::-webkit-scrollbar{display:none}
 <div class="grid g3">
 <div class="card"><span class="tag t-t">tired</span><h3>By hand</h3><p>Every number needs its own theorem, written line by line. 1 + 1 = 2 alone takes a dozen steps of terms, axioms, and modus ponens.</p></div>
 <div class="card"><span class="tag t-py">wired</span><h3>Python prints the lines</h3><p>A loop emits the same theorems for you. Budge-TP neither knows nor cares that Python wrote them, but you only get the numbers you asked for (up to <code>tm4!</code>).</p></div>
-<div class="card"><span class="tag t-p">inspired</span><h3>Induction tactics</h3><p><code>ind_hyp</code>, <code>chain</code>, and <code>induction</code> produce one theorem, <code>thZeroAdd : ⊢ALL(EQ(ADD(0,V(0)),V(0)))</code>, which is ∀n. 0 + n = n.</p></div>
+<div class="card"><span class="tag t-p">inspired</span><h3>Induction tactics</h3><p><code>Ctx</code>, <code>chain</code>, and <code>induction</code> produce one theorem, <code>thZeroAdd : ⊢ALL(EQ(ADD(0,V(0)),V(0)))</code>, which is ∀n. 0 + n = n.</p></div>
 </div>
 <div class="card" style="margin-top:16px"><h3>Reading the formulas</h3><p>Numbers are <code>0</code>, <code>S(0)</code>, <code>S(S(0))</code>… Bound variables use de Bruijn indices: <code>V(0)</code> is the variable of the nearest <code>ALL</code> or <code>EX</code>, <code>V(S(0))</code> the one outside that. So <code>ALL(ALL(EQ(ADD(V(S(0)),V(0)),ADD(V(0),V(S(0))))))</code> reads ∀m∀n. m + n = n + m. Capital letters like <code>N</code> are parameters: arbitrary but fixed, which is how an induction step talks about "some n".</p>
 <div class="quiz" id="quiz"></div>
@@ -429,7 +429,6 @@ QZ.forEach(([f,m])=>{const b=document.createElement('button');b.className='btn m
 // ---------- tactics ----------
 const TACS=[
 ['use(env, __file__)','Start a block: load what budge-tp.py has read and checked so far.','Every tactic block begins with it, so the Python side knows which rules and theorems exist.'],
-['ind_hyp(f)','The induction hypothesis f(N), plus the proof ⊢(f(N)⇒f(N)) to use it.','Budge has no "assume", so the hypothesis rides along as an implication from f(N).'],
 ['chain(start, steps)','Rewrites an equation step by step and proves EQ(start, end).','Each step is a path into the term (like [0] for the first argument) and a proof that rewrites the subterm there.'],
 ['induction(f, base, step)','From ⊢f(0) and ⊢(f(N)⇒f(S(N))) it concludes ⊢ALL(f).','Pass name= to keep the result, e.g. name=\'thZeroAdd\'.'],
 ['induction_rule(rule, f, side, …)','Applies any induction rule: builds its OPEN/ABS side conditions, then the rule.','induction is the rInd instance of it; the verified compiler uses it for induction over expressions, and Aquinas\'s First Way for its no-regress premise.'],
@@ -437,6 +436,7 @@ const TACS=[
 ['gen(…)','Generalise a parameter w: from ⊢g(w) to ⊢ALL(g(V(0))).','This is how a fact about an arbitrary N becomes a fact about every n.'],
 ['sym(h)','Flip an equation: from EQ(a,b) to EQ(b,a).','Handy inside chain when a lemma points the wrong way.'],
 ['Ctx.assume(H)','Reason under a hypothesis H.','A context is a formula G (⊤ at the root, (G∧H) after assuming H); a fact X proved there is the theorem ⊢(G⇒X).'],
+['ctx.hyp_(H)','The hypothesis H (default: the newest) as a fact in this context.','An induction step assumes f(N) and uses it through hyp_(), e.g. as a rewrite in chain.'],
 ['ctx.discharge(p)','A proof of X under (G∧H) gives (H⇒X) in the parent context.','This is ⇒-introduction, done with derived Hilbert schemas.'],
 ['root.close(p)','At the root: from ⊢(⊤⇒X) get ⊢X.','The last step of a natural-deduction proof.'],
 ['ctx.ex_i(…)','∃-introduction: f[t] here gives EX(f).','Pack a witness into an existential.'],
@@ -453,19 +453,21 @@ const LIB=['fol','logic','peano','semiring','sum','strings','tally','boolean','n
 const LOCAL={
 '@zeroadd':`# ∀n. 0 + n = n, proved by tactics (the "inspired" way)
 <?py load('lib/peano.btp') ?>
+<?py load('lib/nd.btp') ?>
 <?py
 import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from tactics import *
 use(env, __file__)
 
 f = EQ(ADD(Z, V0), V0)              # the formula 0 + n = n
-G, ih = ind_hyp(f)                  # induction hypothesis 0 + N = N
 base = aAZ(Z)                       # base case: 0 + 0 = 0
-step = chain(ADD(Z, S(N_)), [       # 0 + S(N)
+root = Ctx(reserved={N_})
+c = root.assume(instantiate(f, N_)) # assume 0 + N = N
+step = c.chain(ADD(Z, S(N_)), [     # 0 + S(N)
     ([], aAS(Z, N_)),               #   = S(0 + N)
-    ([0], ih),                      #   = S(N)
+    ([0], c.hyp_()),                #   = S(N)
 ])
-induction(f, base, step, name='thZeroAdd')
+induction(f, base, root.close(c.discharge(step)), name='thZeroAdd')
 ?>
 pZeroAdd : ∀n. 0 + n = n
 `,
@@ -476,11 +478,6 @@ pZeroAdd : ∀n. 0 + n = n
 import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from tactics import *
 use(env, __file__)
-
-def num(k):
-    t = Z
-    for _ in range(k): t = S(t)
-    return t
 
 # 0 + 0 = 0 straight from the axiom, then 0 + S(k) = S(0 + k) = S(k)
 prev = aAZ(Z)

@@ -42,8 +42,9 @@ rAbsAdd : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,ADD(x,y),ADD(u,v))
 rAbsMul : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,MUL(x,y),MUL(u,v))
 
 ## Induction. The premise ABS(0,N,g,f) both instantiates f at the parameter N
-## and checks that N does not occur in f. The step ⊢(g=>h) is proved with no
-## assumptions (Budge proofs have none), so N is arbitrary there.
+## and checks that N does not occur in f. The step ⊢(g=>h) is a theorem: any
+## hypotheses used to prove it (tactics.py's Ctx) are discharged into the
+## implication, so nothing is assumed about N and N is arbitrary there.
 rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)
 
 ## Term constructors

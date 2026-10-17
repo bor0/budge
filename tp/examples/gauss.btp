@@ -16,7 +16,7 @@
 #
 # What this example shows, and what it doesn't
 # --------------------------------------------
-# It shows that a checker of ~200 lines that only does string replacement can
+# It shows that a checker of ~300 lines that only does string replacement can
 # verify real mathematics: the semiring laws of + and · and Gauss's formula,
 # from Peano's axioms, with no derived inference rules and with capture-free
 # nested quantifiers. This is the Metamath / LCF idea: a tiny trusted checker,
@@ -30,9 +30,9 @@
 # - At this scale proofs are not written step by step: they are meta-programs
 #   (the Python blocks) that emit the steps.
 # - Much of the expressiveness comes from encodings that work around what Budge
-#   lacks: de Bruijn indices and OPEN/ABS for binding, the induction hypothesis
-#   carried as an implication for the missing assumptions, explicit terms for
-#   the missing unification.
+#   lacks: de Bruijn indices and OPEN/ABS for binding, hypotheses as a context
+#   formula discharged into implications (tactics.py's Ctx, over nd.btp),
+#   explicit terms for the missing unification.
 # - Soundness depends on the rules in lib/; one bad rule makes everything
 #   unsound, and some side conditions there are documented, not checked.
 #
@@ -66,10 +66,11 @@ base = chain(ADD(SUM(Z), SUM(Z)), [
     ([], lambda t: aSumZ()),
     ([], lambda t: sym(inst(L5, S(Z)))),
 ])
-G, ih = ind_hyp(f)
+root = Ctx(reserved={N_})
+c = root.assume(instantiate(f, N_))
 A_, B_ = SUM(N_), S(N_)
 X_ = ADD(MUL(N_, N_), N_)
-left = chain(ADD(SUM(B_), SUM(B_)), [
+left = c.chain(ADD(SUM(B_), SUM(B_)), [
     ([0], lambda t: aSumS(N_)),
     ([1], lambda t: aSumS(N_)),
     ([], lambda t: inst(L4, A_, B_, ADD(A_, B_))),
@@ -77,7 +78,7 @@ left = chain(ADD(SUM(B_), SUM(B_)), [
     ([1, 0], lambda t: inst(L3, B_, A_)),
     ([1], lambda t: inst(L4, A_, B_, B_)),
     ([], lambda t: sym(inst(L4, A_, A_, ADD(B_, B_)))),
-    ([0], ih),
+    ([0], c.hyp_()),
     ([0], lambda t: aMS(N_, N_)),
     ([], lambda t: sym(inst(L4, X_, B_, B_))),
 ])
@@ -86,7 +87,8 @@ right = chain(MUL(B_, S(B_)), [
     ([0], lambda t: aMS(B_, N_)),
     ([0, 0], lambda t: inst(L6, N_, N_)),
 ])
-L10 = induction(f, base, trans(left, sym(right)), name='thGauss')
+step = root.close(c.discharge(c.trans(left, c.sym(right))))
+L10 = induction(f, base, step, name='thGauss')
 prose('pGauss', '∀n. SUM(n) + SUM(n) = n · (n + 1), i.e. 0 + 1 + ... + n = n(n+1)/2')
 
 section('Example: n = 4', 'GsEx', [

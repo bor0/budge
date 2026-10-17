@@ -173,7 +173,7 @@ section('Base: NUM(n)', 'CoA', [
 h = chain(EXEC(COMP(NUM(N_), K_), U_), [
     ([0], apply('rCompNum', [('x', N_), ('k', K_)], [])),
     ([], apply('rExecPush', [('x', N_), ('k', K_), ('s', U_)], [])),
-    ([1, 0], sym(apply('rEvalNum', [('x', N_)], [])))])
+    ([1, 0], sym(ax('rEvalNum', N_)))])
 base = gen_all(h, K_, U_)
 assert val(base)[1] == instantiate(f, NUM(N_))
 
@@ -213,7 +213,6 @@ lemma('thCompile', forall(N_, EQ(EXEC(COMP(N_, HALT), EMPTY), CONS(EVAL(N_), EMP
 section('Example: 1 + 2', 'CoE', [
     'The code for PLUS(NUM(1),NUM(2)), by the compiler equations, and its result',
     'by thCompile: no run of the machine needed.'])
-ONE, TWO = S(Z), S(S(Z))
 e = PLUS(NUM(ONE), NUM(TWO))
 code = chain(COMP(e, HALT), [
     ([], apply('rCompPlus', [('x', NUM(ONE)), ('y', NUM(TWO)), ('k', HALT)], [])),
@@ -222,8 +221,8 @@ code = chain(COMP(e, HALT), [
 visible(code, 'thExampleCode')
 value = chain(EVAL(e), [
     ([], apply('rEvalPlus', [('x', NUM(ONE)), ('y', NUM(TWO))], [])),
-    ([0], apply('rEvalNum', [('x', ONE)], [])),
-    ([1], apply('rEvalNum', [('x', TWO)], [])),
+    ([0], ax('rEvalNum', ONE)),
+    ([1], ax('rEvalNum', TWO)),
     ([], add_eval(ONE, TWO))])
 run = chain(EXEC(val(code)[1][2], EMPTY), [
     ([0], sym(code)), ([], inst('thCompile', e)), ([0], value)])

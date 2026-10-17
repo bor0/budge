@@ -135,7 +135,7 @@ def no_first(c):
             h_not = c3.mp(c3.hyp_(NOT(FM)), c3.all_e(NoMover, x))
             return c3.efq(h_mover, h_not, FM)
         return c2.ex_e(c2.hyp_(), with_x)
-    return c.ex_e(c.get(apply('rSomethingMoves', [], [])), with_y), c.hyp_()
+    return c.ex_e(c.get(ax('rSomethingMoves')), with_y), c.hyp_()
 
 
 h = root.close(root.by_contra(FM, no_first))

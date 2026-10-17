@@ -2,7 +2,7 @@
 #
 # lib/peano.btp axiomatises + and × (equality and the ∀ quantifier are in
 # lib/fol.btp); lib/semiring.btp proves the laws of + and × from it, with a
-# Python block that emits ~1300 checked lines. This file shows, by hand, the
+# Python block that emits ~1400 checked lines. This file shows, by hand, the
 # three moves every proof there is made of:
 #
 #   1. computation:    1 + 1 = 2 from the defining equations of +

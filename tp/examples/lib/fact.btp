@@ -31,12 +31,12 @@ section('Lemma: ∃k. n! = S(k)', 'FcA', [
 fp = lambda n: exists(spare(n), EQ(FACT(n), S(spare(n))))
 f = abstract(fp(N_), N_)
 root = Ctx(reserved={N_})
-base = root.close(root.ex_i(apply('rFact0', [], []), fp(Z)[1], Z))
+base = root.close(root.ex_i(ax('rFact0'), fp(Z)[1], Z))
 c = root.assume(fp(N_))
 
 
 def with_k(c2, k):
-    h = c2.chain(FACT(S(N_)), [([], apply('rFactS', [('x', N_)], [])), ([0], c2.hyp_()),
+    h = c2.chain(FACT(S(N_)), [([], ax('rFactS', N_)), ([0], c2.hyp_()),
                                ([], aMS(S(k), N_)), ([], aAS(MUL(S(k), N_), k))])
     return c2.ex_i(h, fp(S(N_))[1], ADD(MUL(S(k), N_), k))
 
@@ -58,7 +58,7 @@ base = root.close(cb.discharge(cb.efq(hz, hnz, dvd(M_, FACT(Z)))))
 H = AND(le(ONE, M_), le(M_, S(N_)))
 c1 = root.assume(df(N_))
 c2 = c1.assume(H)
-fs = sym(apply('rFactS', [('x', N_)], []))                                  # FACT(N)·S(N) = FACT(S(N))
+fs = sym(ax('rFactS', N_))   # FACT(N)·S(N) = FACT(S(N))
 
 
 def small(c3):

@@ -62,13 +62,14 @@ literally: `p=EQ(ADD(0,x),x)` gives `EQ(ADD(0,x),x)(0)` (no beta-reduction). Old
 defined predicate (`⊢(BODY(x)=>PRED(x))`, `⊢(PRED(x)=>BODY(x))`, pass `p=tmPRED!`). Better:
 de Bruijn bodies with OPEN, as in `lib/peano.btp`'s `rInd` (below).
 
-**Inductive step, Hilbert-style.** No hypothetical reasoning: meta rules like
+**Inductive step, Hilbert-style.** Budge has no open assumptions: meta rules like
 `⊢EQ(x,y) -> ⊢EQ(S(x),S(y))` only fire on proved facts, so can't build
 `⊢(PRED(n)=>PRED(S(n)))`. By the deduction theorem, state facts as object-level
 implications (`⊢(EQ(x,y)=>EQ(S(x),S(y)))`, curried `rEqT : ⊢(EQ(x,y)=>(EQ(y,z)=>EQ(x,z)))`),
 chain with `rMp` and hypothetical syllogism (`thHS` in `lib/logic.btp`). An unconditional
 fact (`⊢H` from `rAS`) feeds a curried implication via `rMp`, leaving `⊢(F=>G)` to chain. Never axiomatise the step
-(`rImpl : ⊢(PRED(n)=>PRED(S(n)))`): that assumes the proof's content.
+(`rImpl : ⊢(PRED(n)=>PRED(S(n)))`): that assumes the proof's content. Python blocks
+don't do this by hand: `Ctx` (below) compiles assume/discharge to these steps.
 
 **Induction variable must stay arbitrary.** With a schematic `n` step
 (`rInd : ⊢p(0) -> ⊢(p(n)=>p(S(n))) -> …`), passing `n=tmZ!` checks the step only at 0 and
@@ -136,10 +137,10 @@ in an example would duplicate `rEqS`.
 not a duplicate: don't load a library for a coincidental symbol.
 `tally.btp` (loads strings): bar tallies `|||`, ≤, multiplication and powers MOD n; exports
 `tmBar1!`…`tmBar10!`. Cheap arithmetic for computations; proofs about all numbers use peano.
-`semiring.btp` (loads peano; Python block): `thZeroAdd` … `thMulAssoc`, all closed ∀ sentences
+`semiring.btp` (loads peano, nd; Python block): `thZeroAdd` … `thMulAssoc`, all closed ∀ sentences
 (0+n = n, S(m)+n = S(m+n), + and · commutative and associative, distributivity, …).
 `sum.btp` (loads peano): SUM(n) = 0+1+…+n by recursion; `gauss.btp` proves 2·SUM(n) = n·S(n).
-`parity.btp` (loads peano; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
+`parity.btp` (loads peano, nd; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
 `thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads fol, strings): Hoare rules and program syntax.
 `nd.btp` (loads logic; Python block): `thCurry`, `thC`, `thW`, `thCP2`, `thAbs`, `thLEM`, the
 schemas natural deduction compiles to. `order.btp` (loads semiring, nd; Python block): ≤ is
@@ -159,8 +160,10 @@ library: it holds only what the committed proofs use.
 **Induction with de Bruijn ∀** (`lib/peano.btp`). No defined predicates:
 `rInd : OPEN(0,f,0,b) -> ABS(0,N,g,f) -> OPEN(0,f,S(N),h) -> ⊢b -> ⊢(g=>h) -> ⊢ALL(f)`;
 the ABS premise also checks N ∉ f. Several parameters: `ABS(k,w,g,f)` names the
-parameter `w` (`PAR(w)`), others pass via `DIFF(w,o)`. Use the IH as `thId` `⊢(G=>G)`;
-steps under G: `rK` weakens facts, `thHS` chains, `rS` + `rEqT` give transitivity.
+parameter `w` (`PAR(w)`), others pass via `DIFF(w,o)`. In tactics, the step is
+`root.close(c.discharge(...))` for `c = root.assume(instantiate(f, N_))`, the IH `c.hyp_()`
+(semiring, gauss); no hand-rolled `thId`/`rK`/`thHS` plumbing, and none in assertion
+VCs either (`hoare.btp`).
 
 **Other inductive types** (`compiler.btp`). Structural induction like `rInd`, one parameter
 per subterm (`rIndExp`: M, N, each with OPEN and ABS premises; IHs as curried premises

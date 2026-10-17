@@ -14,6 +14,7 @@
 #   thDiv2Even  ¬(MOD2(n) = 1)  =>  DIV2(S(n)) = DIV2(n)        (via thModDich)
 
 <?py load('peano.btp') ?>
+<?py load('nd.btp') ?>
 ## Definitions
 rFlip0 : ⊢EQ(FLIP(0),S(0))
 rFlip1 : ⊢EQ(FLIP(S(0)),0)
@@ -47,8 +48,7 @@ from tactics import *
 use(env, __file__)
 
 
-ONE = S(Z)
-
+root = Ctx(reserved={M_, N_})
 
 # ---- MOD2(n) is 0 or 1
 section('Lemma: MOD2(n) = 0 ∨ MOD2(n) = 1', 'PtA', [
@@ -56,51 +56,47 @@ section('Lemma: MOD2(n) = 0 ∨ MOD2(n) = 1', 'PtA', [
     '  MOD2(N) = 0  =>  MOD2(S(N)) = FLIP(MOD2(N)) = FLIP(0) = 1',
     '  MOD2(N) = 1  =>  MOD2(S(N)) = FLIP(MOD2(N)) = FLIP(1) = 0'])
 f = OR(EQ(MOD2(V0), Z), EQ(MOD2(V0), ONE))
-b0 = ax('rMod0')
-base = mp(b0, apply('rOrL', [('p', EQ(MOD2(Z), Z)), ('q', EQ(MOD2(Z), ONE))], []))
-H = subst(f, V0, S(N_))
-E0, E1 = EQ(MOD2(N_), Z), EQ(MOD2(N_), ONE)
-case0 = chain(MOD2(S(N_)), [
-    ([], ax('rModS', N_)),
-    ([0], apply('thId', [('i', E0)], [])),
-    ([], ax('rFlip0')),
-])                                                  # ⊢(E0 => MOD2(S(N)) = 1)
-case0 = hs(case0, apply('rOrR', [('p', H[1]), ('q', H[2])], []))
-case1 = chain(MOD2(S(N_)), [
-    ([], ax('rModS', N_)),
-    ([0], apply('thId', [('i', E1)], [])),
-    ([], ax('rFlip1')),
-])                                                  # ⊢(E1 => MOD2(S(N)) = 0)
-case1 = hs(case1, apply('rOrL', [('p', H[1]), ('q', H[2])], []))
-Dich = induction(f, base, or_elim(case0, case1, H), name='thModDich')
+base = root.close(root.or_l(ax('rMod0'), EQ(MOD2(Z), ONE)))
+H = instantiate(f, S(N_))
+
+
+def flip(rule, side):
+    def go(c):                                      # MOD2(N) = 0 (or 1) here
+        h = c.chain(MOD2(S(N_)), [([], ax('rModS', N_)), ([0], c.hyp_()), ([], ax(rule))])
+        return c.or_r(h, H[1]) if side else c.or_l(h, H[2])
+    return go
+
+
+c = root.assume(instantiate(f, N_))
+step = root.close(c.discharge(c.cases(c.hyp_(), flip('rFlip0', 1), flip('rFlip1', 0))))
+Dich = induction(f, base, step, name='thModDich')
 
 # ---- odd: DIV2(S(n)) = S(DIV2(n))
 section('Lemma: MOD2(n) = 1 => DIV2(S(n)) = S(DIV2(n))', 'PtB', [
     'For a parameter M: DIV2(S(M)) = DIV2(M) + MOD2(M) = DIV2(M) + 1',
     '  = S(DIV2(M) + 0) = S(DIV2(M)), then generalise M.'])
 C = EQ(MOD2(M_), ONE)
-odd = chain(DIV2(S(M_)), [
+c = root.assume(C)
+odd = c.chain(DIV2(S(M_)), [
     ([], ax('rDiv2S', M_)),
-    ([1], apply('thId', [('i', C)], [])),
+    ([1], c.hyp_()),
     ([], aAS(DIV2(M_), Z)),
     ([0], aAZ(DIV2(M_))),
 ])
-Odd = gen(odd, M_, name='thDiv2Odd')
+Odd = gen(root.close(c.discharge(odd)), M_, name='thDiv2Odd')
 
 # ---- even: DIV2(S(n)) = DIV2(n)
 section('Lemma: ¬(MOD2(n) = 1) => DIV2(S(n)) = DIV2(n)', 'PtC', [
     'For a parameter M: thModDich gives MOD2(M) = 0 ∨ MOD2(M) = 1, so under',
     '¬(MOD2(M) = 1) disjunctive syllogism (thDS) gives MOD2(M) = 0, and',
     'DIV2(S(M)) = DIV2(M) + MOD2(M) = DIV2(M) + 0 = DIV2(M). Generalise M.'])
-NC, E0M = NOT(C), EQ(MOD2(M_), Z)
-dM = inst(Dich, M_)                                  # ⊢(E0M ∨ C)
-ds = apply('thDS', [('i', E0M), ('j', C)], [])       # ⊢(¬C => ((E0M ∨ C) => E0M))
-s_ = apply('rS', [('p', NC), ('q', OR(E0M, C)), ('r', E0M)], [])
-hE0 = mp(weaken(dM, NC), mp(ds, s_))                 # ⊢(¬C => E0M)
-even = chain(DIV2(S(M_)), [
+E0M = EQ(MOD2(M_), Z)
+c = root.assume(NOT(C))
+hE0 = c.mp(inst(Dich, M_), c.thru(c.hyp_(), apply('thDS', [('i', E0M), ('j', C)], [])))
+even = c.chain(DIV2(S(M_)), [
     ([], ax('rDiv2S', M_)),
     ([1], hE0),
     ([], aAZ(DIV2(M_))),
 ])
-Even = gen(even, M_, name='thDiv2Even')
+Even = gen(root.close(c.discharge(even)), M_, name='thDiv2Even')
 ?>
