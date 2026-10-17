@@ -553,15 +553,28 @@ def ind_hyp(f):
     return G, apply('thId', [('i', G)], [])
 
 
+def induction_rule(rule, f, side, premises, name=None):
+    """Apply an induction rule concluding ⊢ALL(f), its variable for f named f.
+    side lists its judgement premises in order: ('OPEN', t, key) is OPEN(0,f,t,key)
+    and ('ABS', w, key) is ABS(0,w,key,f), key the rule's variable for f[t] or f[w].
+    premises are the proofs of its remaining hypotheses."""
+    keys, hyps = {'f': f}, []
+    for kind, t, key in side:
+        if kind == 'OPEN':
+            j, g = open_(Z, f, t)
+        else:
+            g = instantiate(f, t)
+            j, f2 = abs_(Z, t, g)
+            assert f2 == f, (r(f2), r(f))
+        assert keys.setdefault(key, g) == g, key
+        hyps.append(j)
+    return apply(rule, list(keys.items()), hyps + list(premises), name=name)
+
+
 def induction(f, base, step, name=None):
     """From ⊢f(0) and ⊢(f(N)=>f(S(N))) conclude ⊢ALL(f)."""
-    b, g, h = instantiate(f, Z), instantiate(f, N_), instantiate(f, S(N_))
-    o1, b2 = open_(Z, f, Z)
-    a, f2 = abs_(Z, N_, g)
-    o3, h2 = open_(Z, f, S(N_))
-    assert (b2, f2, h2) == (b, f, h)
-    return apply('rInd', [('f', f), ('b', b), ('g', g), ('h', h)],
-                 [o1, a, o3, base, step], name=name)
+    return induction_rule('rInd', f, [('OPEN', Z, 'b'), ('ABS', N_, 'g'), ('OPEN', S(N_), 'h')],
+                          [base, step], name=name)
 
 
 # axiom instances
@@ -597,6 +610,14 @@ def instantiate(f, t, k=0):
 def forall(w, body): return ('ALL', abstract(body, w))
 def exists(w, body): return ('EX', abstract(body, w))
 def mentions(t, w): return t == w or (isinstance(t, tuple) and any(mentions(a, w) for a in t[1:]))
+
+
+def replace_at(t, path, new):
+    """t with its subterm at path replaced by new."""
+    if not path:
+        return new
+    i = path[0] + 1
+    return t[:i] + (replace_at(t[i], path[1:], new),) + t[i + 1:]
 
 
 # ---------------------------------------------------------------- natural deduction
@@ -741,9 +762,9 @@ class Ctx:
         assert g == self.concl(h), (r(g), r(self.concl(h)))
         return self.thru(h, apply('rExI', [('f', f), ('t', t), ('g', g)], [o]))
 
-    def all_i(self, f, prove):
-        """ALL(f), from prove(ctx, w) proving f[w] for a fresh parameter w."""
-        w = self.fresh(f)
+    def all_i(self, f, prove, avoid=()):
+        """ALL(f), from prove(ctx, w) proving f[w] for a fresh parameter w (not in avoid)."""
+        w = self.fresh(f, *avoid)
         c = copy.copy(self)
         c.params = self.params | {w}
         h = self.get(prove(c, w))                            # ⊢(G=>f[w])
@@ -755,10 +776,10 @@ class Ctx:
         ai = apply('rAllImp', [('q', self.G), ('f', f)], [o])
         return mp(gen_, ai)
 
-    def ex_e(self, hex_, prove):
-        """From EX(f) here and prove(ctx with f[w], w) proving X (w fresh, not in X)."""
+    def ex_e(self, hex_, prove, avoid=()):
+        """From EX(f) here and prove(ctx with f[w], w) proving X (w fresh, not in X or avoid)."""
         f = self.concl(hex_)[1]
-        w = self.fresh(f)
+        w = self.fresh(f, *avoid)
         c = self.assume(instantiate(f, w))
         c.params = self.params | {w}
         hx = prove(c, w)
@@ -778,6 +799,13 @@ class Ctx:
         h3 = mp(gen_, ee)                                     # ⊢(EX(f)=>(G=>X))
         h4 = self.thru(hex_, h3)                              # ⊢(G=>(G=>X))
         return mp(h4, apply('thW', [('i', self.G), ('j', X)], []))
+
+    # -- cases on a number (thZeroOrSucc, lib/order.btp)
+    def nat_cases(self, t, zero, succ):
+        """t = 0 or t = S(p): zero(ctx with t = 0) and succ(ctx with t = S(p), p)
+        proving the same X."""
+        return self.cases(self.get(inst('thZeroOrSucc', t)), zero,
+                          lambda c: c.ex_e(c.hyp_(), succ))
 
     # -- equations
     def eq(self, h):
@@ -799,6 +827,42 @@ class Ctx:
             _, cur = sides(step)
             acc = step if acc is None else trans(self.eq(acc), self.eq(step))
         return self.get(acc)
+
+    def subst(self, heq, h, path):
+        """From a = b and φ here, a the subterm of φ at path, prove φ with b there.
+        Through the connectives and quantifiers down to an EQ; ¬ and the left of =>
+        go back from b to a."""
+        phi = self.concl(h)
+        a, b = sides(heq)
+        target = replace_at(phi, path, b)
+        op, i, sub = phi[0], path[0], path[1:]
+        if op == 'EQ':
+            e = rewrite(phi[i + 1], sub, self.eq(heq))
+            return self.trans(self.sym(e), h) if i == 0 else self.trans(h, e)
+        if op == 'AND':
+            parts = [self.and_l(h), self.and_r(h)]
+            parts[i] = self.subst(heq, parts[i], sub)
+            return self.and_i(*parts)
+        if op == 'OR':
+            def side(j):
+                def go(c):
+                    hj = c.subst(heq, c.hyp_(), sub) if j == i else c.hyp_()
+                    return c.or_l(hj, target[2]) if j == 0 else c.or_r(hj, target[1])
+                return go
+            return self.cases(h, side(0), side(1))
+        if op == 'IMP':
+            c = self.assume(target[1])
+            if i == 0:
+                return c.discharge(c.mp(c.subst(c.sym(heq), c.hyp_(), sub), h))
+            return c.discharge(c.subst(heq, c.mp(c.hyp_(), h), sub))
+        if op == 'NOT':
+            return self.absurd(target[1], lambda c: (c.subst(c.sym(heq), c.hyp_(), sub), h))
+        if op == 'ALL':
+            return self.all_i(target[1], lambda c, w: c.subst(heq, c.all_e(h, w), sub), avoid=(a, b))
+        if op == 'EX':
+            return self.ex_e(h, lambda c, w: c.ex_i(c.subst(heq, c.hyp_(), sub), target[1], w),
+                             avoid=(a, b))
+        raise Exception(f'subst: no congruence for {op}')
 
 
 # ---------------------------------------------------------------- arithmetic formulas
@@ -859,7 +923,6 @@ def lemma(name, statement, h):
 # ---------------------------------------------------------------- library symbols
 # Defined by recursion in parity.btp (FLIP, MOD2, DIV2), sum.btp (SUM),
 # fact.btp (FACT); each has a term rule and CT, OPEN, ABS and congruence rules.
-def FLIP(x): return ('FLIP', x)
 def MOD2(x): return ('MOD2', x)
 def DIV2(x): return ('DIV2', x)
 def FACT(x): return ('FACT', x)

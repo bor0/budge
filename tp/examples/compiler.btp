@@ -160,15 +160,9 @@ def correct(e):
 
 def exp_induction(f, base, step_plus, step_times):
     """From ⊢f(NUM(N)), ⊢(f(M)=>(f(N)=>f(PLUS(M,N)))) and the same for TIMES, ⊢ALL(f)."""
-    o1, b = open_(Z, f, NUM(N_))
-    a1, f1 = abs_(Z, N_, instantiate(f, N_))
-    o2, h = open_(Z, f, M_)
-    a2, f2 = abs_(Z, M_, h)
-    o3, p = open_(Z, f, PLUS(M_, N_))
-    o4, q = open_(Z, f, TIMES(M_, N_))
-    assert f1 == f2 == f
-    return apply('rIndExp', [('f', f), ('b', b), ('g', instantiate(f, N_)), ('h', h), ('p', p), ('q', q)],
-                 [o1, a1, o2, a2, o3, o4, base, step_plus, step_times])
+    side = [('OPEN', NUM(N_), 'b'), ('ABS', N_, 'g'), ('OPEN', M_, 'h'), ('ABS', M_, 'h'),
+            ('OPEN', PLUS(M_, N_), 'p'), ('OPEN', TIMES(M_, N_), 'q')]
+    return induction_rule('rIndExp', f, side, [base, step_plus, step_times])
 
 
 f = abstract(correct(N_), N_)

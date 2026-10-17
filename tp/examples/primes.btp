@@ -73,11 +73,7 @@ def step_m(c, w):
             def with_d(c5, d):
                 hdw = c5.and_l(c5.hyp_())
                 h2d = c5.and_l(c5.and_r(c5.hyp_()))
-
-                def with_k(c6, k):                 # w = S(d)+k, so S(N) = S(d)+k
-                    h = c6.trans(c6.sym(c6.hyp_(EQ(w, S(N_)))), c6.hyp_())
-                    return c6.ex_i(h, lt(d, S(N_))[1], k)
-                hlt = c5.ex_e(c5.and_r(c5.and_r(c5.hyp_())), with_k)
+                hlt = c5.subst(c5.hyp_(EQ(w, S(N_))), c5.and_r(c5.and_r(c5.hyp_())), [0, 0])   # d < S(N)
                 hle = c5.thru(hlt, inst('thLtSuccLe', d, N_))
                 pf_d = c5.mp(c5.and_i(h2d, hle), c5.all_e(c5.hyp_(stmt(N_)), d))
 

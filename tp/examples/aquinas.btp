@@ -72,10 +72,7 @@ def mover(x):
 
 def no_regress(f, premise, name=None):
     """From ⊢(∀x(MOVES(x,N) => f(x)) => f(N)), conclude ⊢ALL(f)."""
-    g = instantiate(f, N_)
-    a, f2 = abs_(Z, N_, g)
-    assert f2 == f
-    return apply('rNoRegress', [('f', f), ('g', g)], [a, premise], name=name)
+    return induction_rule('rNoRegress', f, [('ABS', N_, 'g')], [premise], name=name)
 
 
 def ih(f):

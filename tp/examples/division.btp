@@ -65,14 +65,12 @@ def with_q(c3, q):
                 pos6 = c6.thru(c6.hyp_(NZ), inst('thPos', M_))
                 return witness(c6, h, pos6, S(N_), S(q), Z)
 
-            def k_succ(c6):
-                def with_p(c7, p):
-                    h = c7.chain(M_, [([], c7.hyp_(hk)), ([1], c7.hyp_()), ([], aAS(S(r), p)),
-                                      ([], sym(inst('thSuccAdd', S(r), p)))])   # M = S(S(r))+p
-                    h_lt = c7.ex_i(h, lt(S(r), M_)[1], p)
-                    return witness(c7, h_succ, h_lt, S(N_), q, S(r))
-                return c6.ex_e(c6.hyp_(), with_p)
-            return c5.cases(c5.get(inst('thZeroOrSucc', k)), k_zero, k_succ)
+            def k_succ(c6, p):
+                h = c6.chain(M_, [([], c6.hyp_(hk)), ([1], c6.hyp_()), ([], aAS(S(r), p)),
+                                  ([], sym(inst('thSuccAdd', S(r), p)))])   # M = S(S(r))+p
+                h_lt = c6.ex_i(h, lt(S(r), M_)[1], p)
+                return witness(c6, h_succ, h_lt, S(N_), q, S(r))
+            return c5.nat_cases(k, k_zero, k_succ)
         return c4.ex_e(c4.and_r(c4.hyp_()), with_k)
     return c3.ex_e(c3.hyp_(), with_r)
 

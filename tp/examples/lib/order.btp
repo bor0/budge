@@ -35,11 +35,7 @@ base = root.close(root.or_l(refl(Z), zs(Z)[2]))
 c = root.assume(instantiate(f, N_))
 hs_ = c.ex_i(c.get(refl(S(N_))), zs(S(N_))[2][1], N_)
 step = root.close(c.discharge(c.or_r(hs_, EQ(S(N_), Z))))
-ZeroOrSucc = lemma('thZeroOrSucc', ALL(f), induction(f, base, step))
-
-
-def zero_or_succ(ctx, t):
-    return ctx.get(inst(ZeroOrSucc, t))
+lemma('thZeroOrSucc', ALL(f), induction(f, base, step))
 
 
 # ---- a+b = a+c => b = c
@@ -95,15 +91,13 @@ root = Ctx(reserved={M_, K_})
 c = root.assume(EQ(ADD(M_, K_), Z))
 
 
-def succ_case(c2):
-    def with_p(c3, p):
-        h = c3.chain(S(ADD(M_, p)), [([], sym(aAS(M_, p))), ([1], c3.sym(c3.hyp_())),
-                                     ([], c3.hyp_(EQ(ADD(M_, K_), Z)))])
-        return c3.efq(h, snz(ADD(M_, p)), EQ(K_, Z))
-    return c2.ex_e(c2.hyp_(), with_p)
+def succ_case(c3, p):
+    h = c3.chain(S(ADD(M_, p)), [([], sym(aAS(M_, p))), ([1], c3.sym(c3.hyp_())),
+                                 ([], c3.hyp_(EQ(ADD(M_, K_), Z)))])
+    return c3.efq(h, snz(ADD(M_, p)), EQ(K_, Z))
 
 
-h = c.cases(zero_or_succ(c, K_), lambda c2: c2.hyp_(), succ_case)
+h = c.nat_cases(K_, lambda c2: c2.hyp_(), succ_case)
 AddZeroR = lemma('thAddZeroR', closed(IMP(EQ(ADD(M_, K_), Z), EQ(K_, Z)), M_, K_),
                  gen_all(root.close(c.discharge(h)), M_, K_))
 
@@ -130,13 +124,11 @@ def from_le(c2):
             h = c4.chain(S(N_), [([0], c4.sym(hM)), ([], sym(aAZ(S(M_))))])             # S(N) = S(M)+0
             return c4.or_r(c4.ex_i(h, LT[1], Z), LE)
 
-        def k_succ(c4):
-            def with_p(c5, p):
-                h = c5.chain(M_, [([], c5.hyp_(hk)), ([1], c5.hyp_()), ([], aAS(N_, p)),
-                                  ([], sym(inst('thSuccAdd', N_, p)))])                  # M = S(N)+p
-                return c5.or_l(c5.ex_i(h, LE[1], p), LT)
-            return c4.ex_e(c4.hyp_(), with_p)
-        return c3.cases(zero_or_succ(c3, k), k_zero, k_succ)
+        def k_succ(c5, p):
+            h = c5.chain(M_, [([], c5.hyp_(hk)), ([1], c5.hyp_()), ([], aAS(N_, p)),
+                              ([], sym(inst('thSuccAdd', N_, p)))])                  # M = S(N)+p
+            return c5.or_l(c5.ex_i(h, LE[1], p), LT)
+        return c3.nat_cases(k, k_zero, k_succ)
     return c2.ex_e(c2.hyp_(), with_k)
 
 
@@ -179,13 +171,11 @@ def with_k(c2, k):
         h = c3.chain(M_, [([], sym(aAZ(M_))), ([1], c3.sym(c3.hyp_())), ([], c3.sym(c3.hyp_(hk)))])
         return c3.or_r(h, GOAL_L)
 
-    def k_succ(c3):
-        def with_p(c4, p):
-            h = c4.chain(S(K_), [([], c4.hyp_(hk)), ([1], c4.hyp_()), ([], aAS(M_, p))])
-            h = c4.thru(h, sinj(K_, ADD(M_, p)))
-            return c4.or_l(c4.ex_i(h, GOAL_L[1], p), GOAL_R)
-        return c3.ex_e(c3.hyp_(), with_p)
-    return c2.cases(zero_or_succ(c2, k), k_zero, k_succ)
+    def k_succ(c4, p):
+        h = c4.chain(S(K_), [([], c4.hyp_(hk)), ([1], c4.hyp_()), ([], aAS(M_, p))])
+        h = c4.thru(h, sinj(K_, ADD(M_, p)))
+        return c4.or_l(c4.ex_i(h, GOAL_L[1], p), GOAL_R)
+    return c2.nat_cases(k, k_zero, k_succ)
 
 
 h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
@@ -213,15 +203,13 @@ c = root.assume(NOT(EQ(M_, Z)))
 POS = lt(Z, M_)
 
 
-def m_succ(c2):
-    def with_p(c3, p):
-        h = c3.chain(M_, [([], c3.hyp_()), ([0], sym(inst('thZeroAdd', p))),
-                          ([], sym(inst('thSuccAdd', Z, p)))])
-        return c3.ex_i(h, POS[1], p)
-    return c2.ex_e(c2.hyp_(), with_p)
+def m_succ(c3, p):
+    h = c3.chain(M_, [([], c3.hyp_()), ([0], sym(inst('thZeroAdd', p))),
+                      ([], sym(inst('thSuccAdd', Z, p)))])
+    return c3.ex_i(h, POS[1], p)
 
 
-h = c.cases(zero_or_succ(c, M_), lambda c2: c2.efq(c2.hyp_(), c2.hyp_(NOT(EQ(M_, Z))), POS), m_succ)
+h = c.nat_cases(M_, lambda c2: c2.efq(c2.hyp_(), c2.hyp_(NOT(EQ(M_, Z))), POS), m_succ)
 Pos = lemma('thPos', closed(IMP(NOT(EQ(M_, Z)), POS), M_), gen(root.close(c.discharge(h)), M_))
 
 # ---- S(a) ≤ b => a ≤ b

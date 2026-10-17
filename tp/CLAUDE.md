@@ -159,7 +159,9 @@ steps under G: `rK` weakens facts, `thHS` chains, `rS` + `rEqT` give transitivit
 per subterm (`rIndExp`: M, N, each with OPEN and ABS premises; IHs as curried premises
 `⊢(h=>(g=>p))`). One sort, so it and `rInd` both say "every object is one of these"; consistent
 because numbers can code the terms. Quantify the IH over everything that varies (`∀k∀s`), and
-use continuations (`COMP(e,k)`) instead of appending lists. Constants register in `ATOM_RULES`,
+use continuations (`COMP(e,k)`) instead of appending lists. tactics' `induction_rule(rule, f,
+side, premises)` builds the OPEN/ABS premises of any such rule (`induction`, `exp_induction`,
+`no_regress` are calls to it). Constants register in `ATOM_RULES`,
 `CT_ATOMS`, `OPEN_ATOMS`, `ABS_ATOMS`. Well-founded induction over a relation (`aquinas.btp`'s
 `rNoRegress`): IH `ALL((MOVES(V(0),N)=>f))`, putting f as is under the new ∀ rebinds its V(0).
 
@@ -167,7 +169,10 @@ use continuations (`COMP(e,k)`) instead of appending lists. Constants register i
 under hypotheses is a context formula G (⊤, then (G∧H) per assumption); a fact X there is
 ⊢(G=>X). `assume`, `hyp_`, `discharge` (thCurry), `mp`/`thru` (axiom S / HS), `and_i/l/r`,
 `or_l/r`, `cases` (rOrE), `efq`, `absurd` (thAbs), `by_contra`, `lem`, `all_e`, `ex_i`, `all_i`
-(rGen + `rAllImp`), `ex_e` (thC, rGen, `rExE`, thW), equations via `chain`/`trans`/`sym`. Fresh
+(rGen + `rAllImp`), `ex_e` (thC, rGen, `rExE`, thW), `nat_cases` (thZeroOrSucc, the S(p) case
+unpacked), equations via `chain`/`trans`/`sym`; `subst(heq, h, path)` rewrites a = b inside any
+formula built from EQ (∧ ∨ => ¬ ∀ ∃; ¬ and the left of => go back b to a). It re-derives per use, so
+a lemma like `thDvdEq` checks shorter where one exists. Fresh
 parameters come from K < M < … < Z; pass `reserved=` for the statement's own. Build formulas
 with named parameters and `forall`/`exists`/`le`/`lt`/`dvd`/`prime`; `instantiate`/`abstract`
 handle de Bruijn shifts (`parity.btp`: ∀n ∃k. n = k+k ∨ n = S(k+k)). Shared helpers (`snz`, `sinj`, `refl`,

@@ -71,14 +71,7 @@ d_, x_, y_ = K_, M_, N_
 root = Ctx(reserved={d_, x_, y_})
 c1 = root.assume(EQ(x_, y_))
 c2 = c1.assume(dvd(d_, x_))
-
-
-def with_c(c3, cc):
-    h = c3.trans(c3.sym(c3.hyp_(EQ(x_, y_))), c3.hyp_())
-    return c3.ex_i(h, dvd(d_, y_)[1], cc)
-
-
-h = root.close(c1.discharge(c2.discharge(c2.ex_e(c2.hyp_(), with_c))))
+h = root.close(c1.discharge(c2.discharge(c2.subst(c2.hyp_(EQ(x_, y_)), c2.hyp_(), [0, 0]))))
 DvdEq = lemma('thDvdEq', closed(IMP(EQ(x_, y_), IMP(dvd(d_, x_), dvd(d_, y_))), d_, x_, y_),
               gen_all(h, d_, x_, y_))
 
@@ -99,29 +92,25 @@ def x_zero(c2):
     return c2.efq(c2.sym(h), snz(Z), GOAL)
 
 
-def x_succ(c2):
-    def with_u(c3, u):
-        def y_zero(c4):
-            h = c4.chain(Z, [([], sym(aMZ(x_))), ([1], c4.sym(c4.hyp_())), ([], c4.hyp_(HYP))])
-            return c4.efq(c4.sym(h), snz(Z), GOAL)
+def x_succ(c3, u):
+    def y_zero(c4):
+        h = c4.chain(Z, [([], sym(aMZ(x_))), ([1], c4.sym(c4.hyp_())), ([], c4.hyp_(HYP))])
+        return c4.efq(c4.sym(h), snz(Z), GOAL)
 
-        def y_succ(c4):
-            def with_v(c5, v):
-                h = c5.chain(S(ADD(MUL(x_, v), u)), [
-                    ([], sym(aAS(MUL(x_, v), u))),
-                    ([1], c5.sym(c5.hyp_(EQ(x_, S(u))))),
-                    ([], sym(aMS(x_, v))),
-                    ([1], c5.sym(c5.hyp_())),
-                    ([], c5.hyp_(HYP))])                          # S(x·v + u) = S(0)
-                h = c5.thru(h, sinj(ADD(MUL(x_, v), u), Z))
-                hu = c5.thru(h, inst('thAddZeroR', MUL(x_, v), u))  # u = 0
-                return c5.chain(x_, [([], c5.hyp_(EQ(x_, S(u)))), ([0], hu)])
-            return c4.ex_e(c4.hyp_(), with_v)
-        return c3.cases(c3.get(inst('thZeroOrSucc', y_)), y_zero, y_succ)
-    return c2.ex_e(c2.hyp_(), with_u)
+    def y_succ(c5, v):
+        h = c5.chain(S(ADD(MUL(x_, v), u)), [
+            ([], sym(aAS(MUL(x_, v), u))),
+            ([1], c5.sym(c5.hyp_(EQ(x_, S(u))))),
+            ([], sym(aMS(x_, v))),
+            ([1], c5.sym(c5.hyp_())),
+            ([], c5.hyp_(HYP))])                          # S(x·v + u) = S(0)
+        h = c5.thru(h, sinj(ADD(MUL(x_, v), u), Z))
+        hu = c5.thru(h, inst('thAddZeroR', MUL(x_, v), u))  # u = 0
+        return c5.chain(x_, [([], c5.hyp_(EQ(x_, S(u)))), ([0], hu)])
+    return c3.nat_cases(y_, y_zero, y_succ)
 
 
-h = c.cases(c.get(inst('thZeroOrSucc', x_)), x_zero, x_succ)
+h = c.nat_cases(x_, x_zero, x_succ)
 MulOne = lemma('thMulOne', closed(IMP(HYP, GOAL), x_, y_), gen_all(root.close(c.discharge(h)), x_, y_))
 
 # ---- p|a => (p|S(a) => p = 1)
