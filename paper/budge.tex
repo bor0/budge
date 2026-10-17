@@ -26,7 +26,7 @@
 \maketitle
 
 \begin{abstract}
-We present a simple programming language based on Gödel numbering and prime factorization, enhanced with explicit, scoped loops, allowing for easy program composition. Further, we will present a theorem prover that allows expressing and working with formal systems. The theorem prover is simple as it relies merely on a substitution rule and sequence equality to derive theorems; Python meta-programs and a library of theories let it check proofs such as Euclid's theorem on infinitely many primes from Peano's axioms. Finally, we will represent the programming language in the theorem prover. We will show the syntax and semantics of both, and then provide a few example programs and their evaluation.
+We present a simple programming language based on Gödel numbering and prime factorization, enhanced with explicit, scoped loops, allowing for easy program composition. Further, we will present a theorem prover that allows expressing and working with formal systems. The theorem prover is simple as it relies merely on a substitution rule and sequence equality to derive theorems; Python meta-programs and a library of theories let it check proofs such as Euclid's theorem on infinitely many primes from Peano's axioms. Finally, we will represent the programming language in the theorem prover, and the prover's rule application in the language. We will show the syntax and semantics of both, and then provide a few example programs and their evaluation.
 \end{abstract}
 
 \keywords{Programming language, theorem prover, computational model, Gödel numbering}
@@ -219,6 +219,8 @@ rAppendRec : APPEND x y z -> APPEND (a x) y (a z)
 \end{minipage}
 
 To calculate the program $((2, -2, 1))$ on registers \texttt{(1 2)}, we apply \texttt{rInitState}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Succ}, \texttt{rNextState-2}, \texttt{rNextState+1}, \texttt{rLoop2Base}, arriving at \texttt{(3 0)}, the sum.
+
+Conversely, Budge-TP's rule application runs as a Budge-PL program. A string over $B$ symbols is its bijective base-$B$ numeral, so the hypothesis check compares registers, and $X[t/v]$ is one loop: pop a digit (divide by $B$), push $t$'s digits if it is $v$, else the digit. A macro assembler generates the program (about $1000$ instructions for one substitution and one hypothesis); the parser stays outside. As arithmetic is unary, the interpreter runs transfer loops like $(2, -2, 1)$ and the pop loop by closed forms. It derives the MIU theorems above\cite{b7}.
 
 \begin{footnotesize}
 \begin{thebibliography}{1}
