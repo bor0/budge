@@ -868,6 +868,22 @@ def lt(a, b):
     return le(S(a), b)
 
 
+def LE(x, y): return ('LE', x, y)   # ≤ as a predicate (order.btp's rLeI, rLeE)
+
+
+def le_i(c, h):
+    """le(a,b) in Ctx c gives LE(a,b)."""
+    e = c.concl(h)[1]
+    a, b = e[2][1], e[1]
+    return c.thru(h, apply('rLeI', [('x', a), ('y', b)], [ct(a), ct(b)]))
+
+
+def le_e(c, h):
+    """LE(a,b) in Ctx c gives le(a,b)."""
+    _, a, b = c.concl(h)
+    return c.thru(h, apply('rLeE', [('x', a), ('y', b)], [ct(a), ct(b)]))
+
+
 def dvd(d, m):
     """d | m := ∃c. m = d·c"""
     c = spare(d, m)
@@ -914,6 +930,7 @@ def SUM(x): return ('SUM', x)
 
 for _op, _n in (('FLIP', 'Flip'), ('MOD2', 'Mod2'), ('DIV2', 'Div2'), ('FACT', 'Fact'), ('SUM', 'Sum')):
     add_symbol(_op, f'rTm{_n}', f'rCt{_n}', f'rOpen{_n}', f'rAbs{_n}', {0: f'rCong{_n}'})
+add_symbol('LE', 'rTmLe', None, 'rOpenLe', 'rAbsLe', {})   # a predicate: no CT, no congruence
 
 
 def prime(p):

@@ -200,6 +200,7 @@ nav .wrap::-webkit-scrollbar{display:none}
 <option value="examples/primes.btp">Euclid: infinitely many primes</option>
 <option value="examples/hoare.btp">Counting odd numbers with Hoare logic</option>
 <option value="examples/gcd.btp">Euclid's GCD with Hoare logic</option>
+<option value="examples/bsearch.btp">Integer square root by binary search</option>
 <option value="examples/compiler.btp">A verified compiler</option>
 <option value="examples/aquinas.btp">Aquinas's First Way</option>
 <option value="@broken">A broken proof (spot the bug)</option>
@@ -443,6 +444,7 @@ const TACS=[
 ['ctx.ex_e(…)','∃-elimination: from EX(f), prove X using f[w] for a fresh w not in X.','Unpacks a witness, as in "a|b means b = a·x for some x".'],
 ['ctx.nat_cases(t, zero, succ)','Cases on a number: t = 0, or t = S(p) for some p.','The succ case gets p directly, the ∃ already unpacked.'],
 ['ctx.subst(heq, h, path)','From a = b and a formula φ with a at path, prove φ with b there.','Goes through ∧, ∨, ⇒, ¬, ∀ and ∃ down to an equation, so it rewrites inside ≤, < and | as well.'],
+['le_i(ctx, h) / le_e(ctx, h)','Convert between a ≤ b as a formula (∃k. b = a+k) and the predicate LE(a,b).','Program tests must run, so the binary search tests LE; proofs unfold it to the ∃ form to compute with it.'],
 ['ctx.by_contra(…)','Proof by contradiction: assume ¬A, derive some B and ¬B, conclude A.','Classical logic, from the axioms in lib/logic.btp.'],
 ];
 const tg=document.getElementById('tacs');TACS.forEach(([n,d,m])=>{const e=document.createElement('div');e.className='tac';e.innerHTML=`<code>${esc(n)}</code><p>${esc(d)}</p><div class="more">${esc(m)}</div>`;e.onclick=()=>e.classList.toggle('on');tg.appendChild(e)});

@@ -1,0 +1,244 @@
+# Integer square root by binary search, verified from Peano's axioms with Hoare logic
+#
+# Proved by the Python blocks below; Budge checks every
+# step, including those of the imported library.
+#
+# Program:
+#
+#   $L = 0; $H = S($N);
+#   WHILE (¬EQ(S($L),$H)) {
+#     $M = DIV2(ADD($L,$H));
+#     IF (LE(MUL($M,$M),$N)) { $L = $M; } ELSE { $H = $M; }
+#   }
+#
+# Goal: {⊤} program {$L·$L ≤ $N ∧ ¬(S($L)·S($L) ≤ $N)}, i.e. $L = ⌊√$N⌋.
+#
+# Invariant: $L·$L ≤ $N, ¬($H·$H ≤ $N) and $L < $H. The answer lies in [$L,$H)
+# and the loop halves that range until $H = S($L). A step keeps the invariant
+# because the midpoint lies strictly between the ends when they are at least
+# 2 apart (thMidpoint): a+2 ≤ b => a < DIV2(a+b) < b. So whichever end moves
+# to $M, $L < $H still holds.
+#
+# The test uses LE, lib/order.btp's ≤ as a predicate, which extraction reads
+# as <=. Program variables are parameters, as in gcd.btp. Partial
+# correctness: termination ($H − $L decreases) is not proved.
+
+<?py load('lib/order.btp') ?>
+<?py load('lib/parity.btp') ?>
+<?py load('lib/hoare.btp') ?>
+## Program variables: parameters, after Z in the PLT order
+rTm$H    : $H
+rTm$L    : $L
+rTm$M    : $M
+rTm$N    : $N
+rPar$H   : PAR($H)
+rPar$L   : PAR($L)
+rPar$M   : PAR($M)
+rPar$N   : PAR($N)
+rPltZ$H  : PLT(Z,$H)
+rPlt$H$L : PLT($H,$L)
+rPlt$L$M : PLT($L,$M)
+rPlt$M$N : PLT($M,$N)
+
+<?py
+import os, sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+from tactics import *
+use(env, __file__)
+
+H, L, M, N = '$H', '$L', '$M', '$N'
+add_program_vars(H, L, M, N)
+
+
+# ---- the midpoint
+section('Lemma: S(S(a)) ≤ b => S(a) ≤ DIV2(a+b) ∧ S(DIV2(a+b)) ≤ b', 'BsA', [
+    'b = S(S(a)) + k, so a+b = k + (S(a)+S(a)) and DIV2(a+b) = DIV2(k) + S(a)',
+    '(thDiv2Add, lib/parity.btp): S(a) ≤ it. With k = DIV2(k) + j (thDiv2Le),',
+    'b = S(S(a)) + DIV2(k) + j = S(DIV2(a+b)) + j.'])
+root = Ctx(reserved={K_, M_})
+c = root.assume(le(S(S(K_)), M_))
+Mid = DIV2(ADD(K_, M_))
+
+
+def with_k(c2, k):
+    hb = c2.hyp_()                                  # M = S(S(K)) + k
+    Dk = DIV2(k)
+    e1 = chain(ADD(K_, ADD(S(S(K_)), k)), [
+        ([1], inst('thSuccAdd', S(K_), k)),
+        ([1, 0], inst('thSuccAdd', K_, k)),
+        ([], aAS(K_, S(ADD(K_, k)))),
+        ([0], aAS(K_, ADD(K_, k))),
+        ([0, 0], sym(inst('thAddAssoc', K_, K_, k))),
+        ([0, 0], inst('thAddComm', ADD(K_, K_), k)),
+    ])                                              # = S(S(k + (K+K)))
+    e2 = chain(ADD(k, ADD(S(K_), S(K_))), [
+        ([1], aAS(S(K_), K_)),
+        ([1, 0], inst('thSuccAdd', K_, K_)),
+        ([], aAS(k, S(ADD(K_, K_)))),
+        ([0], aAS(k, ADD(K_, K_))),
+    ])
+    hmid = c2.chain(Mid, [([0, 1], hb), ([0], trans(e1, sym(e2))),
+                          ([], inst('thDiv2Add', k, S(K_)))])   # DIV2(K+M) = DIV2(k) + S(K)
+    lo = c2.ex_i(c2.trans(hmid, inst('thAddComm', Dk, S(K_))), le(S(K_), Mid)[1], Dk)
+
+    def with_j(c3, j):
+        hj = c3.hyp_()                              # k = DIV2(k) + j
+        left = c3.chain(M_, [
+            ([], hb),
+            ([1], hj),
+            ([], inst('thSuccAdd', S(K_), ADD(Dk, j))),
+            ([0], inst('thSuccAdd', K_, ADD(Dk, j))),
+            ([0, 0], sym(inst('thAddAssoc', K_, Dk, j))),
+            ([0, 0, 0], inst('thAddComm', K_, Dk)),
+        ])                                          # M = S(S((DIV2(k) + K) + j))
+        right = c3.chain(ADD(S(Mid), j), [
+            ([0, 0], hmid),
+            ([], inst('thSuccAdd', ADD(Dk, S(K_)), j)),
+            ([0, 0], aAS(Dk, K_)),
+            ([0], inst('thSuccAdd', ADD(Dk, K_), j)),
+        ])
+        return c3.ex_i(c3.trans(left, c3.sym(right)), le(S(Mid), M_)[1], j)
+    hi = c2.ex_e(c2.get(inst('thDiv2Le', k)), with_j)
+    return c2.and_i(lo, hi)
+
+
+h = root.close(c.discharge(c.ex_e(c.hyp_(), with_k)))
+Midpoint = lemma('thMidpoint', closed(IMP(le(S(S(K_)), M_), AND(le(S(K_), Mid), le(S(Mid), M_))),
+                                      K_, M_), gen_all(h, K_, M_))
+
+# ---- Assertions
+def sq_le(x): return LE(MUL(x, x), N)               # x·x ≤ $N
+def inv(l, h): return AND(sq_le(l), AND(NOT(sq_le(h)), LE(S(l), h)))
+
+
+Inv = inv(L, H)
+G = NOT(EQ(S(L), H))
+D = DIV2(ADD(L, H))
+C = sq_le(M)
+P = AND(Inv, AND(LE(S(L), M), LE(S(M), H)))         # before the IF: $L < $M < $H
+Post = AND(sq_le(L), NOT(sq_le(S(L))))
+
+# Program
+init = SEQ(ASG(L, Z), ASG(H, S(N)))
+cL, cH = ASG(L, M), ASG(H, M)
+branch = IF(C, cL, cH)
+cM = ASG(M, D)
+body = SEQ(cM, branch)
+loop = WHILE(G, body)
+prog = SEQ(init, loop)
+
+section('Initialisation', 'BsB', [
+    'Backwards from Inv over $H = S($N) and $L = 0: inv(0,S($N)).',
+    '  0·0 ≤ $N, as $N = 0·0 + $N; 0 < S($N), as S($N) = S(0) + $N;',
+    '  ¬(S($N)·S($N) ≤ $N): $N = S($N)·S($N) + k = $N + S(S($N)·$N + k) is',
+    '  impossible (thAddSNeq).'])
+t1 = assign(H, S(N), Inv)
+t2 = assign(L, Z, inv(L, S(N)))
+t3 = apply('rSeq', [('p', inv(Z, S(N))), ('a', ASG(L, Z)), ('q', inv(L, S(N))), ('b', ASG(H, S(N))),
+                    ('r', Inv)], [t2, t1])
+root = Ctx()
+h = chain(ADD(MUL(Z, Z), N), [([0], aMZ(Z)), ([], inst('thZeroAdd', N))])
+zero = le_i(root, root.ex_i(root.get(sym(h)), le(MUL(Z, Z), N)[1], N))
+h = chain(ADD(ONE, N), [([], inst('thSuccAdd', Z, N)), ([0], inst('thZeroAdd', N))])
+pos = le_i(root, root.ex_i(root.get(sym(h)), le(ONE, S(N))[1], N))
+SN = S(N)
+X = sq_le(SN)
+
+
+def contra(c):
+    def with_k(c2, k):
+        W = ADD(MUL(SN, N), k)
+        h = c2.chain(N, [
+            ([], c2.hyp_()),
+            ([0], aMS(SN, N)),
+            ([0], inst('thAddComm', MUL(SN, N), SN)),
+            ([], inst('thAddAssoc', SN, MUL(SN, N), k)),
+            ([], inst('thSuccAdd', N, W)),
+            ([], sym(aAS(N, W))),
+        ])                                          # $N = $N + S(W)
+        return c2.efq(c2.sym(h), inst('thAddSNeq', W, N), NOT(X))
+    return c.hyp_(), c.ex_e(le_e(c, c.hyp_()), with_k)
+
+
+big = root.absurd(X, contra)
+vcInit = root.and_i(zero, root.and_i(big, pos))
+tInit = apply('rConsPre', [('p', TOP), ('q', inv(Z, S(N))), ('c', init), ('r', Inv)], [vcInit, t3],
+              name='thInit')
+
+section('Loop body', 'BsC', [
+    'Each branch moves one end to $M and keeps Inv given $L < $M < $H and the test.',
+    'Backwards over $M = DIV2($L+$H) the VC is Inv ∧ G => $L < DIV2($L+$H) < $H:',
+    '$H = S($L) + k with k ≠ 0 by G, so S(S($L)) ≤ $H, and thMidpoint.'])
+t1 = assign(L, M, Inv)                              # {inv($M,$H)} $L = $M; {Inv}
+t2 = assign(H, M, Inv)                              # {inv($L,$M)} $H = $M; {Inv}
+root = Ctx()
+
+
+def branch_vc(test, pick):
+    c = root.assume(AND(P, test))
+    inv_, mids = c.and_l(c.and_l(c.hyp_())), c.and_r(c.and_l(c.hyp_()))
+    return root.close(c.discharge(pick(c, inv_, mids, c.and_r(c.hyp_()))))
+
+
+vcThen = branch_vc(C, lambda c, i, m, t: c.and_i(t, c.and_i(c.and_l(c.and_r(i)), c.and_r(m))))
+vcElse = branch_vc(NOT(C), lambda c, i, m, t: c.and_i(c.and_l(i), c.and_i(t, c.and_l(m))))
+tThen = apply('rConsPre', [('p', AND(P, C)), ('q', inv(M, H)), ('c', cL), ('r', Inv)], [vcThen, t1])
+tElse = apply('rConsPre', [('p', AND(P, NOT(C))), ('q', inv(L, M)), ('c', cH), ('r', Inv)],
+              [vcElse, t2])
+tIf = apply('rIf', [('p', P), ('b', C), ('c', cL), ('d', cH), ('q', Inv)], [tThen, tElse])
+Pd = AND(Inv, AND(LE(S(L), D), LE(S(D), H)))
+t3 = assign(M, D, P)                                # {Pd} $M = D; {P}
+t4 = apply('rSeq', [('p', Pd), ('a', cM), ('q', P), ('b', branch), ('r', Inv)], [t3, tIf])
+
+c = root.assume(AND(Inv, G))
+inv_ = c.and_l(c.hyp_())
+SL = S(L)
+
+
+def with_k(c2, k):
+    hk = c2.hyp_()                                  # $H = S($L) + k
+    goal = le(S(SL), H)
+
+    def k_zero(c3):
+        h = c3.chain(H, [([], hk), ([1], c3.hyp_()), ([], aAZ(SL))])
+        return c3.efq(c3.sym(h), c3.and_r(c3.hyp_(AND(Inv, G))), goal)
+
+    def k_succ(c3, p):
+        h = c3.chain(H, [([], hk), ([1], c3.hyp_()), ([], aAS(SL, p)), ([], sym(inst('thSuccAdd', SL, p)))])
+        return c3.ex_i(h, goal[1], p)
+    return c2.nat_cases(k, k_zero, k_succ)
+
+
+h2 = c.ex_e(le_e(c, c.and_r(c.and_r(inv_))), with_k)    # S(S($L)) ≤ $H
+hm = c.mp(h2, c.get(inst(Midpoint, L, H)))
+vcBody = root.close(c.discharge(c.and_i(inv_, c.and_i(le_i(c, c.and_l(hm)), le_i(c, c.and_r(hm))))))
+tBody = apply('rConsPre', [('p', AND(Inv, G)), ('q', Pd), ('c', body), ('r', Inv)], [vcBody, t4],
+              name='thBody')
+tLoop = apply('rWhile', [('p', Inv), ('b', G), ('c', body)], [tBody])
+
+section('Loop exit and the whole program', 'BsD', [
+    'VC: Inv ∧ ¬¬EQ(S($L),$H) => Post. S($L) = $H (thDNE), so ¬($H·$H ≤ $N) is',
+    '¬(S($L)·S($L) ≤ $N).'])
+c = root.assume(AND(Inv, NOT(G)))
+inv_ = c.and_l(c.hyp_())
+heq = c.thru(c.and_r(c.hyp_()), apply('thDNE', [('i', EQ(SL, H))], []))   # S($L) = $H
+
+
+def contra(c2):
+    h = le_e(c2, c2.hyp_())
+    h = c2.subst(heq, c2.subst(heq, h, [0, 1, 0, 0]), [0, 1, 0, 1])
+    return le_i(c2, h), c2.and_l(c2.and_r(inv_))
+
+
+vcExit = root.close(c.discharge(c.and_i(c.and_l(inv_), c.absurd(sq_le(SL), contra))))
+tLoopPost = apply('rConsPost', [('p', Inv), ('c', loop), ('q', AND(Inv, NOT(G))), ('r', Post)],
+                  [tLoop, vcExit], name='thLoop')
+apply('rSeq', [('p', TOP), ('a', init), ('q', Inv), ('b', loop), ('r', Post)],
+      [tInit, tLoopPost], name='thProgram')
+prose('pProgram', 'The program sets $L to the integer square root of $N.')
+?>
+
+## Extraction: bsearch.py, generated from the checked value of thProgram (lib/extract.py)
+<?py
+from extract import write_py
+write_py(env, 'thProgram', 'isqrt', 'bsearch.py', __file__)
+?>

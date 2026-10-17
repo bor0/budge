@@ -70,6 +70,7 @@ In the `examples` folder you can find the following proofs:
 - [God](./examples/God.btp) - Anselm's ontological argument as a contraposition, using the library
 - [Aquinas](./examples/aquinas.btp) - Aquinas's First Way: no infinite regress of movers gives an unmoved mover, and makes "moved by another" redundant
 - [Automaton](./examples/automaton.btp) - A finite-state machine
+- [Binary search](./examples/bsearch.btp) - Integer square root by binary search, verified with Hoare logic (the midpoint lies strictly between the ends), extracted to [bsearch.py](./examples/bsearch.py)
 - [Boolean](./examples/boolean.btp) - An identity of Boolean algebra, proved for an arbitrary element, generalised and instantiated
 - [Budge system (two-register)](./examples/budge-pl.btp) - Based on my [Budge programming language](https://github.com/bor0/budge/tree/main/pl)
 - [CL](./examples/cl.btp) - Propositional logic with ∧ and ∨ by hand, using the library

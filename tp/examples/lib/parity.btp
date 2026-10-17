@@ -12,8 +12,11 @@
 #   thModDich   MOD2(n) = 0  ∨  MOD2(n) = 1                     (induction)
 #   thDiv2Odd   MOD2(n) = 1  =>  DIV2(S(n)) = S(DIV2(n))
 #   thDiv2Even  ¬(MOD2(n) = 1)  =>  DIV2(S(n)) = DIV2(n)        (via thModDich)
+#   thDiv2SS    DIV2(S(S(n))) = S(DIV2(n))
+#   thDiv2Add   DIV2(n + (m+m)) = DIV2(n) + m                   (induction on m)
+#   thDiv2Le    DIV2(n) ≤ n, i.e. ∃j. n = DIV2(n) + j          (induction)
 
-<?py load('peano.btp') ?>
+<?py load('semiring.btp') ?>
 <?py load('nd.btp') ?>
 ## Definitions
 rFlip0 : ⊢EQ(FLIP(0),S(0))
@@ -99,4 +102,75 @@ even = c.chain(DIV2(S(M_)), [
     ([], aAZ(DIV2(M_))),
 ])
 Even = gen(root.close(c.discharge(even)), M_, name='thDiv2Even')
+
+section('Lemma: DIV2(S(S(n))) = S(DIV2(n))', 'PtD', [
+    'DIV2(S(S(n))) = DIV2(n) + MOD2(n) + FLIP(MOD2(n)), and by thModDich one of',
+    'MOD2(n), FLIP(MOD2(n)) is 0 and the other 1.'])
+root = Ctx(reserved={M_})
+
+
+def div2ss(flip, other):
+    def go(c):                                      # MOD2(M) = 0 (or 1) here
+        start = [([], ax('rDiv2S', S(M_))), ([0], ax('rDiv2S', M_)), ([1], ax('rModS', M_)),
+                 ([0, 1], c.hyp_()), ([1, 0], c.hyp_()), ([1], ax(flip))]
+        return c.chain(DIV2(S(S(M_))), start + other)
+    return go
+
+
+D = DIV2(M_)
+h = root.cases(root.get(inst('thModDich', M_)),
+               div2ss('rFlip0', [([0], aAZ(D)), ([], aAS(D, Z)), ([0], aAZ(D))]),
+               div2ss('rFlip1', [([], aAZ(ADD(D, ONE))), ([], aAS(D, Z)), ([0], aAZ(D))]))
+Div2SS = lemma('thDiv2SS', closed(EQ(DIV2(S(S(M_))), S(D)), M_), gen(root.close(h), M_))
+
+section('Lemma: DIV2(n + (m+m)) = DIV2(n) + m', 'PtE', [
+    'Induction on m. Step: n + (S(m)+S(m)) = S(S(n + (m+m))), so by thDiv2SS and the',
+    'hypothesis DIV2 of it is S(DIV2(n) + m) = DIV2(n) + S(m).'])
+stmt = lambda m: EQ(DIV2(ADD(K_, ADD(m, m))), ADD(DIV2(K_), m))
+f = abstract(stmt(N_), N_)
+root = Ctx(reserved={K_, N_})
+base = chain(DIV2(ADD(K_, ADD(Z, Z))), [([0, 1], aAZ(Z)), ([0], aAZ(K_)), ([], sym(aAZ(DIV2(K_))))])
+c = root.assume(instantiate(f, N_))
+h = c.chain(DIV2(ADD(K_, ADD(S(N_), S(N_)))), [
+    ([0, 1], aAS(S(N_), N_)),
+    ([0, 1, 0], inst('thSuccAdd', N_, N_)),
+    ([0], aAS(K_, S(ADD(N_, N_)))),
+    ([0, 0], aAS(K_, ADD(N_, N_))),
+    ([], inst(Div2SS, ADD(K_, ADD(N_, N_)))),
+    ([0], c.hyp_()),
+    ([], sym(aAS(DIV2(K_), N_))),
+])
+Div2Add = lemma('thDiv2Add', closed(stmt(N_), K_, N_),
+                gen(induction(f, base, root.close(c.discharge(h))), K_))
+
+section('Lemma: DIV2(n) ≤ n', 'PtF', [
+    'Induction on n. Step from n = DIV2(n) + j: DIV2(S(n)) = DIV2(n) + MOD2(n), so',
+    'S(n) = DIV2(S(n)) + S(j) if MOD2(n) = 0 and S(n) = DIV2(S(n)) + j if it is 1.'])
+f = abstract(le(DIV2(N_), N_), N_)
+root = Ctx(reserved={N_})
+h0 = chain(ADD(DIV2(Z), Z), [([], aAZ(DIV2(Z))), ([], ax('rDiv2Z'))])
+base = root.close(root.ex_i(root.get(sym(h0)), le(DIV2(Z), Z)[1], Z))
+c1 = root.assume(instantiate(f, N_))
+goal = le(DIV2(S(N_)), S(N_))
+
+
+def with_j(c2, j):
+    hj = c2.hyp_()                                  # N = DIV2(N) + j
+    DN = DIV2(N_)
+
+    def even(c3):                                   # S(N) = DIV2(N)+S(j) = DIV2(S(N))+S(j)
+        hd = c3.chain(DIV2(S(N_)), [([], ax('rDiv2S', N_)), ([1], c3.hyp_()), ([], aAZ(DN))])
+        h = c3.chain(S(N_), [([0], hj), ([], sym(aAS(DN, j))), ([0], c3.sym(hd))])
+        return c3.ex_i(h, goal[1], S(j))
+
+    def odd(c3):                                    # S(N) = S(DIV2(N))+j = DIV2(S(N))+j
+        hd = c3.chain(DIV2(S(N_)), [([], ax('rDiv2S', N_)), ([1], c3.hyp_()), ([], aAS(DN, Z)),
+                                    ([0], aAZ(DN))])
+        h = c3.chain(S(N_), [([0], hj), ([], sym(inst('thSuccAdd', DN, j))), ([0], c3.sym(hd))])
+        return c3.ex_i(h, goal[1], j)
+    return c2.cases(c2.get(inst('thModDich', N_)), even, odd)
+
+
+step = root.close(c1.discharge(c1.ex_e(c1.hyp_(), with_j)))
+Div2Le = lemma('thDiv2Le', ALL(f), induction(f, base, step))
 ?>

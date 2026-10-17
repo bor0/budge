@@ -13,7 +13,7 @@ asserts, or comments if they can't run (quantifiers).
 
 Trusted, as in Coq's extraction: the table below, which reads library
 symbols as Python on natural numbers (MOD2 as % 2, DIV2 as // 2, MOD as %,
-which agree with the library's definitions where the program uses them), and
+LE as <=, which agree with the library's definitions where the program uses them), and
 termination, which partial correctness does not give. A symbol not in the
 table is an error, never passed through.
 """
@@ -29,6 +29,7 @@ TERMS = {
     'MOD2': lambda x: f'{x} % 2',
     'DIV2': lambda x: f'{x} // 2',
     'EQ': lambda x, y: f'{x} == {y}',
+    'LE': lambda x, y: f'{x} <= {y}',
     'NOT': lambda x: f'not {x}',
     'AND': lambda x, y: f'{x} and {y}',
     'OR': lambda x, y: f'{x} or {y}',

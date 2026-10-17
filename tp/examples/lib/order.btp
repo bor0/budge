@@ -2,7 +2,9 @@
 #
 # Proved by the Python block below; Budge checks every
 # step. a ≤ b is ∃k. b = a+k and a < b is S(a) ≤ b, both written out as
-# formulas (no new symbols). Proves, for all numbers:
+# formulas. The predicate LE(a,b) names ≤ for programs, whose tests must be
+# executable (../bsearch.btp): rLeI and rLeE define it, for closed terms (CT,
+# so the V(0) under EX can't capture). Proves, for all numbers:
 #
 #   thZeroOrSucc   n = 0 ∨ ∃p. n = S(p)
 #   thAddCancel    ∀b∀c∀a. a+b = a+c => b = c
@@ -21,6 +23,15 @@
 
 <?py load('semiring.btp') ?>
 <?py load('nd.btp') ?>
+## a ≤ b as a predicate, defined
+rLeI : CT(x) -> CT(y) -> ⊢(EX(EQ(y,ADD(x,V(0))))=>LE(x,y))
+rLeE : CT(x) -> CT(y) -> ⊢(LE(x,y)=>EX(EQ(y,ADD(x,V(0)))))
+
+## Syntax (see fol.btp)
+rTmLe   : LE(x,y)
+rOpenLe : OPEN(k,x,t,u) -> OPEN(k,y,t,v) -> OPEN(k,LE(x,y),t,LE(u,v))
+rAbsLe  : ABS(k,w,x,u) -> ABS(k,w,y,v) -> ABS(k,w,LE(x,y),LE(u,v))
+
 <?py
 import os, sys; sys.path.insert(0, os.path.dirname(__file__))
 from tactics import *

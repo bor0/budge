@@ -104,6 +104,9 @@ parameters, assigned ones in the postcondition the result, pre/post become `asse
 when quantified). Trusted: its symbol table (MOD2 as `% 2`, MOD as `%`, `$` dropped, …; unknown
 symbols are errors) and termination. `gcd.btp`: Euclid, invariant "same common divisors as
 $X, $Y"; MOD by recursion (`rModWrap`/`rModNext`), `thModDiv`: a = b·q + MOD(a,b).
+`bsearch.btp`: isqrt by binary search; tests need executable symbols, so it uses order's
+predicate `LE` (extract reads it as `<=`); `thMidpoint`:
+a+2 ≤ b ⇒ a < DIV2(a+b) < b (via parity's `thDiv2Add`, `thDiv2Le`).
 
 **Quantifiers** (`lib/fol.btp`). `rInst` can't handle nesting or capture; use de
 Bruijn indices: `ALL(EX(R(V(S(0)),V(0))))` is ∀x∃y R(x,y). Two judgements, one
@@ -140,11 +143,12 @@ not a duplicate: don't load a library for a coincidental symbol.
 `semiring.btp` (loads peano, nd; Python block): `thZeroAdd` … `thMulAssoc`, all closed ∀ sentences
 (0+n = n, S(m)+n = S(m+n), + and · commutative and associative, distributivity, …).
 `sum.btp` (loads peano): SUM(n) = 0+1+…+n by recursion; `gauss.btp` proves 2·SUM(n) = n·S(n).
-`parity.btp` (loads peano, nd; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
-`thDiv2Odd`, `thDiv2Even`. `hoare.btp` (loads fol, strings): Hoare rules and program syntax.
+`parity.btp` (loads semiring, nd; Python block): FLIP, MOD2, DIV2 by recursion; `thModDich`,
+`thDiv2Odd`, `thDiv2Even`, `thDiv2SS`, `thDiv2Add` (DIV2(n+(m+m)) = DIV2(n)+m), `thDiv2Le`. `hoare.btp` (loads fol, strings): Hoare rules and program syntax.
 `nd.btp` (loads logic; Python block): `thCurry`, `thC`, `thW`, `thCP2`, `thAbs`, `thLEM`, the
 schemas natural deduction compiles to. `order.btp` (loads semiring, nd; Python block): ≤ is
-∃k. b = a+k, < is S(a) ≤ b, as formulas; totality, cancellation, `thLeSuccNZ`, `thLeTwoNotOne`, ….
+∃k. b = a+k, < is S(a) ≤ b, as formulas; totality, cancellation, `thLeSuccNZ`, `thLeTwoNotOne`, …; `LE(a,b)`, ≤ as a
+predicate for program tests (`rLeI`/`rLeE`, CT-guarded; tactics' `le_i`/`le_e` convert).
 `divides.btp` (loads order): d|m is ∃c. m = d·c; `thDvdSucc`: p|a, p|S(a) ⇒ p = 1; `thDvdZero`,
 `thDvdAdd`, `thDvdCancel` (d|a, d|a+b ⇒ d|b). `fact.btp` (loads divides): FACT, `thFactPos`,
 `thDvdFact`; `primes.btp` proves Euclid's theorem on them.
