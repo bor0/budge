@@ -29,6 +29,7 @@ Python blocks are meta-programs: lines between `<?py` and `?>` (each on its own 
 ```
 python3 budge-tp.py examples/primes.btp
 python3 budge-tp.py --expand out examples/primes.btp && python3 budge-tp.py out/primes.btp
+cd examples && python3 ../budge-tp.py < miu.btp   # no file (or -): stdin; load() paths from the current directory
 ```
 
 ## Semantics

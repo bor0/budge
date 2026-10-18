@@ -156,8 +156,11 @@ def load_file(env, path, visible=True, stack=None):
     env['loaded'].add(real)
     stack.append(real)
 
-    with open(path, encoding='utf-8') as file:
-        lines = file.read().split('\n')
+    if path == '-':     # the main file, read from standard input
+        lines = sys.stdin.read().split('\n')
+    else:
+        with open(path, encoding='utf-8') as file:
+            lines = file.read().split('\n')
 
     expanded = []
 
@@ -280,13 +283,18 @@ def main():
         out_dir = args[i + 1]
         del args[i:i + 2]
 
+    if not args and not sys.stdin.isatty():
+        args = ['-']
+
     if len(args) != 1:
-        sys.exit(f"Usage: python {sys.argv[0]} [--expand DIR] <filename.btp>")
+        sys.exit(f"Usage: python {sys.argv[0]} [--expand DIR] <filename.btp | ->")
 
-    if not exists(args[0]):
+    if args[0] == '-':
+        if out_dir is not None:
+            sys.exit("--expand needs a filename, not standard input")
+    elif not exists(args[0]):
         sys.exit(f"Filename '{args[0]}' not found.")
-
-    if not isfile(args[0]):
+    elif not isfile(args[0]):
         sys.exit(f"Not a filename: '{args[0]}'.")
 
     env = new_environment()
