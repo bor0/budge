@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import contextlib
+import functools
 import io
 import os
+import re
 import sys
 from os.path import dirname, exists, isfile, join, realpath
 
@@ -222,6 +224,12 @@ def write_expanded(env, main_path, out_dir):
             file.write(text)
 
 
+@functools.lru_cache(maxsize=4096)
+def variables_pattern(keys):
+    """A regex matching any of the (one-letter) variables in keys"""
+    return re.compile('[' + ''.join(map(re.escape, keys)) + ']')
+
+
 def apply_rule_or_theorem(env, theorem, theorem_name):
     """Main method used to apply a rule or a theorem"""
     replacements = dict(theorem['replacements'])
@@ -246,24 +254,35 @@ def apply_rule_or_theorem(env, theorem, theorem_name):
         if not isinstance(replacements[key], str):
             raise Exception(f"Invalid theorem: '{value}' in '{theorem_name}'")
 
+    # Replacements apply in order, each with .replace(). That is one
+    # simultaneous pass unless a value contains a variable replaced after it,
+    # which the later .replace() would rewrite. A text with none of the
+    # variables (most of them, in big proofs) is left as it is.
+    keys = ''.join(replacements)
+    pattern = variables_pattern(keys) if keys else None
+    in_order = pattern is not None and any(
+        keys.index(key) > i
+        for i, value in enumerate(replacements.values())
+        for key in set(pattern.findall(value)))
+
+    def substitute(text):
+        if pattern is None or not pattern.search(text):
+            return text
+        if not in_order:
+            return pattern.sub(lambda match: replacements[match.group()], text)
+        for key, value in replacements.items():
+            text = text.replace(key, value)
+        return text
+
     # Process theorem's hypotheses by substituting for other theorems
     for i, hypo in enumerate(th_hypotheses):
         if hypo not in env['theorems']:
             raise Exception(f"Invalid theorem: '{hypo}' in '{theorem_name}'")
-        hypothesis = env['theorems'][hypo]
+        th_hypotheses[i] = substitute(env['theorems'][hypo])
 
-        for key, value in replacements.items():
-            hypothesis = hypothesis.replace(key, value)
-
-        th_hypotheses[i] = hypothesis
-
-    for key, value in replacements.items():
-        # Process rule's hypotheses by substituting the replacements
-        for i, _ in enumerate(ru_hypotheses):
-            ru_hypotheses[i] = ru_hypotheses[i].replace(key, value)
-
-        # Process conclusion by substituting the replacements
-        ru_conclusion = ru_conclusion.replace(key, value)
+    # Process rule's hypotheses and conclusion by substituting the replacements
+    ru_hypotheses = [substitute(hypothesis) for hypothesis in ru_hypotheses]
+    ru_conclusion = substitute(ru_conclusion)
 
     if ru_hypotheses != th_hypotheses:
         raise Exception(
