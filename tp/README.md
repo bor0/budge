@@ -32,6 +32,8 @@ python3 budge-tp.py --expand out examples/primes.btp && python3 budge-tp.py out/
 cd examples && python3 ../budge-tp.py < miu.btp   # no file (or -): stdin; load() paths from the current directory
 ```
 
+[`translators/`](./translators/README.md) turns Metamath databases and Prolog programs into Budge-TP files for the checker.
+
 ## Semantics
 
 The syntax `r<name>` specifies a rule, and `t<name>` specifies a theorem.

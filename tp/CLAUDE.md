@@ -10,7 +10,15 @@ python3 budge-tp.py examples/<file>.btp
 # all examples must pass after any change:
 for f in examples/*.btp examples/lib/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" && echo "FAIL: $f"; done
 # --expand DIR writes every loaded file with <?py ... ?> blocks replaced by their output
+# translator examples, piped into the checker (no file or - reads stdin); must pass too:
+for f in translators/*.mm; do echo "== $f"; (set -o pipefail; python3 translators/mm2btp.py "$f" | python3 budge-tp.py) || echo "FAIL: $f"; done
+for f in translators/*.pl; do echo "== $f"; (set -o pipefail; python3 translators/prolog2btp.py "$f" | python3 budge-tp.py) || echo "FAIL: $f"; done
 ```
+
+`translators/` (see its README): `mm2btp.py` (Metamath assertions → sequents `⟦ Γ ⟧ ⟹ C`, $d as
+`DISJ`, dummies stay premises; nf.mm checks, full set.mm runs out of memory) and `prolog2btp.py`
+(clauses → rules, an untrusted SLD engine writes each answer's proof tree). Both use only Unicode
+lowercase blocks that system python3 3.9 agrees on (not IPA).
 
 `spacefast/index.html` is the browser playground; it fetches the checker and examples from
 GitHub `main` at run time. Keep it in step with any change: `LIB` lists every `examples/lib/`
