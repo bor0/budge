@@ -1,0 +1,134 @@
+# A stack machine, and proving programs equivalent by symbolic execution
+#
+# A state [k | s] is code k (instructions separated by spaces, ending in END)
+# and a stack s (top on the left: X:Y:S has X on top). a ~> [k | s] says that
+# running from state a reaches [k | s]. Arithmetic stays symbolic: ADD on
+# X:Y:S leaves (Y+X):S.
+#
+# The programs run on X:Y:S, where X, Y and S are atoms that no rule looks
+# inside: every rule matches them with a variable. Replace them by any values
+# and any stack and the same steps still check, so a run on X:Y:S is a run on
+# every stack with at least two values. Two programs that end with the same
+# stack from X:Y:S therefore behave the same everywhere (rSame).
+#
+# Theorems:
+#   thSwapSwap  SWAP SWAP does nothing
+#   thRot3      ROT ROT ROT does nothing
+#   thSquare    ADD DUP MUL and DUP ROT DUP ROT ADD ROT ROT SWAP ADD MUL both
+#               compute (Y+X)·(Y+X): adding before copying saves seven instructions
+
+<?py load('lib/strings.btp') ?>
+## The machine
+rStart : [k | s] ~> [k | s]
+rDup   : a ~> [DUP k | x:s] -> a ~> [k | x:x:s]
+rSwap  : a ~> [SWAP k | x:y:s] -> a ~> [k | y:x:s]
+rRot   : a ~> [ROT k | x:y:z:s] -> a ~> [k | z:x:y:s]
+rAdd   : a ~> [ADD k | x:y:s] -> a ~> [k | (y+x):s]
+rMul   : a ~> [MUL k | x:y:s] -> a ~> [k | (y*x):s]
+
+## Two programs that end with the same stack are equivalent
+rSame : [p | s] ~> [END | t] -> [q | s] ~> [END | t] -> p ≡ q ON s
+
+## Terms
+rTmX     : X
+rTmY     : Y
+rTmZ     : Z
+rTmS     : S
+rTmEnd   : END
+rTmDup   : DUP
+rTmSwap  : SWAP
+rTmRot   : ROT
+rTmAdd   : ADD
+rTmMul   : MUL
+rTmPush  : x:s
+rTmPlus  : (x+y)
+rTmTimes : (x*y)
+rTmState : [k | s]
+
+tmX!    : rTmX
+tmY!    : rTmY
+tmZ!    : rTmZ
+tmS!    : rTmS
+tmEnd!  : rTmEnd
+tmDup!  : rTmDup
+tmSwap! : rTmSwap
+tmRot!  : rTmRot
+tmAdd!  : rTmAdd
+tmMul!  : rTmMul
+
+# Stacks
+tmYS!   : rTmPush x=tmY!;s=tmS!       # Y:S
+tmXYS!  : rTmPush x=tmX!;s=tmYS!      # X:Y:S
+tmZS!   : rTmPush x=tmZ!;s=tmS!       # Z:S
+tmYZS!  : rTmPush x=tmY!;s=tmZS!      # Y:Z:S
+tmXYZS! : rTmPush x=tmX!;s=tmYZS!     # X:Y:Z:S
+
+# SWAP SWAP does nothing
+tmC1!   : rTmSeq x=tmSwap!;y=tmEnd!   # SWAP END
+tmC2!   : rTmSeq x=tmSwap!;y=tmC1!    # SWAP SWAP END
+tmRun1! : rTmState k=tmC2!;s=tmXYS!
+
+thSS0!  : rStart k=tmC2!;s=tmXYS!
+thSS1!  : rSwap a=tmRun1!;k=tmC1!;x=tmX!;y=tmY!;s=tmS! thSS0!
+thSS2   : rSwap a=tmRun1!;k=tmEnd!;x=tmY!;y=tmX!;s=tmS! thSS1!
+thNop1! : rStart k=tmEnd!;s=tmXYS!
+thSwapSwap : rSame p=tmC2!;q=tmEnd!;s=tmXYS!;t=tmXYS! thSS2 thNop1!
+
+# ROT ROT ROT does nothing
+tmR1!   : rTmSeq x=tmRot!;y=tmEnd!    # ROT END
+tmR2!   : rTmSeq x=tmRot!;y=tmR1!     # ROT ROT END
+tmR3!   : rTmSeq x=tmRot!;y=tmR2!     # ROT ROT ROT END
+tmRun2! : rTmState k=tmR3!;s=tmXYZS!
+
+thRRR0! : rStart k=tmR3!;s=tmXYZS!
+thRRR1! : rRot a=tmRun2!;k=tmR2!;x=tmX!;y=tmY!;z=tmZ!;s=tmS! thRRR0!
+thRRR2! : rRot a=tmRun2!;k=tmR1!;x=tmZ!;y=tmX!;z=tmY!;s=tmS! thRRR1!
+thRRR3  : rRot a=tmRun2!;k=tmEnd!;x=tmY!;y=tmZ!;z=tmX!;s=tmS! thRRR2!
+thNop2! : rStart k=tmEnd!;s=tmXYZS!
+thRot3 : rSame p=tmR3!;q=tmEnd!;s=tmXYZS!;t=tmXYZS! thRRR3 thNop2!
+
+# Values (Y+X) and (Y+X)·(Y+X), and stacks holding them
+tmSum!   : rTmPlus x=tmY!;y=tmX!          # (Y+X)
+tmSq!    : rTmTimes x=tmSum!;y=tmSum!     # ((Y+X)*(Y+X))
+tmSumS!  : rTmPush x=tmSum!;s=tmS!        # (Y+X):S
+tmSqS!   : rTmPush x=tmSq!;s=tmS!         # ((Y+X)*(Y+X)):S
+
+# ADD DUP MUL
+tmA1!   : rTmSeq x=tmMul!;y=tmEnd!    # MUL END
+tmA2!   : rTmSeq x=tmDup!;y=tmA1!     # DUP MUL END
+tmA3!   : rTmSeq x=tmAdd!;y=tmA2!     # ADD DUP MUL END
+tmRun3! : rTmState k=tmA3!;s=tmXYS!
+
+thA0!   : rStart k=tmA3!;s=tmXYS!
+thA1!   : rAdd a=tmRun3!;k=tmA2!;x=tmX!;y=tmY!;s=tmS! thA0!
+thA2!   : rDup a=tmRun3!;k=tmA1!;x=tmSum!;s=tmS! thA1!
+thA3    : rMul a=tmRun3!;k=tmEnd!;x=tmSum!;y=tmSum!;s=tmS! thA2!
+
+# DUP ROT DUP ROT ADD ROT ROT SWAP ADD MUL
+tmXS!   : rTmPush x=tmX!;s=tmS!       # X:S
+tmXXS!  : rTmPush x=tmX!;s=tmXS!      # X:X:S
+tmYXS!  : rTmPush x=tmY!;s=tmXS!      # Y:X:S
+tmB2!   : rTmSeq x=tmAdd!;y=tmA1!     # ADD MUL END
+tmB3!   : rTmSeq x=tmSwap!;y=tmB2!    # SWAP ADD MUL END
+tmB4!   : rTmSeq x=tmRot!;y=tmB3!     # ROT SWAP ADD MUL END
+tmB5!   : rTmSeq x=tmRot!;y=tmB4!     # ROT ROT SWAP ADD MUL END
+tmB6!   : rTmSeq x=tmAdd!;y=tmB5!     # ADD ROT ROT SWAP ADD MUL END
+tmB7!   : rTmSeq x=tmRot!;y=tmB6!     # ROT ADD ROT ROT SWAP ADD MUL END
+tmB8!   : rTmSeq x=tmDup!;y=tmB7!     # DUP ROT ADD ROT ROT SWAP ADD MUL END
+tmB9!   : rTmSeq x=tmRot!;y=tmB8!     # ROT DUP ROT ADD ROT ROT SWAP ADD MUL END
+tmB10!  : rTmSeq x=tmDup!;y=tmB9!     # DUP ROT DUP ROT ADD ROT ROT SWAP ADD MUL END
+tmRun4! : rTmState k=tmB10!;s=tmXYS!
+
+thB0!   : rStart k=tmB10!;s=tmXYS!
+thB1!   : rDup a=tmRun4!;k=tmB9!;x=tmX!;s=tmYS! thB0!                 # X:X:Y:S
+thB2!   : rRot a=tmRun4!;k=tmB8!;x=tmX!;y=tmX!;z=tmY!;s=tmS! thB1!    # Y:X:X:S
+thB3!   : rDup a=tmRun4!;k=tmB7!;x=tmY!;s=tmXXS! thB2!                # Y:Y:X:X:S
+thB4!   : rRot a=tmRun4!;k=tmB6!;x=tmY!;y=tmY!;z=tmX!;s=tmXS! thB3!   # X:Y:Y:X:S
+thB5!   : rAdd a=tmRun4!;k=tmB5!;x=tmX!;y=tmY!;s=tmYXS! thB4!         # (Y+X):Y:X:S
+thB6!   : rRot a=tmRun4!;k=tmB4!;x=tmSum!;y=tmY!;z=tmX!;s=tmS! thB5!  # X:(Y+X):Y:S
+thB7!   : rRot a=tmRun4!;k=tmB3!;x=tmX!;y=tmSum!;z=tmY!;s=tmS! thB6!  # Y:X:(Y+X):S
+thB8!   : rSwap a=tmRun4!;k=tmB2!;x=tmY!;y=tmX!;s=tmSumS! thB7!       # X:Y:(Y+X):S
+thB9!   : rAdd a=tmRun4!;k=tmA1!;x=tmX!;y=tmY!;s=tmSumS! thB8!        # (Y+X):(Y+X):S
+thB10   : rMul a=tmRun4!;k=tmEnd!;x=tmSum!;y=tmSum!;s=tmS! thB9!
+
+thSquare : rSame p=tmA3!;q=tmB10!;s=tmXYS!;t=tmSqS! thA3 thB10

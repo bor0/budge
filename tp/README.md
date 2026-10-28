@@ -93,6 +93,7 @@ In the `examples` folder you can find the following proofs:
 - [Run-Length Encoder decompressor](./examples/rle.btp) - Based on lists, an encoding/decoding algorithm
 - [Quantifiers](./examples/quantifiers.btp) - First-order reasoning with ∀ and ∃ by hand, using the library
 - [Primes](./examples/primes.btp) - Euclid: there are infinitely many primes, from Peano's axioms
+- [Stack machine](./examples/stack.btp) - Forth-style programs proved equivalent by symbolic execution: SWAP SWAP and ROT ROT ROT do nothing, and ADD DUP MUL computes the same as DUP ROT DUP ROT ADD ROT ROT SWAP ADD MUL
 - [RSA](./examples/rsa.btp) - Toy RSA encryption and decryption using tally numbers
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication
