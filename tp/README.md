@@ -97,5 +97,6 @@ In the `examples` folder you can find the following proofs:
 - [RSA](./examples/rsa.btp) - Toy RSA encryption and decryption using tally numbers
 - [SKI calculus](./examples/ski.btp) - SKI calculus
 - [TQ](./examples/tq.btp) - Number multiplication
+- [Two stacks](./examples/twostack.btp) - Two stacks make a Turing machine's tape: the 2-state busy beaver halts with four 1s
 - [Typed](./examples/typed.btp) - Shows the distinction between terms and theorems
 - [Whirlpool](./examples/whirlpool.btp) - The self-referential trap of searching for escape, and cognitive defusion

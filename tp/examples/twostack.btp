@@ -1,0 +1,72 @@
+# Two stacks are a tape: the 2-state busy beaver
+#
+# A machine with two stacks can simulate a Turing machine, so it can compute
+# anything a computer can. The state ⟨q | L | R⟩ is a machine state q and a
+# tape split at the head: R holds the head cell and the cells to its right, L
+# the cells to its left, nearest on top. ⊥ is the bottom of a stack. s ~> ⟨…⟩
+# says that running from state s reaches ⟨…⟩.
+#
+# The step rules work for any machine; the machine itself is its table of
+# transitions T(q,a,b,D,p): in state q reading a, write b, move D (L or R)
+# and go to state p. Here it is the 2-state busy beaver, which from a blank
+# tape halts (state H) after 6 steps with four 1s, the most any 2-state
+# machine can write (Radó, 1962):
+#
+#   thBusyBeaver  ⟨A | ⊥ | ⊥⟩ ~> ⟨H | 1:1:⊥ | 1:1:⊥⟩, the tape 1 1 [1] 1
+
+## Running a machine
+rStart : ⟨q | l | r⟩ ~> ⟨q | l | r⟩
+rRight : T(q,a,b,R,p) -> s ~> ⟨q | l | a:r⟩ -> s ~> ⟨p | b:l | r⟩
+rLeft  : T(q,a,b,L,p) -> s ~> ⟨q | c:l | a:r⟩ -> s ~> ⟨p | l | c:b:r⟩
+
+## The tape is blank (0) wherever it has not been written
+rGrowL : s ~> ⟨q | ⊥ | r⟩ -> s ~> ⟨q | 0:⊥ | r⟩
+rGrowR : s ~> ⟨q | l | ⊥⟩ -> s ~> ⟨q | l | 0:⊥⟩
+
+## The busy beaver
+rA0 : T(A,0,1,R,B)
+rA1 : T(A,1,1,L,B)
+rB0 : T(B,0,1,L,A)
+rB1 : T(B,1,1,R,H)
+
+## Terms
+rTmA     : A
+rTmB     : B
+rTmH     : H
+rTm0     : 0
+rTm1     : 1
+rTmBot   : ⊥
+rTmPush  : x:s
+rTmState : ⟨q | l | r⟩
+
+tmA!   : rTmA
+tmB!   : rTmB
+tmH!   : rTmH
+tm0!   : rTm0
+tm1!   : rTm1
+tmBot! : rTmBot
+
+# Stacks
+tm1B!    : rTmPush x=tm1!;s=tmBot!     # 1:⊥
+tm11B!   : rTmPush x=tm1!;s=tm1B!      # 1:1:⊥
+tm111B!  : rTmPush x=tm1!;s=tm11B!     # 1:1:1:⊥
+tm011B!  : rTmPush x=tm0!;s=tm11B!     # 0:1:1:⊥
+tmStart! : rTmState q=tmA!;l=tmBot!;r=tmBot!
+
+thA0! : rA0
+thA1! : rA1
+thB0! : rB0
+thB1! : rB1
+
+## The run; the head cell is in brackets
+thBB0! : rStart q=tmA!;l=tmBot!;r=tmBot!
+thBB1! : rGrowR s=tmStart!;q=tmA!;l=tmBot! thBB0!                                          # A  [0]
+thBB2! : rRight s=tmStart!;q=tmA!;a=tm0!;b=tm1!;p=tmB!;l=tmBot!;r=tmBot! thA0! thBB1!      # B  1 [ ]
+thBB3! : rGrowR s=tmStart!;q=tmB!;l=tm1B! thBB2!                                           # B  1 [0]
+thBB4! : rLeft s=tmStart!;q=tmB!;a=tm0!;b=tm1!;p=tmA!;c=tm1!;l=tmBot!;r=tmBot! thB0! thBB3!  # A  [1] 1
+thBB5! : rGrowL s=tmStart!;q=tmA!;r=tm11B! thBB4!                                          # A  0 [1] 1
+thBB6! : rLeft s=tmStart!;q=tmA!;a=tm1!;b=tm1!;p=tmB!;c=tm0!;l=tmBot!;r=tm1B! thA1! thBB5!   # B  [0] 1 1
+thBB7! : rGrowL s=tmStart!;q=tmB!;r=tm011B! thBB6!                                         # B  0 [0] 1 1
+thBB8! : rLeft s=tmStart!;q=tmB!;a=tm0!;b=tm1!;p=tmA!;c=tm0!;l=tmBot!;r=tm11B! thB0! thBB7!  # A  [0] 1 1 1
+thBB9! : rRight s=tmStart!;q=tmA!;a=tm0!;b=tm1!;p=tmB!;l=tmBot!;r=tm111B! thA0! thBB8!     # B  1 [1] 1 1
+thBusyBeaver : rRight s=tmStart!;q=tmB!;a=tm1!;b=tm1!;p=tmH!;l=tm1B!;r=tm11B! thB1! thBB9! # H  1 1 [1] 1
