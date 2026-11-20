@@ -17,6 +17,7 @@ Examples here:
 | `zebra.pl` | Einstein's riddle: Prolog searches, Budge-TP checks the one derivation of the answer |
 | `types.pl` | Simply typed λ-calculus: certifies `S : (α → β → γ) → (α → β) → α → γ`; `λx. x x` has no type (occurs check) |
 | `miu.pl` | Hofstadter's MIU system, as in `examples/miu.btp`, with derivations bounded by a step count |
+| `neural.pl` | A neural network learns XOR by backpropagation: one epoch of training, and the trained weights compute XOR (13,773 steps, most of them arithmetic) |
 
 ## mm2btp.py: Metamath
 
