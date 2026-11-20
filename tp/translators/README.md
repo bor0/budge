@@ -57,5 +57,23 @@ answer become Greek letters: the theorem holds for every value of them.
 
 `!` and `true` have no logical content and are dropped from the rules, so a proof is a proof from
 the clauses read as implications; `X = Y` is proved by `rEq : =(x,x)`. Not supported (an error):
-negation (`\+`), disjunction, if-then-else, arithmetic and other built-ins, assert/retract, `op/3`,
-DCG rules. A query with no answer gives nothing to check.
+negation (`\+`), disjunction, if-then-else, other built-ins, assert/retract, `op/3`, DCG rules. A
+query with no answer gives nothing to check.
+
+Arithmetic: `is/2` and `<`, `>`, `=<`, `>=`, `=:=`, `=\=` over `+ - * / // mod` and `exp`. Numbers
+are numerals with at most four decimals (`0.5`, `-12`, `2.71828` reads as `2.7182`), one type:
+sums are exact, `*`, `/` and `exp` cut their results to four decimals, `//` rounds toward zero,
+`mod` takes the sign of the divisor, `exp(x)` needs `|x| < 100`. A program that uses them gets
+built-in rules (named `$…`) that the checker uses like any other:
+
+- digit tables `$SUM` (a + b + carry) and `$PROD`, then `+`, `×` and `<` on digit strings column by
+  column, the carries coming back up the string (`rAddcS : $SUM(a,b,k,c,i) -> $ADDC(x,y,i,z,j) ->
+  $ADDC(xa,yb,k,zc,j)`);
+- a numeral is its digits times 10⁴ (`$SC(0.5,05000)`), so a sum of numerals is a sum of integers,
+  and a product drops the last four digits of the integer product;
+- a quotient is checked rather than computed: `q = x / y` because `q·y + r = x` and `r < y`;
+- `exp(x)` multiplies one table entry `e^(d·10^j)` per digit `d` of `x`, and `e^-x = 1 / e^x`;
+- `$EVAL(e,v)` follows the expression, and `rIs : $EVAL(e,x) -> IS(x,e)` closes `X is E`.
+
+The trusted part is the 310 digit facts and the 60 values of `e^(d·10^j)`, rounded to four decimals.
+prolog2btp.py computes each result in Python and writes its proof directly (no search).
