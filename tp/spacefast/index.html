@@ -251,7 +251,7 @@ h = root.close(c1.discharge(c2.discharge(...)))</pre>
 <div class="lcf">
 <div class="box"><h3>Untrusted</h3>Python blocks, <code>tactics.py</code>, loops, anything clever.<small>A bug here can only produce a step that gets rejected.</small></div>
 <div class="arr">→</div>
-<div class="box gen"><h3>Generated lines</h3>Plain <code>r…</code> / <code>t…</code> statements, exactly what <code>--expand</code> writes out.<small>Checkable later with no Python at all.</small></div>
+<div class="box gen"><h3>Generated lines</h3>Plain <code>r…</code> / <code>t…</code> statements, exactly what <code>--expand</code> writes out.<small>Checkable later with <code>--pure</code>, which runs no Python at all.</small></div>
 <div class="arr">→</div>
 <div class="box trust"><h3>Trusted</h3><code>budge-tp.py</code>: about 300 lines that only substitute and compare.<small>Plus the axioms in <code>lib/</code>. One bad rule there would make everything unsound.</small></div>
 </div>

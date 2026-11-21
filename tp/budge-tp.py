@@ -55,13 +55,13 @@ def parse_theorem(name, expr):
             'hypotheses': hypotheses}
 
 
-def new_environment():
+def new_environment(pure=False):
     """An empty environment. Rules and theorems are parsed as they are read,
     and theorems are derived (checked) in source order: before a Python block
-    runs, and at the end."""
+    runs, and at the end. With pure, no Python is run (see run_python)."""
     return {'rules': {}, 'theorems': {}, 'specs': {}, 'pending': [],
             'prose': {}, 'order': [], 'where': {}, 'loaded': set(),
-            'expanded': {}, 'namespaces': {}}
+            'expanded': {}, 'namespaces': {}, 'pure': pure}
 
 
 def add_line(env, raw_line, where, visible):
@@ -113,6 +113,9 @@ def check_pending(env):
     env['pending'] = []
 
 
+LOAD = re.compile(r"""load\((['"])([^'"\\]+)\1\)""")
+
+
 def run_python(env, code, path, where, stack, loads):
     """Run a <?py ... ?> block; what it prints is Budge code.
 
@@ -120,7 +123,10 @@ def run_python(env, code, path, where, stack, loads):
     and checked so far) and load(path) defined. load reads and checks another
     file (path relative to this one) once: its rules and theorems become
     available here, its theorems and prose are not printed. Blocks of one
-    file share their namespace."""
+    file share their namespace.
+
+    In a pure environment no Python is run: the block must be load('file')
+    and nothing else, which is read here; any other block is an error."""
     def load(target):
         full = join(dirname(path), target)
         if not isfile(full):
@@ -128,6 +134,16 @@ def run_python(env, code, path, where, stack, loads):
         load_file(env, full, False, stack)
         check_pending(env)
         loads.append(target)
+
+    if env['pure']:
+        match = LOAD.fullmatch(code)
+        try:
+            if not match:
+                raise Exception("Python block: --pure only reads <?py load('file') ?>")
+            load(match.group(2))
+        except Exception as error:
+            raise Exception(f"{where}: {error}") from None
+        return ''
 
     namespace = env['namespaces'].setdefault(realpath(path), {'__file__': path})
     namespace['env'], namespace['load'] = env, load
@@ -294,6 +310,9 @@ def apply_rule_or_theorem(env, theorem, theorem_name):
 def main():
     """Entrypoint"""
     args = sys.argv[1:]
+    pure = '--pure' in args
+    if pure:
+        args.remove('--pure')
     out_dir = None
     if '--expand' in args:
         i = args.index('--expand')
@@ -306,7 +325,7 @@ def main():
         args = ['-']
 
     if len(args) != 1:
-        sys.exit(f"Usage: python {sys.argv[0]} [--expand DIR] <filename.btp | ->")
+        sys.exit(f"Usage: python {sys.argv[0]} [--pure] [--expand DIR] <filename.btp | ->")
 
     if args[0] == '-':
         if out_dir is not None:
@@ -316,7 +335,7 @@ def main():
     elif not isfile(args[0]):
         sys.exit(f"Not a filename: '{args[0]}'.")
 
-    env = new_environment()
+    env = new_environment(pure)
     load_file(env, args[0])
     check_environment(env)
 

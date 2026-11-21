@@ -1,11 +1,12 @@
 # Translators
 
 Programs that turn other formal systems into Budge-TP files, so `budge-tp.py` checks their proofs.
-Both stream to standard output, so pipe them into the checker:
+Both stream to standard output, so pipe them into the checker (`--pure`: it runs no Python, so
+nothing a translator writes can be more than rules and theorems to check):
 
 ```
-python3 translators/mm2btp.py translators/demo0.mm | python3 budge-tp.py
-python3 translators/prolog2btp.py translators/zebra.pl | python3 budge-tp.py
+python3 translators/mm2btp.py translators/demo0.mm | python3 budge-tp.py --pure
+python3 translators/prolog2btp.py translators/zebra.pl | python3 budge-tp.py --pure
 ```
 
 Examples here:

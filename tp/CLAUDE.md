@@ -9,10 +9,12 @@ sections rather than appending, and don't drop information when trimming.
 python3 budge-tp.py examples/<file>.btp
 # all examples must pass after any change:
 for f in examples/*.btp examples/lib/*.btp; do python3 budge-tp.py "$f" 2>&1 | grep -q "Traceback" && echo "FAIL: $f"; done
-# --expand DIR writes every loaded file with <?py ... ?> blocks replaced by their output
+# --expand DIR writes every loaded file with <?py ... ?> blocks replaced by their output; --pure runs
+# no Python (it reads <?py load('file') ?> itself, any other block is an error), so this must pass:
+python3 budge-tp.py --expand out examples/<file>.btp && python3 budge-tp.py --pure out/<file>.btp
 # translator examples, piped into the checker (no file or - reads stdin); must pass too:
-for f in translators/*.mm; do echo "== $f"; (set -o pipefail; python3 translators/mm2btp.py "$f" | python3 budge-tp.py) || echo "FAIL: $f"; done
-for f in translators/*.pl; do echo "== $f"; (set -o pipefail; python3 translators/prolog2btp.py "$f" | python3 budge-tp.py) || echo "FAIL: $f"; done
+for f in translators/*.mm; do echo "== $f"; (set -o pipefail; python3 translators/mm2btp.py "$f" | python3 budge-tp.py --pure) || echo "FAIL: $f"; done
+for f in translators/*.pl; do echo "== $f"; (set -o pipefail; python3 translators/prolog2btp.py "$f" | python3 budge-tp.py --pure) || echo "FAIL: $f"; done
 ```
 
 `translators/` (see its README): `mm2btp.py` (Metamath assertions → sequents `⟦ Γ ⟧ ⟹ C`, $d as
@@ -47,7 +49,9 @@ p<name> : <text>                               # prose, printed as `-- <text>` i
   in and checked. That's all budge-tp.py does. There is no import statement.
 - `<?py load('lib/x.btp') ?>`: path relative to this file; fully checked, shares one namespace
   (clashes are errors), loads once (diamonds fine, cycles are errors), prints nothing.
-  `--expand` keeps these lines and replaces every other block.
+  `--expand` keeps these lines and replaces every other block; `--pure` reads them without
+  running Python and rejects every other block (a block can write `env` directly, so only an
+  expansion checked with `--pure` is free of trusted Python).
 - Field 2 is always parsed as replacements, so hypotheses without substitutions need a
   bare `;`: `tFoo : rBar ; hyp1`, not `tFoo : rBar hyp1`.
 
