@@ -30,9 +30,10 @@ f-string's braces, that needs 3.12) and use only Unicode lowercase blocks it agr
 `spacefast/index.html` is the browser playground; it fetches the checker and examples from
 GitHub `main` at run time, so the published page runs whatever is pushed: of budge-tp.py it
 calls only `new_environment`, `check(env, path, expand_dir)` and `results(env)` (and counts
-`env['rules']`, `env['theorems']`, `env['loaded']`), which must keep working. Keep it in step with any change: `LIB` lists every `examples/lib/`
-file, the `runEx` dropdown offers the showcase examples, the `TACS` cards match tactics.py's
-names and behaviour, and the prose matches the code. It must stay phone-friendly (no horizontal
+`env['rules']`, `env['theorems']`, `env['loaded']`), which must keep working. Keep it in step
+with any change: `LIB` lists every `examples/lib/` file, the `runEx` dropdown offers the
+showcase examples, the `TACS` cards match tactics.py's names and behaviour, and the prose
+matches the code. It must stay phone-friendly (no horizontal
 scroll at 320px). After changing it, republish it (spacefast skill) to its existing Space, https://budge.space.fast/ (linked from
 README.md), updating it rather than creating one; that needs the owner's API key. No `.spacefast/` folder.
 
@@ -118,10 +119,11 @@ back over `$I = S($I)` gives `EQ($S,DIV2(S($I)))`. Program text and conditions u
 notation (`EQ`, `¬`, `MOD2`), so `rIf`/`rWhile` put conditions into assertions as is, and
 the verification conditions are library lemmas (`lib/parity.btp`), not axioms.
 Extraction: a last block calls `lib/extract.py`'s `write_py(env, 'thProgram', fn, 'hoare.py', __file__)`,
-which parses the *checked* triple from `env['theorems']` and writes Python (variables a run may read
-before assigning them are parameters, even if assigned later; assigned ones in the postcondition
-the result, pre/post become `assert`s, or comments when quantified). Trusted: its symbol table (MOD2 as `% 2`, MOD as `%`, `$` dropped, …; unknown
-symbols are errors) and termination. `gcd.btp`: Euclid, invariant "same common divisors as
+which parses the *checked* triple from `env['theorems']` and writes Python (variables a run may
+read before assigning them are parameters, even if assigned later; assigned ones in the
+postcondition the result, pre/post become `assert`s, or comments when quantified). Trusted: its
+symbol table (MOD2 as `% 2`, MOD as `%`, `$` dropped, …; unknown symbols are errors) and
+termination. `gcd.btp`: Euclid, invariant "same common divisors as
 $X, $Y"; MOD by recursion (`rModWrap`/`rModNext`), `thModDiv`: a = b·q + MOD(a,b).
 `bsearch.btp`: isqrt by binary search; tests need executable symbols, so it uses order's
 predicate `LE` (extract reads it as `<=`); `thMidpoint`:
