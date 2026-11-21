@@ -518,15 +518,10 @@ def run_btp(path, expand):
     t0 = time.time(); env = btp.new_environment(); buf = io.StringIO(); exp = ''
     try:
         with contextlib.redirect_stdout(buf):
-            btp.load_file(env, path); btp.check_environment(env)
-            if expand:
-                btp.write_expanded(env, path, '/out')
+            btp.check(env, path, '/out' if expand else None)
         if expand:
             with open('/out/' + os.path.basename(path), encoding='utf-8') as fh: exp = fh.read()
-        lines = []
-        for kind, name, visible in env['order']:
-            if not visible or name[-1] == '!': continue
-            lines.append(('p', env['prose'][name]) if kind == 'prose' else ('t', name + ' : ' + env['theorems'][name]))
+        lines = [('t', name + ' : ' + text) if name else ('p', text) for name, text in btp.results(env)]
         return dict(ok=True, lines=lines, rules=len(env['rules']), theorems=len(env['theorems']), files=len(env['loaded']), ms=int((time.time()-t0)*1000), expanded=exp, stray=buf.getvalue())
     except Exception as e:
         return dict(ok=False, error=str(e), theorems=len(env['theorems']), ms=int((time.time()-t0)*1000))

@@ -307,6 +307,27 @@ def apply_rule_or_theorem(env, theorem, theorem_name):
     return ru_conclusion
 
 
+def check(env, path, expand_dir=None):
+    """Read and check a file, and what it loads, into env (new_environment).
+    With expand_dir, also write the expansion there (write_expanded). This
+    and results are what a program that runs the checker needs to call."""
+    load_file(env, path)
+    check_environment(env)
+    if expand_dir is not None:
+        write_expanded(env, path, expand_dir)
+
+
+def results(env):
+    """What the checked file shows, in source order: (name, value) for a
+    theorem, (None, text) for prose. Names ending in ! are left out."""
+    for kind, name, visible in env['order']:
+        if visible and name[-1] != '!':
+            if kind == 'prose':
+                yield None, env['prose'][name]
+            else:
+                yield name, env['theorems'][name]
+
+
 def main():
     """Entrypoint"""
     args = sys.argv[1:]
@@ -336,19 +357,10 @@ def main():
         sys.exit(f"Not a filename: '{args[0]}'.")
 
     env = new_environment(pure)
-    load_file(env, args[0])
-    check_environment(env)
+    check(env, args[0], out_dir)
 
-    if out_dir is not None:
-        write_expanded(env, args[0], out_dir)
-
-    for kind, name, visible in env['order']:
-        if not visible or name[-1] == '!':
-            continue
-        if kind == 'prose':
-            print(f"-- {env['prose'][name]}")
-        else:
-            print(f"{name} : {env['theorems'][name]}")
+    for name, text in results(env):
+        print(f"{name} : {text}" if name else f"-- {text}")
 
 
 if __name__ == '__main__':

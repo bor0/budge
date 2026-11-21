@@ -25,7 +25,9 @@ become `$`-named built-in rules over digit strings, numerals with four decimals,
 f-string's braces, that needs 3.12) and use only Unicode lowercase blocks it agrees on (not IPA).
 
 `spacefast/index.html` is the browser playground; it fetches the checker and examples from
-GitHub `main` at run time. Keep it in step with any change: `LIB` lists every `examples/lib/`
+GitHub `main` at run time, so the published page runs whatever is pushed: of budge-tp.py it
+calls only `new_environment`, `check(env, path, expand_dir)` and `results(env)` (and counts
+`env['rules']`, `env['theorems']`, `env['loaded']`), which must keep working. Keep it in step with any change: `LIB` lists every `examples/lib/`
 file, the `runEx` dropdown offers the showcase examples, the `TACS` cards match tactics.py's
 names and behaviour, and the prose matches the code. It must stay phone-friendly (no horizontal
 scroll at 320px). After changing it, republish it (spacefast skill) to its existing Space, https://budge.space.fast/ (linked from
