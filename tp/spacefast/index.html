@@ -147,7 +147,7 @@ nav .wrap::-webkit-scrollbar{display:none}
 
 <section id="how"><div class="wrap">
 <h2>Four kinds of lines</h2>
-<p class="sub">A Budge-TP file is a list of statements. The first letter of a name says what it is. Names and expressions can be any characters except <code>:</code> and spaces, and <code>#</code> starts a comment.</p>
+<p class="sub">A Budge-TP file is a list of statements. The first letter of a name says what it is. Names can be any characters except <code>:</code> and spaces; a rule's expressions can have those too, as in <code>|- Mx</code>. <code>#</code> starts a comment.</p>
 <div class="grid g3">
 <div class="card"><span class="tag t-r">r…</span><h3>Rules</h3><p>Hypotheses, then a conclusion, joined by <code>-&gt;</code>. Lowercase letters are variables you can substitute.</p><pre>r2 : |- Mx -> |- Mxx</pre></div>
 <div class="card"><span class="tag t-t">t…</span><h3>Theorems</h3><p>Apply a rule (or an earlier theorem), give substitutions <code>x=X;y=Y</code>, then the theorems that satisfy its hypotheses.</p><pre>thMII : r2 x=tmI! thMI</pre></div>

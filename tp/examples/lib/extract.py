@@ -204,9 +204,14 @@ def to_py(name, function, value):
 
 def write_py(env, name, function, target, here):
     """Write the Python for the checked Hoare triple `name` to `target`
-    (relative to the file `here`)"""
+    (relative to the file `here`), unless that is what the file already holds"""
     if name not in env['theorems']:
         raise ValueError(f"'{name}' is not a checked theorem")
     path = os.path.join(os.path.dirname(here), target)
+    text = to_py(name, function, env['theorems'][name])
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as file:
+            if file.read() == text:
+                return
     with open(path, 'w', encoding='utf-8') as file:
-        file.write(to_py(name, function, env['theorems'][name]))
+        file.write(text)

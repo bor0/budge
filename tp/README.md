@@ -18,7 +18,7 @@ p<name> : <text>
 <?py <python code> ?>
 ```
 
-The syntax for `<name>` and `<expr>` is any string of characters except `':'` and `' '` (whitespace). Square brackets represent optional values.
+A `<name>` is any string of characters except `:`, `#` and whitespace (and `;`, for a theorem named in a substitution). An `<expr>` may contain `:` and spaces, as in `x:s` or `|- Mx`; it cannot contain `->`, which separates a rule's expressions, or `#`, which starts a comment anywhere on a line. Square brackets represent optional values.
 
 Lowercase characters in a rule expression are considered a variable and will be used for substitution within the expressions.
 

@@ -234,7 +234,7 @@ def judgement_key(t):
     return t
 
 
-def emit_line(buf, name, rule, keys, hyps, comment=None):
+def emit_line(name, rule, keys, hyps, comment=None):
     repl = ';'.join(f'{k}={v}' for k, v in keys)
     parts = [rule]
     if repl:
@@ -291,7 +291,7 @@ def T(t):
     assert v == s, (v, s)
     THMS[name] = v
     TERM_NAMES[s] = name
-    emit_line(None, name, rule, keys, [], comment)
+    emit_line(name, rule, keys, [], comment)
     return name
 
 
@@ -309,7 +309,7 @@ def apply(rule, subst_list, hyps, name=None):
     THMS[name] = v
     VALUES.setdefault(v, name)
     c = v if (v.startswith('⊢') and name.endswith('!')) else None
-    emit_line(None, name, rule, keys, hyps, c)
+    emit_line(name, rule, keys, hyps, c)
     return name
 
 
@@ -384,7 +384,7 @@ def sym(h):
     return through(h, apply('rEqS', [('x', a), ('y', b)], []))
 
 
-def trans(h1, h2, G=None):
+def trans(h1, h2):
     if is_cond(h1) != is_cond(h2):
         if is_cond(h1):
             h2 = weaken(h2, val(h1)[1][1])

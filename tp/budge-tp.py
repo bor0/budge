@@ -267,9 +267,6 @@ def apply_rule_or_theorem(env, theorem, theorem_name):
 
         replacements[key] = env['theorems'][value]
 
-        if not isinstance(replacements[key], str):
-            raise Exception(f"Invalid theorem: '{value}' in '{theorem_name}'")
-
     # Replacements apply in order, each with .replace(). That is one
     # simultaneous pass unless a value contains a variable replaced after it,
     # which the later .replace() would rewrite. A text with none of the
