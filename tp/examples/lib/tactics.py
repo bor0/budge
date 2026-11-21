@@ -38,18 +38,24 @@ PROGRAM = {
 
 
 def r(t):
+    """The text of a tree, written out once (TEXTS)"""
     if isinstance(t, str):
         return t
-    op = t[0]
-    if op == 'THM':
-        return '⊢' + r(t[1])
-    if op == 'NOT':
-        return '¬' + r(t[1])
-    if op in PROGRAM:
-        return PROGRAM[op](*map(r, t[1:]))
-    if op in INFIX:
-        return '(' + r(t[1]) + INFIX[op] + r(t[2]) + ')'
-    return op + '(' + ','.join(r(a) for a in t[1:]) + ')'
+    s = TEXTS.get(t)
+    if s is None:
+        op = t[0]
+        if op == 'THM':
+            s = '⊢' + r(t[1])
+        elif op == 'NOT':
+            s = '¬' + r(t[1])
+        elif op in PROGRAM:
+            s = PROGRAM[op](*map(r, t[1:]))
+        elif op in INFIX:
+            s = '(' + r(t[1]) + INFIX[op] + r(t[2]) + ')'
+        else:
+            s = op + '(' + ','.join(r(a) for a in t[1:]) + ')'
+        TEXTS[t] = s
+    return s
 
 
 def parse(s):
@@ -186,6 +192,8 @@ TERM_NAMES = {}  # value string -> term theorem name
 VALUES = {}      # value string -> theorem name, for reuse of identical facts
 MEMO = {}        # judgement key -> theorem name
 TERM_COUNT = {}  # file tag -> numbered terms emitted so far
+TREES = {}       # theorem name -> its value parsed (val), so each is parsed once
+TEXTS = {}       # tree -> its text (r)
 SEC = {'prefix': 'x', 'count': 0}
 FILE = {}
 
@@ -195,7 +203,7 @@ JUDGEMENTS = ('PAR', 'DIFF', 'PLT', 'LT', 'CT', 'OPEN', 'ABS')
 def use(env, path):
     """Start a block: load what budge-tp.py has read and checked so far."""
     if FILE.get('env') is not env:              # a new run: forget the previous one
-        for table in (RULES, THMS, VALUES, TERM_NAMES, MEMO, TERM_COUNT):
+        for table in (RULES, THMS, VALUES, TERM_NAMES, MEMO, TERM_COUNT, TREES, TEXTS):
             table.clear()
         FILE['env'] = env
     stem = os.path.basename(path).split('.')[0]
@@ -306,7 +314,11 @@ def apply(rule, subst_list, hyps, name=None):
 
 
 def val(name):
-    return parse(THMS[name])
+    """The value of a theorem, as a tree"""
+    t = TREES.get(name)
+    if t is None:
+        t = TREES[name] = parse(THMS[name])
+    return t
 
 
 def section(title, prefix, intro=()):
@@ -493,7 +505,7 @@ def open_(k, f, t):
         keys += [('t', t), ('u', subs[0][1])] + ([('v', subs[1][1])] if len(f) == 3 else [])
         return apply(OPEN_RULES[f[0]], keys, [s[0] for s in subs])
     name = memo(('OPEN', k, f, t), go)
-    return name, parse(THMS[name])[4]
+    return name, val(name)[4]
 
 
 def abs_(k, w, g):
@@ -515,7 +527,7 @@ def abs_(k, w, g):
         keys += [('u', subs[0][1])] + ([('v', subs[1][1])] if len(g) == 3 else [])
         return apply(ABS_RULES[g[0]], keys, [s[0] for s in subs])
     name = memo(('ABS', k, w, g), go)
-    return name, parse(THMS[name])[4]
+    return name, val(name)[4]
 
 
 # ---------------------------------------------------------------- quantifiers
