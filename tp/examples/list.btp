@@ -17,7 +17,6 @@ thL1! : rMkPair x=tm1!;y=tmNil!
 thL2! : rMkPair x=tm1!;y=thL1!
 thL3! : rMkPair x=tm2!;y=tmNil!
 thL4! : rMkPair x=tm2!;y=thL1!
-thL5! : rMkPair x=tm2!;y=thL3!
 
 tappS1 : rAppendNil y=thL1! # [] ++ [1] = [1]
 tappS2 : rAppendRec x=tmNil!;y=thL1!;z=thL1!;a=tm1! tappS1 # [1] ++ [1] = [1, 1]
@@ -31,7 +30,7 @@ tLTEg3 : rLtZ n=tm1! # 0 < 2
 # Example 4: List membership
 tmemberEg1 : rMemberNil a=tm1! # 1 `elem` [] => False
 tmemberEg2 : rMemberNeqL a=tm1!;b=tmNil!;c=tmF!;x=tm2! tLTEg2 tmemberEg1 # 1 `elem` [2] => False
-tmemberEg3 : rMemberEq a=tm1!;b=thL3!;c=tmF!;x=tm2! tmemberEg2 # 1 `elem` [1, 2] => True
+tmemberEg3 : rMemberEq a=tm1!;b=thL3!;c=tmF! tmemberEg2 # 1 `elem` [1, 2] => True
 
 # Example 5: Sum list
 tsumEg1 : rSumInit z=thLstep1!

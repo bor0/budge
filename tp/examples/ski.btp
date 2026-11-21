@@ -40,21 +40,13 @@ rHs : ⊢a => ⊢b -> ⊢b => ⊢c -> ⊢a => ⊢c
 
 ## Meta vars
 ra : a
-rb : b
-rc : c
 rp : p
 rq : q
-rr : r
-rx : x
 ry : y
 rz : z
 tma! : ra
-tmb! : rb
-tmc! : rc
 tmp! : rp
 tmq! : rq
-tmr! : rr
-tmx! : rx
 tmy! : ry
 tmz! : rz
 
@@ -141,7 +133,7 @@ thRec : rHs a=tm(((SI)I)p)!;b=tmE(((SI)I)p)!;c=tm(pp)!;p=tma! thRecstep10! thRec
 ## Terms needed for the proof
 tm((SK)p)! : rTm x=tm(SK)!;y=tmp!
 tm(((SK)p)q)! : rTm x=tm((SK)p)!;y=tmq!
-tm(((SK)y)z)! : tm(((SK)p)q)! x=tm(((SK)p)q)!;p=tmy!;q=tmz!
+tm(((SK)y)z)! : tm(((SK)p)q)! p=tmy!;q=tmz!
 tm(((SK)y)z)E! : rTmMk x=tm(((SK)p)q)!;y=tmE!;p=tmy!;q=tmz!
 tmE(((SK)y)z)E! : rTmMk x=tmE!;y=tm(((SK)y)z)E!
 tm(yz)! : rTm y=tmz!;x=tmy!

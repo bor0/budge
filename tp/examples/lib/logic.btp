@@ -212,7 +212,6 @@ tm((b=>a)=>((a∨b)=>a))!        : rTmImp p=tm(b=>a)!;q=tm((a∨b)=>a)!
 tm((a=>a)=>((b=>a)=>((a∨b)=>a)))! : rTmImp p=tm(a=>a)!;q=tm((b=>a)=>((a∨b)=>a))!
 tm(¬b=>((a=>a)=>((b=>a)=>((a∨b)=>a))))! : rTmImp p=tm¬b!;q=tm((a=>a)=>((b=>a)=>((a∨b)=>a)))!
 tm(¬b=>(a=>a))!                : rTmImp p=tm¬b!;q=tm(a=>a)!
-tm((a=>a)=>(¬b=>(a=>a)))!      : rTmImp p=tm(a=>a)!;q=tm(¬b=>(a=>a))!
 tm(¬b=>((b=>a)=>((a∨b)=>a)))!  : rTmImp p=tm¬b!;q=tm((b=>a)=>((a∨b)=>a))!
 tm((¬b=>(a=>a))=>(¬b=>((b=>a)=>((a∨b)=>a))))! : rTmImp p=tm(¬b=>(a=>a))!;q=tm(¬b=>((b=>a)=>((a∨b)=>a)))!
 tm(¬b=>(b=>a))!                : rTmImp p=tm¬b!;q=tm(b=>a)!
