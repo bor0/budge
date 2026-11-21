@@ -15,6 +15,9 @@ python3 budge-tp.py --expand out examples/<file>.btp && python3 budge-tp.py --pu
 # translator examples, piped into the checker (no file or - reads stdin); must pass too:
 for f in translators/*.mm; do echo "== $f"; (set -o pipefail; python3 translators/mm2btp.py "$f" | python3 budge-tp.py --pure) || echo "FAIL: $f"; done
 for f in translators/*.pl; do echo "== $f"; (set -o pipefail; python3 translators/prolog2btp.py "$f" | python3 budge-tp.py --pure) || echo "FAIL: $f"; done
+# advice, not checking: rules no given file applies, hidden theorems none refers to, replacements
+# for a letter that is not there. Hand-written lines only; give libraries together with their users:
+python3 lint.py examples/*.btp examples/lib/*.btp
 ```
 
 `translators/` (see its README): `mm2btp.py` (Metamath assertions → sequents `⟦ Γ ⟧ ⟹ C`, $d as
@@ -215,7 +218,10 @@ quantifiers (`thPrimeFactor` is strong induction on a bound).
 - **Unbound conclusion variables.** One absent from every hypothesis can be set to
   anything via `x=T` (fine only for term rules/axiom schemas); a hypothesis missing a
   field never matches. Unused rules go unexercised: `coordgame.btp`'s `rCoordW` once
-  dropped `HP=h` from its hypothesis unnoticed.
+  dropped `HP=h` from its hypothesis unnoticed. `lint.py` lists them (59 now: moves and
+  instructions a small example doesn't make, and syntax/congruence rules and axioms that
+  libraries declare for completeness), and hidden theorems nothing uses (left on purpose:
+  the export `tmT!`, `miu.btp`'s `tmU!`, `llm.btp`'s five uncounted bigrams).
 - **Theorem vs proof.** Relations (`list.btp`: `APPEND(a,b,c)`) keep input and output in
   the theorem; state machines (`rle.btp`, `hanoi.btp`) keep input/path only in the proof
   (rle's final `CODED=… DECODED=NIL` doesn't say what it encodes). For `ENCODE(i)=y` as a

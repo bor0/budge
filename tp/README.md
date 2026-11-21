@@ -30,6 +30,7 @@ Python blocks are meta-programs: lines between `<?py` and `?>` (each on its own 
 python3 budge-tp.py examples/primes.btp
 python3 budge-tp.py --expand out examples/primes.btp && python3 budge-tp.py --pure out/primes.btp
 cd examples && python3 ../budge-tp.py < miu.btp   # no file (or -): stdin; load() paths from the current directory
+python3 lint.py examples/*.btp examples/lib/*.btp   # advice: rules never applied, hidden theorems never used
 ```
 
 [`translators/`](./translators/README.md) turns Metamath databases and Prolog programs into Budge-TP files for the checker.
