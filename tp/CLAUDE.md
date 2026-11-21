@@ -109,9 +109,9 @@ back over `$I = S($I)` gives `EQ($S,DIV2(S($I)))`. Program text and conditions u
 notation (`EQ`, `¬`, `MOD2`), so `rIf`/`rWhile` put conditions into assertions as is, and
 the verification conditions are library lemmas (`lib/parity.btp`), not axioms.
 Extraction: a last block calls `lib/extract.py`'s `write_py(env, 'thProgram', fn, 'hoare.py', __file__)`,
-which parses the *checked* triple from `env['theorems']` and writes Python (unassigned variables are
-parameters, assigned ones in the postcondition the result, pre/post become `assert`s, or comments
-when quantified). Trusted: its symbol table (MOD2 as `% 2`, MOD as `%`, `$` dropped, …; unknown
+which parses the *checked* triple from `env['theorems']` and writes Python (variables a run may read
+before assigning them are parameters, even if assigned later; assigned ones in the postcondition
+the result, pre/post become `assert`s, or comments when quantified). Trusted: its symbol table (MOD2 as `% 2`, MOD as `%`, `$` dropped, …; unknown
 symbols are errors) and termination. `gcd.btp`: Euclid, invariant "same common divisors as
 $X, $Y"; MOD by recursion (`rModWrap`/`rModNext`), `thModDiv`: a = b·q + MOD(a,b).
 `bsearch.btp`: isqrt by binary search; tests need executable symbols, so it uses order's

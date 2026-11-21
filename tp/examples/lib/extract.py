@@ -6,8 +6,9 @@ A <?py ... ?> block after the proof calls
 
 which reads the *checked* value of the theorem from env (not the Python
 terms the proof was built from), so the Python is the program Budge verified.
-Program variables ($I, $N, ...) are Python variables without the $; the ones read
-but never assigned are the function's parameters, the assigned ones the
+Program variables ($I, $N, ...) are Python variables without the $; the ones a
+run may read before it assigns them are the function's parameters (so a
+variable the program both reads and updates is one), the assigned ones the
 postcondition mentions are its result. Pre- and postcondition become
 asserts, or comments if they can't run (quantifiers).
 
@@ -123,15 +124,22 @@ def variables(t, acc):
     return acc
 
 
-def scan(cmds, read, written):
+def scan(cmds, assigned, params, written):
+    """Follow cmds from a point where the variables in assigned certainly have
+    a value: params collects the ones a run may read before it assigns them,
+    written every variable assigned. Returns those that certainly have a value
+    afterwards."""
     for c in cmds:
         if c[0] == 'ASG':
+            params |= variables(parse(c[2]), set()) - assigned
+            assigned = assigned | {c[1]}
             written.add(c[1])
-            variables(parse(c[2]), read)
         elif c[0] != 'SKIP':
-            variables(parse(c[1]), read)
-            for body in c[2:]:
-                scan(body, read, written)
+            params |= variables(parse(c[1]), set()) - assigned      # the test
+            after = [scan(body, assigned, params, written) for body in c[2:]]
+            if c[0] == 'IF':        # both branches; a WHILE body may not run
+                assigned = after[0] & after[1]
+    return assigned
 
 
 def emit(cmds, indent):
@@ -171,9 +179,10 @@ def check(assertion, what):
 def to_py(name, function, value):
     pre, prog, post = triple(value)
     cmds = commands(prog)
-    read, written = set(), set()
-    scan(cmds, read, written)
-    params = [p[1:] for p in sorted(read - written | variables(parse(pre), set()) - written)]
+    params, written = variables(parse(pre), set()), set()   # the precondition is read on entry
+    assigned = scan(cmds, set(), params, written)
+    params |= variables(parse(post), set()) - assigned      # the postcondition on exit
+    params = [p[1:] for p in sorted(params)]
     results = [r[1:] for r in sorted(written & variables(parse(post), set()))]
     if not results:
         raise ValueError(f"'{name}': the postcondition mentions no assigned variable")
