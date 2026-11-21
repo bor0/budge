@@ -19,7 +19,8 @@ for f in translators/*.pl; do echo "== $f"; (set -o pipefail; python3 translator
 `DISJ`, dummies stay premises; nf.mm checks, full set.mm runs out of memory) and `prolog2btp.py`
 (clauses → rules, an untrusted SLD engine writes each answer's proof tree; `is` and comparisons
 become `$`-named built-in rules over digit strings, numerals with four decimals, as in
-`neural.pl`). Both use only Unicode lowercase blocks that system python3 3.9 agrees on (not IPA).
+`neural.pl`). Both must run on system python3 3.9 (`/usr/bin/python3`; no backslash inside an
+f-string's braces, that needs 3.12) and use only Unicode lowercase blocks it agrees on (not IPA).
 
 `spacefast/index.html` is the browser playground; it fetches the checker and examples from
 GitHub `main` at run time. Keep it in step with any change: `LIB` lists every `examples/lib/`

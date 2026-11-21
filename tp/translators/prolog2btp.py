@@ -821,10 +821,11 @@ def prelude(w):
               'rLeEq : $LE(a,a)',
               f'rIs : $EVAL(e,x) -> {op["is"]}(x,e)']
     two = '$EVAL(e,a) -> $EVAL(f,b) -> '
+    ne = op['=\\=']     # named here: before Python 3.12 an f-string's braces can't hold a backslash
     lines += [f'rLt : {two}$LT(a,b) -> {op["<"]}(e,f)', f'rGt : {two}$LT(b,a) -> {op[">"]}(e,f)',
               f'rLe : {two}$LE(a,b) -> {op["=<"]}(e,f)', f'rGe : {two}$LE(b,a) -> {op[">="]}(e,f)',
               f'rEqA : $EVAL(e,a) -> $EVAL(f,a) -> {op["=:="]}(e,f)',
-              f'rNe1 : {two}$LT(a,b) -> {op["=\\="]}(e,f)', f'rNe2 : {two}$LT(b,a) -> {op["=\\="]}(e,f)']
+              f'rNe1 : {two}$LT(a,b) -> {ne}(e,f)', f'rNe2 : {two}$LT(b,a) -> {ne}(e,f)']
     return lines
 
 
